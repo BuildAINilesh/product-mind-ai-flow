@@ -17,6 +17,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/dashboard/Dashboard";
 import RequirementsList from "./pages/requirements/RequirementsList";
 import NewRequirement from "./pages/requirements/NewRequirement";
+import MarketSense from "./pages/dashboard/MarketSense";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="requirements" element={<RequirementsList />} />
               <Route path="requirements/new" element={<NewRequirement />} />
+              <Route path="market-sense" element={<MarketSense />} />
             </Route>
             
             {/* Catch-all Route */}
