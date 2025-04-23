@@ -18,6 +18,10 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import RequirementsList from "./pages/requirements/RequirementsList";
 import NewRequirement from "./pages/requirements/NewRequirement";
 import MarketSense from "./pages/dashboard/MarketSense";
+import RequirementValidator from "./pages/dashboard/RequirementValidator";
+import TestGen from "./pages/dashboard/TestGen";
+import BugShield from "./pages/dashboard/BugShield";
+import SmartSignoff from "./pages/dashboard/SmartSignoff";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +44,10 @@ const App = () => (
               <Route path="requirements" element={<RequirementsList />} />
               <Route path="requirements/new" element={<NewRequirement />} />
               <Route path="market-sense" element={<MarketSense />} />
+              <Route path="validator" element={<RequirementValidator />} />
+              <Route path="test-gen" element={<TestGen />} />
+              <Route path="bug-shield" element={<BugShield />} />
+              <Route path="signoff" element={<SmartSignoff />} />
             </Route>
             
             {/* Catch-all Route */}

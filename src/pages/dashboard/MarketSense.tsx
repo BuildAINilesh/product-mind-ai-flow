@@ -45,7 +45,6 @@ const MarketSense = () => {
       setIsAnalyzing(false);
       setShowResults(true);
       toast({
-        title: "Market analysis complete",
         description: "Your market intelligence report is ready to view.",
       });
     }, 2000);
