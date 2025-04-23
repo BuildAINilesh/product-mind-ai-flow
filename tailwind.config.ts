@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,20 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// ProductMind custom colors
+				pm: {
+					'blue': '#1a4971',
+					'blue-light': '#2d6da3',
+					'teal': '#38b2ac',
+					'teal-light': '#4fd1cb',
+					'gray-dark': '#2d3748',
+					'gray': '#718096',
+					'gray-light': '#e2e8f0',
+					'success': '#48bb78',
+					'warning': '#ed8936',
+					'error': '#e53e3e',
+					'bg-light': '#f7fafc'
 				}
 			},
 			borderRadius: {
@@ -84,11 +99,42 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'fade-out': {
+					'0%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					},
+					'100%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					}
+				},
+				'pulse-soft': {
+					'0%, 100%': {
+						opacity: '1'
+					},
+					'50%': {
+						opacity: '0.8'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.5s ease-out',
+				'fade-out': 'fade-out 0.3s ease-out',
+				'pulse-soft': 'pulse-soft 3s infinite ease-in-out'
 			}
 		}
 	},
