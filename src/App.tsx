@@ -64,6 +64,8 @@ const App = () => (
               <Route path="test-gen" element={<TestGen />} />
               <Route path="bug-shield" element={<BugShield />} />
               <Route path="signoff" element={<SmartSignoff />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="support" element={<Support />} />
             </Route>
             
             {/* Catch-all Route */}
