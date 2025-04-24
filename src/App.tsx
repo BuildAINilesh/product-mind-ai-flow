@@ -31,6 +31,10 @@ import TestGen from "./pages/dashboard/TestGen";
 import BugShield from "./pages/dashboard/BugShield";
 import SmartSignoff from "./pages/dashboard/SmartSignoff";
 
+// Add imports for Settings and Support
+import Settings from "./pages/dashboard/Settings";
+import Support from "./pages/dashboard/Support";
+
 const queryClient = new QueryClient();
 
 const App = () => (
