@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,6 +29,7 @@ import RequirementValidator from "./pages/dashboard/RequirementValidator";
 import TestGen from "./pages/dashboard/TestGen";
 import BugShield from "./pages/dashboard/BugShield";
 import SmartSignoff from "./pages/dashboard/SmartSignoff";
+import Profile from "./pages/dashboard/Profile";
 
 // Add imports for Settings and Support
 import Settings from "./pages/dashboard/Settings";
@@ -70,6 +70,7 @@ const App = () => (
               <Route path="signoff" element={<SmartSignoff />} />
               <Route path="settings" element={<Settings />} />
               <Route path="support" element={<Support />} />
+              <Route path="profile" element={<Profile />} />
             </Route>
             
             {/* Catch-all Route */}
