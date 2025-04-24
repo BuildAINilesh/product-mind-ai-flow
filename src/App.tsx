@@ -11,6 +11,14 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Features from "./pages/Features";
+import Pricing from "./pages/Pricing";
+import Roadmap from "./pages/Roadmap";
+import About from "./pages/About";
+import Blog from "./pages/Blog";
+import Career from "./pages/Career";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 // Dashboard
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -37,6 +45,14 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/careers" element={<Career />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             
             {/* Dashboard Routes */}
             <Route path="/dashboard" element={<DashboardLayout />}>
