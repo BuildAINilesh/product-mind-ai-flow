@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,6 @@ import { ClipboardCheck, Check, FileText, Copy, Code } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
 
-// Mock test cases
 const mockTestCases = {
   functional: [
     {
@@ -101,10 +99,7 @@ const TestGen = () => {
 
   const handleGenerateTests = () => {
     if (!requirementText.trim()) {
-      toast({
-        description: "Please enter requirements to generate test cases.",
-        variant: "destructive"
-      });
+      toast("Please enter requirements to generate test cases.");
       return;
     }
 
@@ -114,9 +109,7 @@ const TestGen = () => {
     setTimeout(() => {
       setTestCases(mockTestCases);
       setIsGenerating(false);
-      toast({
-        description: "Test cases generated successfully.",
-      });
+      toast("Test cases generated successfully.");
     }, 2000);
   };
 
@@ -130,9 +123,7 @@ Expected Result: ${testCase.expectedResult}`;
 
     navigator.clipboard.writeText(textToCopy);
     
-    toast({
-      description: "Test case copied to clipboard.",
-    });
+    toast("Test case copied to clipboard.");
   };
 
   const handleClear = () => {

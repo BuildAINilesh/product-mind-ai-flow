@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,10 +48,7 @@ const RequirementValidator = () => {
 
   const handleValidate = () => {
     if (!requirementText.trim()) {
-      toast({
-        description: "Please enter a requirement to validate.",
-        variant: "destructive"
-      });
+      toast("Please enter a requirement to validate.");
       return;
     }
 
@@ -63,9 +59,7 @@ const RequirementValidator = () => {
       setValidationResults(mockValidationResults);
       setScore(78);
       setIsValidating(false);
-      toast({
-        description: "Requirement validation complete.",
-      });
+      toast("Requirement validation complete.");
     }, 2000);
   };
 

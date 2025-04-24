@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,10 +59,7 @@ const BugShield = () => {
 
   const handleAnalyze = () => {
     if (!codeInput.trim()) {
-      toast({
-        description: "Please enter code or requirements to analyze.",
-        variant: "destructive"
-      });
+      toast("Please enter code or requirements to analyze.");
       return;
     }
 
@@ -76,9 +72,7 @@ const BugShield = () => {
       setVulnerabilities(mockVulnerabilities);
       setSecurityScore(65);
       setIsAnalyzing(false);
-      toast({
-        description: "Security analysis complete.",
-      });
+      toast("Security analysis complete.");
     }, 2500);
   };
 

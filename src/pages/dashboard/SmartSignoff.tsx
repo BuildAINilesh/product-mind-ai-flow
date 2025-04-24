@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,9 +69,7 @@ const SmartSignoff = () => {
   const [selectedRequirement, setSelectedRequirement] = useState<any>(null);
 
   const handleApprove = (requirementId: string) => {
-    toast({
-      description: `Requirement ${requirementId} has been approved.`,
-    });
+    toast(`Requirement ${requirementId} has been approved.`);
     
     // Update the requirement status in our state
     setRequirements(requirements.map(req => 
@@ -86,10 +83,7 @@ const SmartSignoff = () => {
   };
 
   const handleReject = (requirementId: string) => {
-    toast({
-      description: `Requirement ${requirementId} has been rejected.`,
-      variant: "destructive"
-    });
+    toast(`Requirement ${requirementId} has been rejected.`);
     
     // Update the requirement status in our state
     setRequirements(requirements.map(req => 
