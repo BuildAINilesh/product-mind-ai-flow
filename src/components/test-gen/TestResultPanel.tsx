@@ -36,44 +36,45 @@ Expected Result: ${testCase.expectedResult}`;
         <CardDescription>
           Test cases generated based on your requirements
         </CardDescription>
-        <Tabs defaultValue="functional" className="mt-2" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3">
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="functional" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="functional">Functional</TabsTrigger>
             <TabsTrigger value="integration">Integration</TabsTrigger>
             <TabsTrigger value="user">User</TabsTrigger>
           </TabsList>
+          
+          <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
+            <TabsContent value="functional">
+              {testCases.functional.map((testCase: TestCase) => (
+                <TestCaseCard 
+                  key={testCase.id} 
+                  testCase={testCase} 
+                  onCopy={() => handleCopyTestCase(testCase)} 
+                />
+              ))}
+            </TabsContent>
+            <TabsContent value="integration">
+              {testCases.integration.map((testCase: TestCase) => (
+                <TestCaseCard 
+                  key={testCase.id} 
+                  testCase={testCase} 
+                  onCopy={() => handleCopyTestCase(testCase)} 
+                />
+              ))}
+            </TabsContent>
+            <TabsContent value="user">
+              {testCases.user.map((testCase: TestCase) => (
+                <TestCaseCard 
+                  key={testCase.id} 
+                  testCase={testCase} 
+                  onCopy={() => handleCopyTestCase(testCase)} 
+                />
+              ))}
+            </TabsContent>
+          </div>
         </Tabs>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
-          <TabsContent value="functional" className="m-0">
-            {testCases.functional.map((testCase: TestCase) => (
-              <TestCaseCard 
-                key={testCase.id} 
-                testCase={testCase} 
-                onCopy={() => handleCopyTestCase(testCase)} 
-              />
-            ))}
-          </TabsContent>
-          <TabsContent value="integration" className="m-0">
-            {testCases.integration.map((testCase: TestCase) => (
-              <TestCaseCard 
-                key={testCase.id} 
-                testCase={testCase} 
-                onCopy={() => handleCopyTestCase(testCase)} 
-              />
-            ))}
-          </TabsContent>
-          <TabsContent value="user" className="m-0">
-            {testCases.user.map((testCase: TestCase) => (
-              <TestCaseCard 
-                key={testCase.id} 
-                testCase={testCase} 
-                onCopy={() => handleCopyTestCase(testCase)} 
-              />
-            ))}
-          </TabsContent>
-        </div>
       </CardContent>
     </Card>
   );
