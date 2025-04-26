@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,6 @@ const RequirementsList = () => {
     req.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Status badge helper
   const getStatusBadge = (status: Requirement["status"]) => {
     switch (status) {
       case "approved":
@@ -102,8 +100,8 @@ const RequirementsList = () => {
   
   return (
     <div>
-      <AIBackground variant="neural" intensity="low" className="rounded-lg mb-6 p-6">
-        <div className="flex justify-between items-center">
+      <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
+        <div className="flex justify-between items-center relative z-10">
           <div>
             <h2 className="text-2xl font-bold">AI-Powered <AIGradientText>Requirements</AIGradientText></h2>
             <p className="text-muted-foreground mt-1">Create and manage requirements with machine learning assistance</p>

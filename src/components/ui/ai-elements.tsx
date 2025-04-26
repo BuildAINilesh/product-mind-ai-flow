@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
 
@@ -32,7 +31,6 @@ export function AIBackground({
       className={cn(
         "relative overflow-hidden",
         variantClasses[variant],
-        intensityClasses[intensity],
         className
       )}
       {...props}

@@ -40,9 +40,9 @@ const barChartData = [
 const Dashboard = () => {
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
+      {/* Welcome Section - Fixed visibility by removing opacity-10 class */}
       <AIBackground variant="neural" className="relative overflow-hidden rounded-lg p-6 neural-bg">
-        <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 opacity-30">
           <NeuralNetwork nodes={6} layers={12} className="h-full w-full" />
         </div>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
@@ -117,7 +117,7 @@ const Dashboard = () => {
         />
       </section>
       
-      {/* Features Grid */}
+      {/* Features Grid - Fixed links by using proper Link components */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">AI Platform Features</h3>
@@ -125,7 +125,7 @@ const Dashboard = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/requirements" className="block">
+            <Link to="/dashboard/requirements" className="block h-full">
               <div className="flex items-start gap-4">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <FileText className="h-5 w-5 text-primary" />
@@ -142,7 +142,7 @@ const Dashboard = () => {
           </AICard>
           
           <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/market-sense" className="block">
+            <Link to="/dashboard/market-sense" className="block h-full">
               <div className="flex items-start gap-4">
                 <div className="p-2 rounded-lg bg-secondary/10">
                   <BarChart3 className="h-5 w-5 text-secondary" />
@@ -159,7 +159,7 @@ const Dashboard = () => {
           </AICard>
           
           <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/validator" className="block">
+            <Link to="/dashboard/validator" className="block h-full">
               <div className="flex items-start gap-4">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <Brain className="h-5 w-5 text-primary" />
@@ -176,7 +176,7 @@ const Dashboard = () => {
           </AICard>
           
           <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/test-gen" className="block">
+            <Link to="/dashboard/test-gen" className="block h-full">
               <div className="flex items-start gap-4">
                 <div className="p-2 rounded-lg bg-secondary/10">
                   <Network className="h-5 w-5 text-secondary" />
@@ -193,7 +193,7 @@ const Dashboard = () => {
           </AICard>
           
           <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/bug-shield" className="block">
+            <Link to="/dashboard/bug-shield" className="block h-full">
               <div className="flex items-start gap-4">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <Layers className="h-5 w-5 text-primary" />
@@ -210,7 +210,7 @@ const Dashboard = () => {
           </AICard>
           
           <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/signoff" className="block">
+            <Link to="/dashboard/signoff" className="block h-full">
               <div className="flex items-start gap-4">
                 <div className="p-2 rounded-lg bg-secondary/10">
                   <CircuitBoard className="h-5 w-5 text-secondary" />
