@@ -5,74 +5,96 @@
 
 @layer base {
   :root {
-    --background: 210 50% 98%;
-    --foreground: 222 47% 11%;
+    --background: 220 25% 97%;
+    --foreground: 224 71% 4%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 224 71% 4%;
 
-    --primary: 201 70% 28%;
+    --primary: 235 60% 40%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 173 64% 45%;
+    --secondary: 196 80% 45%;
     --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
 
-    --accent: 210 40% 90%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 196 80% 93%;
+    --accent-foreground: 224 71% 4%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 201 70% 35%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 235 60% 40%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 201 70% 20%;
+    --sidebar-background: 235 60% 25%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 173 64% 45%;
+    --sidebar-primary: 196 80% 50%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 201 70% 15%;
+    --sidebar-accent: 235 60% 20%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 201 70% 25%;
-    --sidebar-ring: 173 64% 45%;
+    --sidebar-border: 235 60% 30%;
+    --sidebar-ring: 196 80% 50%;
+
+    /* AI Theme Colors */
+    --ai-accent: 196 80% 50%;
+    --ai-accent-light: 196 80% 85%;
+    --ai-glow: 235 60% 60%;
+    --ai-neural-1: 235 60% 40%;
+    --ai-neural-2: 196 80% 50%;
+    --ai-neural-3: 264 60% 60%;
+    --ai-data-1: 196 80% 50%;
+    --ai-data-2: 170 80% 45%;
+    --ai-grid: 220 13% 91%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
 
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 224 71% 8%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 224 71% 8%;
+    --popover-foreground: 213 31% 91%;
 
-    --primary: 201 70% 40%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 235 60% 60%;
+    --primary-foreground: 224 71% 4%;
 
-    --secondary: 173 64% 40%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 196 80% 50%;
+    --secondary-foreground: 213 31% 91%;
 
-    --muted: 217 32% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
 
-    --accent: 217 32% 20%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 223 47% 15%;
+    --accent-foreground: 213 31% 91%;
 
-    --destructive: 0 62% 45%;
+    --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 32% 17%;
-    --input: 217 32% 17%;
-    --ring: 201 70% 40%;
+    --border: 223 47% 15%;
+    --input: 223 47% 15%;
+    --ring: 235 60% 60%;
+
+    /* AI Theme Colors - Dark */
+    --ai-accent: 196 80% 60%;
+    --ai-accent-light: 196 60% 30%;
+    --ai-glow: 235 60% 70%;
+    --ai-neural-1: 235 60% 60%;
+    --ai-neural-2: 196 80% 60%;
+    --ai-neural-3: 264 60% 70%;
+    --ai-data-1: 196 80% 60%;
+    --ai-data-2: 170 80% 50%;
+    --ai-grid: 223 47% 15%;
   }
 }
 
@@ -84,6 +106,9 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at 50% 0%, 
+                      hsl(var(--ai-accent-light) / 0.1) 0%, 
+                      transparent 60%);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -109,7 +134,7 @@
 
 @layer utilities {
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:shadow-primary/10;
   }
   
   .glassmorphism {
@@ -118,5 +143,114 @@
 
   .dark .glassmorphism {
     @apply bg-gray-900/70 border-gray-800/50;
+  }
+  
+  /* AI-specific utilities */
+  .ai-card {
+    @apply relative overflow-hidden border border-border rounded-xl bg-gradient-to-br from-card to-accent/10;
+  }
+  
+  .ai-card::before {
+    content: "";
+    @apply absolute inset-0 border border-white/20 rounded-xl;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.1) 25%,
+      rgba(255, 255, 255, 0.1) 75%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite linear;
+  }
+  
+  .dark .ai-card::before {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -100% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  .neural-bg {
+    @apply relative isolate;
+    background-image: 
+      radial-gradient(circle at 25% 25%, hsl(var(--ai-accent-light) / 0.2) 0%, transparent 30%),
+      radial-gradient(circle at 75% 75%, hsl(var(--ai-neural-3) / 0.2) 0%, transparent 30%);
+  }
+  
+  .data-flow {
+    background: linear-gradient(90deg, 
+      transparent, 
+      hsl(var(--ai-data-1) / 0.1) 20%, 
+      hsl(var(--ai-data-1) / 0.2) 30%, 
+      hsl(var(--ai-data-1) / 0.1) 40%, 
+      transparent 50%);
+    background-size: 200% 100%;
+    animation: dataFlow 5s infinite linear;
+  }
+  
+  @keyframes dataFlow {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
+  }
+  
+  .ai-grid {
+    position: relative;
+  }
+  
+  .ai-grid::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      to right,
+      hsl(var(--ai-grid) / 0.05) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      hsl(var(--ai-grid) / 0.05) 1px,
+      transparent 1px
+    );
+    background-size: 20px 20px;
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  .glow {
+    position: relative;
+  }
+  
+  .glow::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(
+      circle at 50% 50%,
+      hsl(var(--ai-glow) / 0.4) 0%,
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  
+  .glow:hover::after {
+    opacity: 1;
+  }
+  
+  .pulse-soft {
+    @apply animate-pulse-soft;
   }
 }

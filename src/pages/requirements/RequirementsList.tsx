@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -21,8 +22,8 @@ import {
   Badge
 } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, XCircle, Clock, Plus, Search } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle, XCircle, Clock, Plus, Search, Brain, Network } from "lucide-react";
+import { AICard, AIBackground, AIBadge, NeuralNetwork, AIGradientText } from "@/components/ui/ai-elements";
 
 type Requirement = {
   id: string;
@@ -32,6 +33,7 @@ type Requirement = {
   aiValidated: boolean;
   testsCovered: boolean;
   industry: string;
+  aiConfidence?: number;
 };
 
 const RequirementsList = () => {
@@ -44,7 +46,8 @@ const RequirementsList = () => {
       status: "approved",
       aiValidated: true,
       testsCovered: true,
-      industry: "Technology"
+      industry: "Technology",
+      aiConfidence: 98
     },
     {
       id: "REQ-002",
@@ -53,7 +56,8 @@ const RequirementsList = () => {
       status: "in-review",
       aiValidated: true,
       testsCovered: false,
-      industry: "Financial Services"
+      industry: "Financial Services",
+      aiConfidence: 87
     },
     {
       id: "REQ-003",
@@ -62,7 +66,8 @@ const RequirementsList = () => {
       status: "draft",
       aiValidated: false,
       testsCovered: false,
-      industry: "Retail"
+      industry: "Retail",
+      aiConfidence: 0
     },
     {
       id: "REQ-004",
@@ -71,7 +76,8 @@ const RequirementsList = () => {
       status: "rejected",
       aiValidated: false,
       testsCovered: false,
-      industry: "Technology"
+      industry: "Technology",
+      aiConfidence: 43
     }
   ]);
   
@@ -84,11 +90,11 @@ const RequirementsList = () => {
   const getStatusBadge = (status: Requirement["status"]) => {
     switch (status) {
       case "approved":
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Approved</Badge>;
+        return <AIBadge variant="complete">Approved</AIBadge>;
       case "in-review":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">In Review</Badge>;
+        return <AIBadge variant="analyzing">In Review</AIBadge>;
       case "draft":
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">Draft</Badge>;
+        return <AIBadge variant="neural">Draft</AIBadge>;
       case "rejected":
         return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Rejected</Badge>;
     }
@@ -96,21 +102,26 @@ const RequirementsList = () => {
   
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Requirements</h2>
-        <Button asChild>
-          <Link to="/dashboard/requirements/new">
-            <Plus size={16} className="mr-2" />
-            New Requirement
-          </Link>
-        </Button>
-      </div>
+      <AIBackground variant="neural" intensity="low" className="rounded-lg mb-6 p-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">AI-Powered <AIGradientText>Requirements</AIGradientText></h2>
+            <p className="text-muted-foreground mt-1">Create and manage requirements with machine learning assistance</p>
+          </div>
+          <Button asChild className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
+            <Link to="/dashboard/requirements/new">
+              <Plus size={16} className="mr-2" />
+              New Requirement
+            </Link>
+          </Button>
+        </div>
+      </AIBackground>
       
-      <Card>
+      <AICard>
         <CardHeader>
           <CardTitle>All Requirements</CardTitle>
           <CardDescription>
-            View and manage all your product requirements.
+            View and manage your AI-validated product requirements.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -126,7 +137,7 @@ const RequirementsList = () => {
             </div>
           </div>
           
-          <div className="border rounded-md">
+          <div className="border rounded-md overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -135,8 +146,18 @@ const RequirementsList = () => {
                   <TableHead>Industry</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>AI Validated</TableHead>
-                  <TableHead>Tests</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Brain size={14} />
+                      <span>AI Analysis</span>
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Network size={14} />
+                      <span>Tests</span>
+                    </div>
+                  </TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -151,18 +172,38 @@ const RequirementsList = () => {
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
                       <TableCell>
                         {req.aiValidated 
-                          ? <CheckCircle size={16} className="text-green-500" /> 
-                          : <Clock size={16} className="text-amber-500" />
+                          ? (
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={16} className="text-green-500" />
+                              <span className="text-xs text-muted-foreground">{req.aiConfidence}% confidence</span>
+                            </div>
+                          ) 
+                          : (
+                            <div className="flex items-center gap-2">
+                              <Clock size={16} className="text-amber-500" />
+                              <span className="text-xs text-muted-foreground">Pending</span>
+                            </div>
+                          )
                         }
                       </TableCell>
                       <TableCell>
                         {req.testsCovered 
-                          ? <CheckCircle size={16} className="text-green-500" /> 
-                          : <XCircle size={16} className="text-gray-300" />
+                          ? (
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={16} className="text-green-500" />
+                              <span className="text-xs text-muted-foreground">Generated</span>
+                            </div>
+                          ) 
+                          : (
+                            <div className="flex items-center gap-2">
+                              <XCircle size={16} className="text-gray-300" />
+                              <span className="text-xs text-muted-foreground">Not covered</span>
+                            </div>
+                          )
                         }
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" asChild size="sm">
+                        <Button variant="outline" asChild size="sm" className="border-primary/20 hover:border-primary/50">
                           <Link to={`/dashboard/requirements/${req.id}`}>View</Link>
                         </Button>
                       </TableCell>
@@ -171,7 +212,10 @@ const RequirementsList = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No requirements found. Try a different search or create a new requirement.
+                      <div className="flex flex-col items-center gap-2">
+                        <Search className="h-8 w-8 text-muted-foreground/60" />
+                        <p>No requirements found. Try a different search or create a new requirement.</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -179,7 +223,7 @@ const RequirementsList = () => {
             </Table>
           </div>
         </CardContent>
-      </Card>
+      </AICard>
     </div>
   );
 };

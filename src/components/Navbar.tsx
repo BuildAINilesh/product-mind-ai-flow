@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
+import { AIGradientText } from './ui/ai-elements';
 
 const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,14 +12,15 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
   return (
     <header className={cn(
       "w-full py-4 px-4 md:px-8 fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-      transparent ? "bg-transparent" : "bg-background/95 backdrop-blur-sm shadow-sm"
+      transparent ? "bg-transparent" : "bg-background/95 backdrop-blur-sm border-b border-border/50"
     )}>
       <div className="container mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">P</span>
+          <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center relative overflow-hidden">
+            <span className="text-white font-bold text-lg relative z-10">P</span>
+            <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_70%_70%,_rgba(255,255,255,0.2),_transparent_70%)]"></div>
           </div>
-          <span className="font-bold text-xl text-foreground">ProductMind</span>
+          <span className="font-bold text-xl">Product<AIGradientText>Mind</AIGradientText></span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -41,7 +43,7 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
           <Button variant="ghost" asChild>
             <Link to="/login">Sign In</Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
             <Link to="/register">Get Started</Link>
           </Button>
         </div>
@@ -76,7 +78,7 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
               <Button variant="outline" asChild className="w-full">
                 <Link to="/login" onClick={() => setIsOpen(false)}>Sign In</Link>
               </Button>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
                 <Link to="/register" onClick={() => setIsOpen(false)}>Get Started</Link>
               </Button>
             </div>
