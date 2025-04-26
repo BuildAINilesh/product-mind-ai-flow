@@ -124,118 +124,106 @@ const Dashboard = () => {
           <div className="h-px flex-1 bg-border mx-4"></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AICard className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <FileText className="h-5 w-5 text-primary" />
+          <AICard className="p-6 hover:shadow-lg transition-shadow">
+            <Link to="/dashboard/requirements" className="block">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-1">AI Requirements</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Create structured product requirements with machine learning assistance.
+                  </p>
+                  <span className="text-primary text-sm font-medium">View Requirements</span>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-1">AI Requirements</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Create structured product requirements with machine learning assistance.
-                </p>
-                <Button variant="link" asChild className="p-0 h-auto" size="sm">
-                  <Link to="/dashboard/requirements" className="text-primary">
-                    View Requirements
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            </Link>
           </AICard>
           
-          <AICard className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-secondary/10">
-                <BarChart3 className="h-5 w-5 text-secondary" />
+          <AICard className="p-6 hover:shadow-lg transition-shadow">
+            <Link to="/dashboard/market-sense" className="block">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-secondary/10">
+                  <BarChart3 className="h-5 w-5 text-secondary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-1">MarketSense AI</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Get neural network-powered market insights and competitive analysis.
+                  </p>
+                  <span className="text-primary text-sm font-medium">Analyze Market</span>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-1">MarketSense AI</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Get neural network-powered market insights and competitive analysis.
-                </p>
-                <Button variant="link" asChild className="p-0 h-auto" size="sm">
-                  <Link to="/dashboard/market-sense" className="text-primary">
-                    Analyze Market
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            </Link>
           </AICard>
           
-          <AICard className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Brain className="h-5 w-5 text-primary" />
+          <AICard className="p-6 hover:shadow-lg transition-shadow">
+            <Link to="/dashboard/validator" className="block">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Brain className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-1">Requirement Validator</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Machine learning validation against industry best practices.
+                  </p>
+                  <span className="text-primary text-sm font-medium">Validate Requirements</span>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-1">Requirement Validator</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Machine learning validation against industry best practices.
-                </p>
-                <Button variant="link" asChild className="p-0 h-auto" size="sm">
-                  <Link to="/dashboard/validator" className="text-primary">
-                    Validate Requirements
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            </Link>
           </AICard>
           
-          <AICard className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-secondary/10">
-                <Network className="h-5 w-5 text-secondary" />
+          <AICard className="p-6 hover:shadow-lg transition-shadow">
+            <Link to="/dashboard/test-gen" className="block">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-secondary/10">
+                  <Network className="h-5 w-5 text-secondary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-1">Neural TestGen</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Generate comprehensive test cases using advanced AI models.
+                  </p>
+                  <span className="text-primary text-sm font-medium">Generate Tests</span>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-1">Neural TestGen</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Generate comprehensive test cases using advanced AI models.
-                </p>
-                <Button variant="link" asChild className="p-0 h-auto" size="sm">
-                  <Link to="/dashboard/test-gen" className="text-primary">
-                    Generate Tests
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            </Link>
           </AICard>
           
-          <AICard className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Layers className="h-5 w-5 text-primary" />
+          <AICard className="p-6 hover:shadow-lg transition-shadow">
+            <Link to="/dashboard/bug-shield" className="block">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Layers className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-1">BugShield ML</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Predict potential defects using predictive AI modeling.
+                  </p>
+                  <span className="text-primary text-sm font-medium">Predict Defects</span>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-1">BugShield ML</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Predict potential defects using predictive AI modeling.
-                </p>
-                <Button variant="link" asChild className="p-0 h-auto" size="sm">
-                  <Link to="/dashboard/bug-shield" className="text-primary">
-                    Predict Defects
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            </Link>
           </AICard>
           
-          <AICard className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-secondary/10">
-                <CircuitBoard className="h-5 w-5 text-secondary" />
+          <AICard className="p-6 hover:shadow-lg transition-shadow">
+            <Link to="/dashboard/signoff" className="block">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-secondary/10">
+                  <CircuitBoard className="h-5 w-5 text-secondary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-1">AI Signoff</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Streamline approvals with neural network validation.
+                  </p>
+                  <span className="text-primary text-sm font-medium">Manage Approvals</span>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-1">AI Signoff</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Streamline approvals with neural network validation.
-                </p>
-                <Button variant="link" asChild className="p-0 h-auto" size="sm">
-                  <Link to="/dashboard/signoff" className="text-primary">
-                    Manage Approvals
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            </Link>
           </AICard>
         </div>
       </section>
