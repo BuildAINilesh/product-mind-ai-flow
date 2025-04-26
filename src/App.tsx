@@ -23,6 +23,7 @@ import Terms from "./pages/Terms";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/dashboard/Dashboard";
 import RequirementsList from "./pages/requirements/RequirementsList";
+import RequirementView from "./pages/requirements/RequirementView";
 import NewRequirement from "./pages/requirements/NewRequirement";
 import MarketSense from "./pages/dashboard/MarketSense";
 import RequirementValidator from "./pages/dashboard/RequirementValidator";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="requirements" element={<RequirementsList />} />
+              <Route path="requirements/:id" element={<RequirementView />} />
               <Route path="requirements/new" element={<NewRequirement />} />
               <Route path="market-sense" element={<MarketSense />} />
               <Route path="validator" element={<RequirementValidator />} />
