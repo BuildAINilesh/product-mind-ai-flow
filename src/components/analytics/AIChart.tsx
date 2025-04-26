@@ -37,6 +37,109 @@ export function AIChart({
     };
   });
 
+  // Determine which chart to render
+  const renderChart = () => {
+    if (type === "line") {
+      return (
+        <LineChart data={data}>
+          <XAxis 
+            dataKey={xKey} 
+            stroke="hsl(var(--muted-foreground))"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis 
+            stroke="hsl(var(--muted-foreground))" 
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => `${value}`}
+          />
+          {showTooltip && (
+            <ChartTooltip content={<ChartTooltipContent />} />
+          )}
+          {yKeys.map((key, index) => (
+            <Line
+              key={key}
+              type="monotone"
+              dataKey={key}
+              stroke={colors[index % colors.length]}
+              strokeWidth={2}
+              dot={{ r: 4, strokeWidth: 2 }}
+              activeDot={{ r: 6, strokeWidth: 0 }}
+            />
+          ))}
+        </LineChart>
+      );
+    }
+    
+    if (type === "bar") {
+      return (
+        <BarChart data={data}>
+          <XAxis 
+            dataKey={xKey} 
+            stroke="hsl(var(--muted-foreground))"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis 
+            stroke="hsl(var(--muted-foreground))" 
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => `${value}`}
+          />
+          {showTooltip && (
+            <ChartTooltip content={<ChartTooltipContent />} />
+          )}
+          {yKeys.map((key, index) => (
+            <Bar
+              key={key}
+              dataKey={key}
+              fill={colors[index % colors.length]}
+              radius={[4, 4, 0, 0]}
+            />
+          ))}
+        </BarChart>
+      );
+    }
+    
+    // Default to area chart
+    return (
+      <AreaChart data={data}>
+        <XAxis 
+          dataKey={xKey} 
+          stroke="hsl(var(--muted-foreground))"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+        />
+        <YAxis 
+          stroke="hsl(var(--muted-foreground))" 
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(value) => `${value}`}
+        />
+        {showTooltip && (
+          <ChartTooltip content={<ChartTooltipContent />} />
+        )}
+        {yKeys.map((key, index) => (
+          <Area
+            key={key}
+            type="monotone"
+            dataKey={key}
+            stroke={colors[index % colors.length]}
+            fill={`${colors[index % colors.length]}33`}
+            strokeWidth={2}
+          />
+        ))}
+      </AreaChart>
+    );
+  };
+
   return (
     <AICard className="overflow-hidden h-full">
       <CardHeader>
@@ -45,106 +148,7 @@ export function AIChart({
       </CardHeader>
       <CardContent>
         <ChartContainer config={config} className="h-[300px]">
-          {type === "line" && (
-            <LineChart data={data}>
-              <XAxis 
-                dataKey={xKey} 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))" 
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              {showTooltip && (
-                <ChartTooltip>
-                  <ChartTooltipContent />
-                </ChartTooltip>
-              )}
-              {yKeys.map((key, index) => (
-                <Line
-                  key={key}
-                  type="monotone"
-                  dataKey={key}
-                  stroke={colors[index % colors.length]}
-                  strokeWidth={2}
-                  dot={{ r: 4, strokeWidth: 2 }}
-                  activeDot={{ r: 6, strokeWidth: 0 }}
-                />
-              ))}
-            </LineChart>
-          )}
-          
-          {type === "bar" && (
-            <BarChart data={data}>
-              <XAxis 
-                dataKey={xKey} 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))" 
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              {showTooltip && (
-                <ChartTooltip>
-                  <ChartTooltipContent />
-                </ChartTooltip>
-              )}
-              {yKeys.map((key, index) => (
-                <Bar
-                  key={key}
-                  dataKey={key}
-                  fill={colors[index % colors.length]}
-                  radius={[4, 4, 0, 0]}
-                />
-              ))}
-            </BarChart>
-          )}
-          
-          {type === "area" && (
-            <AreaChart data={data}>
-              <XAxis 
-                dataKey={xKey} 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))" 
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              {showTooltip && (
-                <ChartTooltip>
-                  <ChartTooltipContent />
-                </ChartTooltip>
-              )}
-              {yKeys.map((key, index) => (
-                <Area
-                  key={key}
-                  type="monotone"
-                  dataKey={key}
-                  stroke={colors[index % colors.length]}
-                  fill={`${colors[index % colors.length]}33`}
-                  strokeWidth={2}
-                />
-              ))}
-            </AreaChart>
-          )}
+          {renderChart()}
         </ChartContainer>
       </CardContent>
     </AICard>

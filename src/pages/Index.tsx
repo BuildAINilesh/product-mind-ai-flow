@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +12,9 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative pt-24 md:pt-32 pb-16 md:pb-24 px-4 overflow-hidden">
-        <AIBackground variant="neural" className="absolute inset-0 z-0" />
+        <AIBackground variant="neural" className="absolute inset-0 z-0">
+          <div></div>
+        </AIBackground>
         <div className="container mx-auto relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
             <div className="flex-1 text-center lg:text-left">
