@@ -1,4 +1,4 @@
-
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -60,11 +60,9 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
     }
   }, [project]);
 
-  // Helper to get value regardless of key format (camelCase or snake_case)
   const getDocValue = (key: string) => {
     if (!structuredDoc) return "";
     
-    // Try both camelCase and snake_case variants
     return structuredDoc[key] || 
            structuredDoc[key.replace(/([A-Z])/g, '_$1').toLowerCase()] ||
            "";
