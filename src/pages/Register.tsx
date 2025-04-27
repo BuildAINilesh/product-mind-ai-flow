@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,17 +13,17 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 const Register = () => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
-    company: "",
     acceptTerms: false,
   });
   const [loading, setLoading] = useState(false);
+  const { signUp } = useAuth();
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,36 +47,10 @@ const Register = () => {
     }
     
     setLoading(true);
-    
     try {
-      const { error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-          },
-        },
-      });
-
-      if (error) {
-        toast({
-          title: "Error signing up",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Registration successful!",
-          description: "Please check your email to verify your account.",
-        });
-      }
+      await signUp(formData.email, formData.password, formData.fullName);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      // Error is handled in AuthProvider
     } finally {
       setLoading(false);
     }
@@ -142,18 +115,6 @@ const Register = () => {
                 <p className="text-xs text-muted-foreground">
                   Password must be at least 6 characters long.
                 </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="company">Company Name</Label>
-                <Input
-                  id="company"
-                  name="company"
-                  placeholder="Acme Inc."
-                  value={formData.company}
-                  onChange={handleInputChange}
-                  required
-                />
               </div>
               
               <div className="flex items-start space-x-2 pt-2">
