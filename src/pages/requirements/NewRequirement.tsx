@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, FileText, Upload, MessageSquare, AudioLines } from "lucide-react";
+import { Mail, FileText, MessageSquare, Mic, Headphones } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -88,11 +89,11 @@ const NewRequirement = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-      <Card className="w-full max-w-2xl mx-4">
-        <CardHeader>
-          <CardTitle>Create New Project</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen bg-background">
+      <Card className="max-w-4xl mx-auto my-8 shadow-none border-none">
+        <CardHeader className="space-y-2">
+          <CardTitle className="text-2xl font-bold">Create New Project</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Get started with a new project. Fill in the details below to begin.
           </CardDescription>
         </CardHeader>
@@ -110,7 +111,7 @@ const NewRequirement = () => {
                   onChange={handleInputChange}
                   placeholder="Enter project name"
                   required
-                  className="w-full"
+                  className="w-full bg-background"
                 />
               </div>
 
@@ -125,7 +126,7 @@ const NewRequirement = () => {
                   onChange={handleInputChange}
                   placeholder="Enter company name"
                   required
-                  className="w-full"
+                  className="w-full bg-background"
                 />
               </div>
 
@@ -134,7 +135,7 @@ const NewRequirement = () => {
                   Industry Type
                 </label>
                 <Select value={formData.industryType} onValueChange={handleSelectChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background">
                     <SelectValue placeholder="Enter industry type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -158,7 +159,7 @@ const NewRequirement = () => {
                   onChange={handleInputChange}
                   placeholder="Enter username"
                   required
-                  className="w-full"
+                  className="w-full bg-background"
                 />
               </div>
             </div>
@@ -174,34 +175,38 @@ const NewRequirement = () => {
                 onChange={handleInputChange}
                 placeholder="Enter your rough idea for the project"
                 required
-                className="min-h-[120px] w-full"
+                className="min-h-[120px] w-full bg-background"
               />
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2">
-              <Button type="button" variant="outline" className="w-full flex items-center gap-2" size="sm">
-                <AudioLines size={16} />
-                <span className="hidden md:inline">Voice Input</span>
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
+                <Mic className="h-4 w-4" />
+                <span>Voice Input</span>
               </Button>
-              <Button type="button" variant="outline" className="w-full flex items-center gap-2" size="sm">
-                <Mail size={16} />
-                <span className="hidden md:inline">Email Upload</span>
+              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <span>Email Upload</span>
               </Button>
-              <Button type="button" variant="outline" className="w-full flex items-center gap-2" size="sm">
-                <MessageSquare size={16} />
-                <span className="hidden md:inline">Chat Upload</span>
+              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                <span>Chat Upload</span>
               </Button>
-              <Button type="button" variant="outline" className="w-full flex items-center gap-2" size="sm">
-                <FileText size={16} />
-                <span className="hidden md:inline">Document Upload</span>
+              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span>Document Upload</span>
               </Button>
-              <Button type="button" variant="outline" className="w-full flex items-center gap-2" size="sm">
-                <AudioLines size={16} />
-                <span className="hidden md:inline">Audio Upload</span>
+              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
+                <Headphones className="h-4 w-4" />
+                <span>Audio Upload</span>
               </Button>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-[#4744E0] hover:bg-[#4744E0]/90"
+              disabled={loading}
+            >
               {loading ? "Creating Project..." : "Create Project"}
             </Button>
           </form>
