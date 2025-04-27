@@ -33,6 +33,7 @@ const NewRequirement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [processingWithAI, setProcessingWithAI] = useState(false);
 
   const [formData, setFormData] = useState({
     projectName: "",
@@ -133,7 +134,8 @@ const NewRequirement = () => {
         throw new Error("No user found");
       }
 
-      const { error } = await supabase
+      // First, insert the project to get the project ID
+      const { data: newProject, error } = await supabase
         .from('projects')
         .insert({
           user_id: user.id,
@@ -147,7 +149,9 @@ const NewRequirement = () => {
           chat_upload_url: formData.chatUploadUrl,
           document_upload_url: formData.documentUploadUrl,
           audio_upload_url: formData.audioUploadUrl
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -156,7 +160,45 @@ const NewRequirement = () => {
         description: "Your new project has been successfully created.",
       });
       
-      navigate("/dashboard/requirements");
+      // Now that we have the project ID, trigger the AI processing
+      setProcessingWithAI(true);
+      
+      toast({
+        title: "Processing with AI",
+        description: "Analyzing your project information...",
+      });
+      
+      try {
+        // Call the process-project function
+        const { data, error: functionError } = await supabase.functions.invoke('process-project', {
+          body: { projectId: newProject.id }
+        });
+        
+        if (functionError) {
+          console.error('Error calling process-project:', functionError);
+          throw new Error('AI processing failed. Project was created but without AI analysis.');
+        }
+        
+        toast({
+          title: "AI Analysis Complete",
+          description: "Your project details have been analyzed and structured.",
+        });
+        
+        // Redirect to the project view page
+        navigate(`/dashboard/requirements/${newProject.id}`);
+      } catch (aiError) {
+        console.error('AI processing error:', aiError);
+        toast({
+          title: "AI Processing Warning",
+          description: "Project was created, but AI analysis encountered an issue.",
+          variant: "destructive",
+        });
+        // Still redirect to the requirements list
+        navigate("/dashboard/requirements");
+      } finally {
+        setProcessingWithAI(false);
+      }
+      
     } catch (error) {
       console.error('Error creating project:', error);
       toast({
@@ -290,9 +332,11 @@ const NewRequirement = () => {
             <Button
               type="submit"
               className="w-full bg-[#4744E0] hover:bg-[#4744E0]/90"
-              disabled={loading}
+              disabled={loading || processingWithAI}
             >
-              {loading ? "Creating Project..." : "Create Project"}
+              {loading ? "Creating Project..." : 
+               processingWithAI ? "Processing with AI..." : 
+               "Create Project"}
             </Button>
           </form>
         </CardContent>
