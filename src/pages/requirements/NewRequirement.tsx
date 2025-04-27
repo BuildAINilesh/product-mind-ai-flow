@@ -18,7 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, FileText, MessageSquare, Mic, Headphones, Upload } from "lucide-react";
+import { 
+  Mail, 
+  FileText, 
+  MessageSquare, 
+  Mic, 
+  Headphones, 
+  Upload 
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -40,6 +47,14 @@ const NewRequirement = () => {
     audioUploadUrl: null
   });
 
+  const [uploadedFiles, setUploadedFiles] = useState({
+    voice: null,
+    email: null,
+    chat: null,
+    document: null,
+    audio: null
+  });
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -51,10 +66,12 @@ const NewRequirement = () => {
 
   const handleFileUpload = async (type: string, file: File) => {
     try {
+      // Generate a unique filename
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}.${fileExt}`
       const filePath = `${type}/${fileName}`
 
+      // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('project-uploads')
         .upload(filePath, file)
@@ -63,13 +80,20 @@ const NewRequirement = () => {
         throw uploadError
       }
 
+      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('project-uploads')
         .getPublicUrl(filePath)
 
+      // Update form data and uploaded files state
       setFormData(prev => ({ 
         ...prev, 
         [`${type}UploadUrl`]: publicUrl 
+      }));
+
+      setUploadedFiles(prev => ({
+        ...prev,
+        [type]: file.name
       }));
 
       toast({
@@ -254,6 +278,11 @@ const NewRequirement = () => {
                 >
                   <Icon className="h-4 w-4" />
                   <span>{label}</span>
+                  {uploadedFiles[type] && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {uploadedFiles[type]}
+                    </span>
+                  )}
                 </Button>
               ))}
             </div>
