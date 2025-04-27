@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, FileText, MessageSquare, Mic, Headphones } from "lucide-react";
+import { Mail, FileText, MessageSquare, Mic, Headphones, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,7 +32,12 @@ const NewRequirement = () => {
     companyName: "",
     industryType: "",
     username: "",
-    projectIdea: ""
+    projectIdea: "",
+    voiceUploadUrl: null,
+    emailUploadUrl: null,
+    chatUploadUrl: null,
+    documentUploadUrl: null,
+    audioUploadUrl: null
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -44,19 +49,66 @@ const NewRequirement = () => {
     setFormData(prev => ({ ...prev, industryType: value }));
   };
 
+  const handleFileUpload = async (type: string, file: File) => {
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}.${fileExt}`
+      const filePath = `${type}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('project-uploads')
+        .upload(filePath, file)
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-uploads')
+        .getPublicUrl(filePath)
+
+      setFormData(prev => ({ 
+        ...prev, 
+        [`${type}UploadUrl`]: publicUrl 
+      }));
+
+      toast({
+        title: "File Uploaded",
+        description: `${type.charAt(0).toUpperCase() + type.slice(1)} file uploaded successfully.`,
+      });
+    } catch (error) {
+      console.error(`Error uploading ${type} file:`, error);
+      toast({
+        title: "Upload Error",
+        description: `Failed to upload ${type} file.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFileSelect = (type: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleFileUpload(type, file);
+      }
+    };
+    input.click();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         throw new Error("No user found");
       }
 
-      // Insert the project data
       const { error } = await supabase
         .from('projects')
         .insert({
@@ -65,7 +117,12 @@ const NewRequirement = () => {
           company_name: formData.companyName,
           industry_type: formData.industryType,
           username: formData.username,
-          project_idea: formData.projectIdea
+          project_idea: formData.projectIdea,
+          voice_upload_url: formData.voiceUploadUrl,
+          email_upload_url: formData.emailUploadUrl,
+          chat_upload_url: formData.chatUploadUrl,
+          document_upload_url: formData.documentUploadUrl,
+          audio_upload_url: formData.audioUploadUrl
         });
 
       if (error) throw error;
@@ -180,26 +237,25 @@ const NewRequirement = () => {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
-                <Mic className="h-4 w-4" />
-                <span>Voice Input</span>
-              </Button>
-              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                <span>Email Upload</span>
-              </Button>
-              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                <span>Chat Upload</span>
-              </Button>
-              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span>Document Upload</span>
-              </Button>
-              <Button type="button" variant="outline" size="sm" className="flex items-center gap-2">
-                <Headphones className="h-4 w-4" />
-                <span>Audio Upload</span>
-              </Button>
+              {[
+                { type: 'voice', icon: Mic, label: 'Voice Input' },
+                { type: 'email', icon: Mail, label: 'Email Upload' },
+                { type: 'chat', icon: MessageSquare, label: 'Chat Upload' },
+                { type: 'document', icon: FileText, label: 'Document Upload' },
+                { type: 'audio', icon: Headphones, label: 'Audio Upload' }
+              ].map(({ type, icon: Icon, label }) => (
+                <Button 
+                  key={type} 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-2"
+                  onClick={() => handleFileSelect(type)}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{label}</span>
+                </Button>
+              ))}
             </div>
 
             <Button

@@ -38,8 +38,12 @@ export type Database = {
       }
       projects: {
         Row: {
+          audio_upload_url: string | null
+          chat_upload_url: string | null
           company_name: string
           created_at: string
+          document_upload_url: string | null
+          email_upload_url: string | null
           id: string
           industry_type: string
           project_idea: string | null
@@ -47,10 +51,15 @@ export type Database = {
           updated_at: string
           user_id: string
           username: string
+          voice_upload_url: string | null
         }
         Insert: {
+          audio_upload_url?: string | null
+          chat_upload_url?: string | null
           company_name: string
           created_at?: string
+          document_upload_url?: string | null
+          email_upload_url?: string | null
           id?: string
           industry_type: string
           project_idea?: string | null
@@ -58,10 +67,15 @@ export type Database = {
           updated_at?: string
           user_id: string
           username: string
+          voice_upload_url?: string | null
         }
         Update: {
+          audio_upload_url?: string | null
+          chat_upload_url?: string | null
           company_name?: string
           created_at?: string
+          document_upload_url?: string | null
+          email_upload_url?: string | null
           id?: string
           industry_type?: string
           project_idea?: string | null
@@ -69,6 +83,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string
+          voice_upload_url?: string | null
         }
         Relationships: []
       }
