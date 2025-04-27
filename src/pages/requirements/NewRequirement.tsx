@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Mail, FileText, Upload, MessageSquare, AudioLines } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const NewRequirement = () => {
   const navigate = useNavigate();
@@ -43,19 +43,48 @@ const NewRequirement = () => {
     setFormData(prev => ({ ...prev, industryType: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("No user found");
+      }
+
+      // Insert the project data
+      const { error } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          project_name: formData.projectName,
+          company_name: formData.companyName,
+          industry_type: formData.industryType,
+          username: formData.username,
+          project_idea: formData.projectIdea
+        });
+
+      if (error) throw error;
+
       toast({
         title: "Project created",
         description: "Your new project has been successfully created.",
       });
+      
       navigate("/dashboard/requirements");
-    }, 1500);
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast({
+        title: "Error",
+        description: "There was an error creating your project. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
