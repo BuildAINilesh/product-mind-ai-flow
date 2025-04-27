@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { 
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
@@ -17,74 +17,54 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Badge
-} from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { CheckCircle, XCircle, Clock, Plus, Search, Brain, Network } from "lucide-react";
-import { AICard, AIBackground, AIBadge, NeuralNetwork, AIGradientText } from "@/components/ui/ai-elements";
+import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
+import { supabase } from "@/integrations/supabase/client";
 
 type Requirement = {
   id: string;
   title: string;
-  createdAt: string;
+  created_at: string;
   status: "draft" | "in-review" | "approved" | "rejected";
-  aiValidated: boolean;
-  testsCovered: boolean;
-  industry: string;
-  aiConfidence?: number;
+  ai_validated: boolean;
+  tests_covered: boolean;
+  industry_type: string;
+  ai_confidence?: number;
 };
 
 const RequirementsList = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [requirements, setRequirements] = useState<Requirement[]>([
-    {
-      id: "REQ-001",
-      title: "User Authentication System",
-      createdAt: "2025-04-20",
-      status: "approved",
-      aiValidated: true,
-      testsCovered: true,
-      industry: "Technology",
-      aiConfidence: 98
-    },
-    {
-      id: "REQ-002",
-      title: "Payment Processing Gateway",
-      createdAt: "2025-04-18",
-      status: "in-review",
-      aiValidated: true,
-      testsCovered: false,
-      industry: "Financial Services",
-      aiConfidence: 87
-    },
-    {
-      id: "REQ-003",
-      title: "Inventory Management Dashboard",
-      createdAt: "2025-04-15",
-      status: "draft",
-      aiValidated: false,
-      testsCovered: false,
-      industry: "Retail",
-      aiConfidence: 0
-    },
-    {
-      id: "REQ-004",
-      title: "Customer Feedback System",
-      createdAt: "2025-04-10",
-      status: "rejected",
-      aiValidated: false,
-      testsCovered: false,
-      industry: "Technology",
-      aiConfidence: 43
+
+  const { data: requirements = [], isLoading, error } = useQuery({
+    queryKey: ['requirements'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return data.map(project => ({
+        id: project.id,
+        title: project.project_name,
+        created_at: new Date(project.created_at).toISOString().split('T')[0],
+        status: 'draft',
+        ai_validated: project.structured_document !== null,
+        tests_covered: false,
+        industry_type: project.industry_type,
+        ai_confidence: project.structured_document ? 98 : 0
+      }));
     }
-  ]);
+  });
   
   const filteredRequirements = requirements.filter(req => 
     req.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
     req.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
+
   const getStatusBadge = (status: Requirement["status"]) => {
     switch (status) {
       case "approved":
@@ -160,20 +140,35 @@ const RequirementsList = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRequirements.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
+                        <p>Loading requirements...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-red-500">
+                      <p>Error loading requirements. Please try again later.</p>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredRequirements.length > 0 ? (
                   filteredRequirements.map((req) => (
                     <TableRow key={req.id}>
                       <TableCell className="font-medium">{req.id}</TableCell>
                       <TableCell>{req.title}</TableCell>
-                      <TableCell>{req.industry}</TableCell>
-                      <TableCell>{req.createdAt}</TableCell>
+                      <TableCell>{req.industry_type}</TableCell>
+                      <TableCell>{req.created_at}</TableCell>
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
                       <TableCell>
-                        {req.aiValidated 
+                        {req.ai_validated 
                           ? (
                             <div className="flex items-center gap-2">
                               <CheckCircle size={16} className="text-green-500" />
-                              <span className="text-xs text-muted-foreground">{req.aiConfidence}% confidence</span>
+                              <span className="text-xs text-muted-foreground">{req.ai_confidence}% confidence</span>
                             </div>
                           ) 
                           : (
@@ -185,7 +180,7 @@ const RequirementsList = () => {
                         }
                       </TableCell>
                       <TableCell>
-                        {req.testsCovered 
+                        {req.tests_covered 
                           ? (
                             <div className="flex items-center gap-2">
                               <CheckCircle size={16} className="text-green-500" />
