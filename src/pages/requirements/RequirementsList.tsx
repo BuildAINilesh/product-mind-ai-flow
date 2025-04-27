@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -34,6 +35,16 @@ type Requirement = {
   ai_confidence?: number;
 };
 
+// Define the extended project type that includes structured_document
+type ProjectWithStructuredDoc = {
+  id: string;
+  project_name: string;
+  created_at: string;
+  industry_type: string;
+  structured_document: any | null;
+  [key: string]: any; // Allow additional properties
+};
+
 const RequirementsList = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -47,11 +58,12 @@ const RequirementsList = () => {
 
       if (error) throw error;
 
-      return data.map(project => ({
+      // Transform project data to requirements format
+      return data.map((project: ProjectWithStructuredDoc) => ({
         id: project.id,
         title: project.project_name,
         created_at: new Date(project.created_at).toISOString().split('T')[0],
-        status: 'draft',
+        status: 'draft' as const, // Use const assertion to match the expected type
         ai_validated: project.structured_document !== null,
         tests_covered: false,
         industry_type: project.industry_type,
