@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { AIGradientText } from './ui/ai-elements';
+import { useAuth } from '@/hooks/use-auth';
 
 const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
   
   return (
     <header className={cn(
@@ -40,12 +42,20 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="ghost" asChild>
-            <Link to="/login">Sign In</Link>
-          </Button>
-          <Button asChild className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
-            <Link to="/register">Get Started</Link>
-          </Button>
+          {user ? (
+            <Button variant="ghost" asChild>
+              <Link to="/logout">Sign Out</Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link to="/login">Sign In</Link>
+              </Button>
+              <Button asChild className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
+                <Link to="/register">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Navigation Button */}
@@ -75,12 +85,20 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
               About
             </Link>
             <div className="pt-2 flex flex-col space-y-2">
-              <Button variant="outline" asChild className="w-full">
-                <Link to="/login" onClick={() => setIsOpen(false)}>Sign In</Link>
-              </Button>
-              <Button asChild className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
-                <Link to="/register" onClick={() => setIsOpen(false)}>Get Started</Link>
-              </Button>
+              {user ? (
+                <Button variant="outline" asChild className="w-full">
+                  <Link to="/logout" onClick={() => setIsOpen(false)}>Sign Out</Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link to="/login" onClick={() => setIsOpen(false)}>Sign In</Link>
+                  </Button>
+                  <Button asChild className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity">
+                    <Link to="/register" onClick={() => setIsOpen(false)}>Get Started</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
