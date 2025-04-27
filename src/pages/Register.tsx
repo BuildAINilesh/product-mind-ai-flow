@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +14,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { ArrowLeft } from "lucide-react";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -26,6 +26,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -60,12 +61,15 @@ const Register = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <div className="w-full max-w-md">
-        <Link to="/" className="flex items-center justify-center mb-8">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">P</span>
-          </div>
-          <span className="ml-2 font-bold text-xl">ProductMind</span>
-        </Link>
+        <div className="mb-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')} 
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft size={16} /> Back to Home
+          </Button>
+        </div>
         
         <Card>
           <CardHeader>
