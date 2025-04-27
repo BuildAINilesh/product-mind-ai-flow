@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
 
 // Pages
 import Index from "./pages/Index";
@@ -45,39 +46,41 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/features" element={<Features />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/roadmap" element={<Roadmap />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/careers" element={<Career />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            
-            {/* Dashboard Routes */}
-            <Route path="/dashboard" element={<DashboardLayout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="requirements" element={<RequirementsList />} />
-              <Route path="requirements/:id" element={<RequirementView />} />
-              <Route path="requirements/new" element={<NewRequirement />} />
-              <Route path="market-sense" element={<MarketSense />} />
-              <Route path="validator" element={<RequirementValidator />} />
-              <Route path="test-gen" element={<TestGen />} />
-              <Route path="bug-shield" element={<BugShield />} />
-              <Route path="signoff" element={<SmartSignoff />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="support" element={<Support />} />
-              <Route path="profile" element={<Profile />} />
-            </Route>
-            
-            {/* Catch-all Route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AuthProvider>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/roadmap" element={<Roadmap />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/careers" element={<Career />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              
+              {/* Dashboard Routes */}
+              <Route path="/dashboard" element={<DashboardLayout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="requirements" element={<RequirementsList />} />
+                <Route path="requirements/:id" element={<RequirementView />} />
+                <Route path="requirements/new" element={<NewRequirement />} />
+                <Route path="market-sense" element={<MarketSense />} />
+                <Route path="validator" element={<RequirementValidator />} />
+                <Route path="test-gen" element={<TestGen />} />
+                <Route path="bug-shield" element={<BugShield />} />
+                <Route path="signoff" element={<SmartSignoff />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="support" element={<Support />} />
+                <Route path="profile" element={<Profile />} />
+              </Route>
+              
+              {/* Catch-all Route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,17 +14,17 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    fullName: "",
     email: "",
     password: "",
     company: "",
     acceptTerms: false,
   });
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,7 +36,7 @@ const Register = () => {
     setFormData((prev) => ({ ...prev, acceptTerms: checked }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.acceptTerms) {
       toast({
@@ -49,15 +49,38 @@ const Register = () => {
     
     setLoading(true);
     
-    // Simulate register API call
-    setTimeout(() => {
-      setLoading(false);
-      toast({
-        title: "Registration successful!",
-        description: "Your account has been created. Welcome to ProductMind!",
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+          },
+        },
       });
-      navigate("/dashboard");
-    }, 1500);
+
+      if (error) {
+        toast({
+          title: "Error signing up",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registration successful!",
+          description: "Please check your email to verify your account.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -80,12 +103,12 @@ const Register = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="fullName">Full Name</Label>
                 <Input
-                  id="name"
-                  name="name"
+                  id="fullName"
+                  name="fullName"
                   placeholder="John Doe"
-                  value={formData.name}
+                  value={formData.fullName}
                   onChange={handleInputChange}
                   required
                 />
@@ -114,9 +137,10 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   required
+                  minLength={6}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Password must be at least 8 characters long.
+                  Password must be at least 6 characters long.
                 </p>
               </div>
               
