@@ -24,7 +24,8 @@ import {
   MessageSquare, 
   Mic, 
   Headphones, 
-  Upload 
+  Upload,
+  Loader
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,6 +123,42 @@ const NewRequirement = () => {
     input.click();
   };
 
+  const processDocument = async (requirementId: string, documentUrl: string) => {
+    try {
+      toast({
+        title: "Processing Document",
+        description: "Analyzing document content with AI...",
+      });
+      
+      // Process the document with the edge function
+      const { data, error } = await supabase.functions.invoke('process-document', {
+        body: { 
+          documentUrl: documentUrl,
+          requirementId: requirementId
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Analysis Complete",
+        description: "Document processed and analyzed successfully.",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error processing document:', error);
+      toast({
+        title: "Analysis Error",
+        description: "Failed to analyze document. Please try again later.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -170,6 +207,19 @@ const NewRequirement = () => {
         description: "Your new requirement has been successfully created.",
       });
       
+      // If there's a document URL, process it using OpenAI
+      if (formData.documentUploadUrl) {
+        setProcessingWithAI(true);
+        await processDocument(newRequirement.id, formData.documentUploadUrl);
+        
+        // After processing, update the requirement status
+        await supabase
+          .from('requirements')
+          .update({ status: 'Completed' })
+          .eq('id', newRequirement.id);
+      }
+      
+      // Navigate to the requirement view page
       navigate(`/dashboard/requirements/${newRequirement.id}`);
       
     } catch (error) {
@@ -297,9 +347,18 @@ const NewRequirement = () => {
             <Button
               type="submit"
               className="w-full bg-[#4744E0] hover:bg-[#4744E0]/90"
-              disabled={loading}
+              disabled={loading || processingWithAI}
             >
-              {loading ? "Creating Requirement..." : "Create Requirement"}
+              {processingWithAI ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                  Processing Document...
+                </>
+              ) : loading ? (
+                "Creating Requirement..."
+              ) : (
+                "Create Requirement"
+              )}
             </Button>
           </form>
         </CardContent>
