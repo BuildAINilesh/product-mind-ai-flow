@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, XCircle, Clock, Plus, Search, Edit, Play } from "lucide-react";
+import { Plus, Search, Edit, Play } from "lucide-react";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
