@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -157,8 +158,7 @@ const NewRequirement = () => {
           project_idea: formData.projectIdea,
           input_methods_used: inputMethodsUsed,
           file_urls: fileUrls,
-          status: 'Draft',
-          ai_analysis_status: 'Pending'
+          status: 'Draft'
         })
         .select()
         .single();
@@ -170,37 +170,7 @@ const NewRequirement = () => {
         description: "Your new requirement has been successfully created.",
       });
       
-      setProcessingWithAI(true);
-      
-      toast({
-        title: "Processing with AI",
-        description: "Analyzing your requirement information...",
-      });
-      
-      try {
-        const { data, error: functionError } = await supabase.functions.invoke('process-project', {
-          body: { projectId: newRequirement.id }
-        });
-        
-        if (functionError) {
-          throw new Error('AI processing failed. Requirement was created but without AI analysis.');
-        }
-        
-        toast({
-          title: "AI Analysis Complete",
-          description: "Your requirement details have been analyzed and structured.",
-        });
-        
-        navigate(`/dashboard/requirements/${newRequirement.id}`);
-      } catch (aiError) {
-        console.error('AI processing error:', aiError);
-        toast({
-          title: "AI Processing Warning",
-          description: "Requirement was created, but AI analysis encountered an issue.",
-          variant: "destructive",
-        });
-        navigate("/dashboard/requirements");
-      }
+      navigate(`/dashboard/requirements/${newRequirement.id}`);
       
     } catch (error) {
       console.error('Error creating requirement:', error);
@@ -327,11 +297,9 @@ const NewRequirement = () => {
             <Button
               type="submit"
               className="w-full bg-[#4744E0] hover:bg-[#4744E0]/90"
-              disabled={loading || processingWithAI}
+              disabled={loading}
             >
-              {loading ? "Creating Requirement..." : 
-               processingWithAI ? "Processing with AI..." : 
-               "Create Requirement"}
+              {loading ? "Creating Requirement..." : "Create Requirement"}
             </Button>
           </form>
         </CardContent>

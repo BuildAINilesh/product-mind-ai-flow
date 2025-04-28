@@ -28,6 +28,7 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import RequirementsList from "./pages/requirements/RequirementsList";
 import RequirementView from "./pages/requirements/RequirementView";
 import NewRequirement from "./pages/requirements/NewRequirement";
+import EditRequirement from "./pages/requirements/EditRequirement";
 import MarketSense from "./pages/dashboard/MarketSense";
 import RequirementValidator from "./pages/dashboard/RequirementValidator";
 import TestGen from "./pages/dashboard/TestGen";
@@ -70,6 +71,7 @@ const App = () => (
                 <Route path="requirements" element={<RequirementsList />} />
                 <Route path="requirements/:id" element={<RequirementView />} />
                 <Route path="requirements/new" element={<NewRequirement />} />
+                <Route path="requirements/edit/:id" element={<EditRequirement />} />
                 <Route path="market-sense" element={<MarketSense />} />
                 <Route path="validator" element={<RequirementValidator />} />
                 <Route path="test-gen" element={<TestGen />} />

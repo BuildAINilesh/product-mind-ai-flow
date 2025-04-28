@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { 
@@ -20,9 +20,16 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, XCircle, Clock, Plus, Search, Brain, Network } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Plus, Search, Edit, Play } from "lucide-react";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Requirement = {
   id: string;
@@ -33,16 +40,16 @@ type Requirement = {
   project_idea: string | null;
   input_methods_used: string[];
   file_urls: string[];
-  status: string;
-  ai_analysis_status: string;
-  structured_document: any | null;
+  status: "Draft" | "Completed" | "Re_Draft";
   created_at: string;
 };
 
 const RequirementsList = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const { data: requirements = [], isLoading, error } = useQuery({
+  const { data: requirements = [], isLoading, error, refetch } = useQuery({
     queryKey: ['requirements'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -58,19 +65,56 @@ const RequirementsList = () => {
   
   const filteredRequirements = requirements.filter(req => 
     req.project_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    req.requirement_id.toLowerCase().includes(searchQuery.toLowerCase())
+    req.requirement_id?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const triggerAnalysis = async (requirementId: string) => {
+    try {
+      toast({
+        title: "Processing",
+        description: "Analyzing requirement...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('process-project', {
+        body: { projectId: requirementId }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Update status to Completed
+      await supabase
+        .from('requirements')
+        .update({ status: 'Completed' })
+        .eq('id', requirementId);
+
+      toast({
+        title: "Success",
+        description: "Analysis completed successfully.",
+      });
+
+      // Refetch the requirements list
+      refetch();
+
+    } catch (error) {
+      console.error('Error analyzing requirement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to analyze requirement. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case "approved":
-        return <AIBadge variant="complete">Approved</AIBadge>;
-      case "in-review":
-        return <AIBadge variant="analyzing">In Review</AIBadge>;
+      case "completed":
+        return <AIBadge variant="complete">Completed</AIBadge>;
+      case "re_draft":
+        return <AIBadge variant="analyzing">Re-Draft</AIBadge>;
       case "draft":
         return <AIBadge variant="neural">Draft</AIBadge>;
-      case "rejected":
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Rejected</Badge>;
       default:
         return <AIBadge variant="neural">Draft</AIBadge>;
     }
@@ -122,25 +166,13 @@ const RequirementsList = () => {
                   <TableHead>Industry</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Brain size={14} />
-                      <span>AI Analysis</span>
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Network size={14} />
-                      <span>Tests</span>
-                    </div>
-                  </TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={6} className="text-center py-8">
                       <div className="flex flex-col items-center gap-2">
                         <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
                         <p>Loading requirements...</p>
@@ -149,7 +181,7 @@ const RequirementsList = () => {
                   </TableRow>
                 ) : error ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-red-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-red-500">
                       <p>Error loading requirements. Please try again later.</p>
                     </TableCell>
                   </TableRow>
@@ -161,42 +193,48 @@ const RequirementsList = () => {
                       <TableCell>{req.industry_type}</TableCell>
                       <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
-                      <TableCell>
-                        {req.structured_document ? (
-                          <div className="flex items-center gap-2">
-                            <CheckCircle size={16} className="text-green-500" />
-                            <span className="text-xs text-muted-foreground">Completed</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Clock size={16} className="text-amber-500" />
-                            <span className="text-xs text-muted-foreground">Pending</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {false ? (
-                          <div className="flex items-center gap-2">
-                            <CheckCircle size={16} className="text-green-500" />
-                            <span className="text-xs text-muted-foreground">Generated</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <XCircle size={16} className="text-gray-300" />
-                            <span className="text-xs text-muted-foreground">Not covered</span>
-                          </div>
-                        )}
-                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="outline" asChild size="sm" className="border-primary/20 hover:border-primary/50">
-                          <Link to={`/dashboard/requirements/${req.id}`}>View</Link>
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary/50">
+                              Actions
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-background">
+                            <DropdownMenuItem onClick={() => navigate(`/dashboard/requirements/${req.id}`)}>
+                              <Button variant="ghost" size="sm" className="w-full justify-start">
+                                View
+                              </Button>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/dashboard/requirements/edit/${req.id}`)}>
+                              <Button variant="ghost" size="sm" className="w-full justify-start">
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </Button>
+                            </DropdownMenuItem>
+                            {(req.status === "Draft" || req.status === "Re_Draft") && (
+                              <DropdownMenuItem onClick={() => triggerAnalysis(req.id)}>
+                                <Button variant="ghost" size="sm" className="w-full justify-start">
+                                  <Play className="mr-2 h-4 w-4" />
+                                  Analyze
+                                </Button>
+                              </DropdownMenuItem>
+                            )}
+                            {req.status === "Completed" && (
+                              <DropdownMenuItem onClick={() => navigate("/dashboard/market-sense", { state: { requirementId: req.id } })}>
+                                <Button variant="ghost" size="sm" className="w-full justify-start">
+                                  MarketSense AI
+                                </Button>
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="h-8 w-8 text-muted-foreground/60" />
                         <p>No requirements found. Try a different search or create a new requirement.</p>

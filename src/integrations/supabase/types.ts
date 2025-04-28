@@ -38,7 +38,6 @@ export type Database = {
       }
       requirements: {
         Row: {
-          ai_analysis_status: string | null
           company_name: string | null
           created_at: string | null
           file_urls: string[] | null
@@ -48,13 +47,11 @@ export type Database = {
           project_idea: string | null
           project_name: string
           requirement_id: string | null
-          status: string | null
-          structured_document: Json | null
+          status: Database["public"]["Enums"]["requirement_status_enum"] | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
-          ai_analysis_status?: string | null
           company_name?: string | null
           created_at?: string | null
           file_urls?: string[] | null
@@ -64,13 +61,11 @@ export type Database = {
           project_idea?: string | null
           project_name: string
           requirement_id?: string | null
-          status?: string | null
-          structured_document?: Json | null
+          status?: Database["public"]["Enums"]["requirement_status_enum"] | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
-          ai_analysis_status?: string | null
           company_name?: string | null
           created_at?: string | null
           file_urls?: string[] | null
@@ -80,8 +75,7 @@ export type Database = {
           project_idea?: string | null
           project_name?: string
           requirement_id?: string | null
-          status?: string | null
-          structured_document?: Json | null
+          status?: Database["public"]["Enums"]["requirement_status_enum"] | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -107,6 +101,7 @@ export type Database = {
         | "energy"
         | "automotive"
         | "other"
+      requirement_status_enum: "Draft" | "Completed" | "Re_Draft"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -235,6 +230,7 @@ export const Constants = {
         "automotive",
         "other",
       ],
+      requirement_status_enum: ["Draft", "Completed", "Re_Draft"],
     },
   },
 } as const
