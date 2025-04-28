@@ -32,18 +32,28 @@ serve(async (req) => {
     console.log(`Processing document: ${documentUrl} for requirement: ${requirementId}`);
     
     // Fetch the document content
+    console.log(`Attempting to fetch document from URL: ${documentUrl}`);
     const response = await fetch(documentUrl);
     if (!response.ok) {
-      throw new Error(`Failed to fetch document: ${response.statusText}`);
+      throw new Error(`Failed to fetch document: ${response.statusText} (status code: ${response.status})`);
     }
     
     // Read the document content as text
     const documentContent = await response.text();
     console.log(`Document content length: ${documentContent.length} characters`);
+    console.log(`Document content first 200 chars: ${documentContent.substring(0, 200)}...`);
     
     if (!documentContent || documentContent.length < 10) {
       throw new Error("Document content is too short or empty");
     }
+
+    // Check the content type and attempt to determine the file format
+    const contentType = response.headers.get("content-type");
+    console.log(`Document content type from headers: ${contentType}`);
+    
+    // Try to detect if it's a binary file (like DOCX)
+    const isBinary = /[\x00-\x08\x0E-\x1F]/.test(documentContent.substring(0, 1000));
+    console.log(`Document appears to be binary: ${isBinary}`);
     
     // Generate a document summary with OpenAI
     const summaryPrompt = `
@@ -72,6 +82,8 @@ serve(async (req) => {
     
     const documentSummary = completion.choices[0].message.content;
     console.log("Received summary from OpenAI");
+    console.log(`Summary length: ${documentSummary.length} characters`);
+    console.log(`Summary preview: ${documentSummary.substring(0, 200)}...`);
     
     // Update the requirement with the document summary
     const { error: updateError } = await supabase
@@ -83,8 +95,11 @@ serve(async (req) => {
       .eq("id", requirementId);
       
     if (updateError) {
+      console.error("Error updating requirement with summary:", updateError);
       throw updateError;
     }
+    
+    console.log("Successfully updated requirement with document summary");
     
     return new Response(
       JSON.stringify({ 
