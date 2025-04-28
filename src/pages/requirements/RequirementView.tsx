@@ -81,6 +81,7 @@ const RequirementView = () => {
         description: "Analyzing requirement...",
       });
       
+      // Call the process-project function for full analysis
       const { data, error } = await supabase.functions.invoke('process-project', {
         body: { projectId: id }
       });
@@ -131,7 +132,7 @@ const RequirementView = () => {
       });
       
     } catch (error) {
-      console.error('Error refreshing AI analysis:', error);
+      console.error('Error performing AI analysis:', error);
       toast({
         title: "Error",
         description: "Failed to analyze requirement.",

@@ -38,7 +38,6 @@ serve(async (req) => {
     }
     
     // Read the document content as text
-    // In a real implementation, you would use different parsers depending on the file type
     const documentContent = await response.text();
     console.log(`Document content length: ${documentContent.length} characters`);
     
@@ -46,139 +45,52 @@ serve(async (req) => {
       throw new Error("Document content is too short or empty");
     }
     
-    // Analyze the document content with OpenAI
-    const analysisPrompt = `
-      You are an AI system that analyzes project requirements documents. 
-      Please analyze the following document content and extract structured information about the project.
+    // Generate a document summary with OpenAI
+    const summaryPrompt = `
+      Please summarize the following document content in about 3-5 paragraphs.
+      Focus on capturing the main points and key information.
       
       Document content:
       ${documentContent.substring(0, 8000)}
-      
-      Generate a comprehensive analysis with the following sections:
-      1. Project Overview: A quick summary of the project idea and objective.
-      2. Problem Statement: Clearly state the problem the product/feature is solving.
-      3. Proposed Solution: Brief about how this product/feature will solve the problem.
-      4. Business Goals & Success Metrics: What business outcomes are expected?
-      5. Target Audience / Users: Who will use this product? Personas, segments.
-      6. Key Features & Requirements: List major features or functionalities needed.
-      7. User Stories (Optional): High-level user journeys if applicable.
-      8. Competitive Landscape Summary: Quick snapshot of competitors, gaps identified.
-      9. Constraints & Assumptions: Technical, operational, legal constraints; and assumptions made.
-      10. Risks & Mitigations: What risks exist? How can they be mitigated?
-      11. Acceptance Criteria: High-level conditions for "success" of this requirement.
-      
-      Format your response as a JSON object with these sections as keys and your analysis as values.
     `;
     
-    console.log("Sending request to OpenAI...");
+    console.log("Sending request to OpenAI for document summarization...");
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { 
           role: "system", 
-          content: "You are an AI assistant that specializes in analyzing software project requirements documents." 
+          content: "You are an AI assistant that summarizes documents concisely and accurately." 
         },
         { 
           role: "user", 
-          content: analysisPrompt 
+          content: summaryPrompt 
         }
       ],
       temperature: 0.5,
     });
     
-    const analysisResponse = completion.choices[0].message.content;
-    console.log("Received response from OpenAI");
+    const documentSummary = completion.choices[0].message.content;
+    console.log("Received summary from OpenAI");
     
-    let analysisData;
-    try {
-      // Parse the JSON response
-      analysisData = JSON.parse(analysisResponse);
-      console.log("Successfully parsed OpenAI response as JSON");
-    } catch (error) {
-      console.error("Error parsing JSON from OpenAI response:", error);
-      // Attempt to extract structured data using regex
-      analysisData = {
-        project_overview: extractSection(analysisResponse, "Project Overview"),
-        problem_statement: extractSection(analysisResponse, "Problem Statement"),
-        proposed_solution: extractSection(analysisResponse, "Proposed Solution"),
-        business_goals: extractSection(analysisResponse, "Business Goals"),
-        target_audience: extractSection(analysisResponse, "Target Audience"),
-        key_features: extractSection(analysisResponse, "Key Features"),
-        user_stories: extractSection(analysisResponse, "User Stories"),
-        competitive_landscape: extractSection(analysisResponse, "Competitive Landscape"),
-        constraints_assumptions: extractSection(analysisResponse, "Constraints & Assumptions"),
-        risks_mitigations: extractSection(analysisResponse, "Risks & Mitigations"),
-        acceptance_criteria: extractSection(analysisResponse, "Acceptance Criteria")
-      };
-    }
-    
-    // Calculate confidence score based on completeness of analysis
-    const totalSections = 11;
-    let populatedSections = 0;
-    
-    for (const key in analysisData) {
-      if (analysisData[key] && analysisData[key].length > 10) {
-        populatedSections++;
-      }
-    }
-    
-    const confidenceScore = Math.round((populatedSections / totalSections) * 100);
-    
-    // Check if analysis record already exists
-    const { data: existingAnalysis } = await supabase
-      .from("requirement_analysis")
-      .select("id")
-      .eq("requirement_id", requirementId)
-      .maybeSingle();
-    
-    let result;
-    const analysisRecord = {
-      requirement_id: requirementId,
-      project_overview: analysisData.project_overview || null,
-      problem_statement: analysisData.problem_statement || null,
-      proposed_solution: analysisData.proposed_solution || null,
-      business_goals: analysisData.business_goals || null,
-      target_audience: analysisData.target_audience || null,
-      key_features: analysisData.key_features || null,
-      user_stories: analysisData.user_stories || null,
-      competitive_landscape: analysisData.competitive_landscape || null,
-      constraints_assumptions: analysisData.constraints_assumptions || null,
-      risks_mitigations: analysisData.risks_mitigations || null,
-      acceptance_criteria: analysisData.acceptance_criteria || null,
-      appendices: [documentUrl],
-      analysis_confidence_score: confidenceScore
-    };
-    
-    if (existingAnalysis) {
-      // Update existing analysis
-      result = await supabase
-        .from("requirement_analysis")
-        .update(analysisRecord)
-        .eq("id", existingAnalysis.id)
-        .select();
-    } else {
-      // Insert new analysis
-      result = await supabase
-        .from("requirement_analysis")
-        .insert(analysisRecord)
-        .select();
-    }
-    
-    if (result.error) {
-      throw new Error(`Error saving analysis: ${result.error.message}`);
-    }
-    
-    // Update requirement status
-    await supabase
+    // Update the requirement with the document summary
+    const { error: updateError } = await supabase
       .from("requirements")
-      .update({ status: "Completed" })
+      .update({ 
+        document_summary: documentSummary,
+        updated_at: new Date().toISOString()
+      })
       .eq("id", requirementId);
+      
+    if (updateError) {
+      throw updateError;
+    }
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Document processed successfully",
-        analysis: result.data[0]
+        message: "Document processed and summarized successfully",
+        summary: documentSummary
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

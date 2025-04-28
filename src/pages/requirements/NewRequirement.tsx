@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ const NewRequirement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [processingWithAI, setProcessingWithAI] = useState(false);
+  const [processingSummary, setProcessingSummary] = useState(false);
 
   const [formData, setFormData] = useState({
     projectName: "",
@@ -125,12 +124,13 @@ const NewRequirement = () => {
 
   const processDocument = async (requirementId: string, documentUrl: string) => {
     try {
+      setProcessingSummary(true);
       toast({
         title: "Processing Document",
-        description: "Analyzing document content with AI...",
+        description: "Generating document summary...",
       });
       
-      // Process the document with the edge function
+      // Process the document with the edge function to get a summary
       const { data, error } = await supabase.functions.invoke('process-document', {
         body: { 
           documentUrl: documentUrl,
@@ -143,19 +143,21 @@ const NewRequirement = () => {
       }
 
       toast({
-        title: "Analysis Complete",
-        description: "Document processed and analyzed successfully.",
+        title: "Summary Complete",
+        description: "Document processed and summarized successfully.",
       });
       
       return true;
     } catch (error) {
       console.error('Error processing document:', error);
       toast({
-        title: "Analysis Error",
-        description: "Failed to analyze document. Please try again later.",
+        title: "Processing Error",
+        description: "Failed to generate document summary. Please try again later.",
         variant: "destructive",
       });
       return false;
+    } finally {
+      setProcessingSummary(false);
     }
   };
 
@@ -207,16 +209,9 @@ const NewRequirement = () => {
         description: "Your new requirement has been successfully created.",
       });
       
-      // If there's a document URL, process it using OpenAI
+      // If there's a document URL, process it to get a summary (but not full analysis)
       if (formData.documentUploadUrl) {
-        setProcessingWithAI(true);
         await processDocument(newRequirement.id, formData.documentUploadUrl);
-        
-        // After processing, update the requirement status
-        await supabase
-          .from('requirements')
-          .update({ status: 'Completed' })
-          .eq('id', newRequirement.id);
       }
       
       // Navigate to the requirement view page
@@ -231,7 +226,6 @@ const NewRequirement = () => {
       });
     } finally {
       setLoading(false);
-      setProcessingWithAI(false);
     }
   };
 
@@ -347,12 +341,12 @@ const NewRequirement = () => {
             <Button
               type="submit"
               className="w-full bg-[#4744E0] hover:bg-[#4744E0]/90"
-              disabled={loading || processingWithAI}
+              disabled={loading || processingSummary}
             >
-              {processingWithAI ? (
+              {processingSummary ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  Processing Document...
+                  Generating Document Summary...
                 </>
               ) : loading ? (
                 "Creating Requirement..."
