@@ -26,23 +26,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Requirement = {
   id: string;
-  title: string;
-  created_at: string;
-  status: "draft" | "in-review" | "approved" | "rejected";
-  ai_validated: boolean;
-  tests_covered: boolean;
-  industry_type: string;
-  ai_confidence?: number;
-};
-
-// Define the extended project type that includes structured_document
-type ProjectWithStructuredDoc = {
-  id: string;
+  requirement_id: string;
   project_name: string;
-  created_at: string;
+  company_name: string | null;
   industry_type: string;
+  project_idea: string | null;
+  input_methods_used: string[];
+  file_urls: string[];
+  status: string;
+  ai_analysis_status: string;
   structured_document: any | null;
-  [key: string]: any; // Allow additional properties
+  created_at: string;
 };
 
 const RequirementsList = () => {
@@ -52,33 +46,23 @@ const RequirementsList = () => {
     queryKey: ['requirements'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('projects')
+        .from('requirements')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Transform project data to requirements format
-      return data.map((project: ProjectWithStructuredDoc) => ({
-        id: project.id,
-        title: project.project_name,
-        created_at: new Date(project.created_at).toISOString().split('T')[0],
-        status: 'draft' as const, // Use const assertion to match the expected type
-        ai_validated: project.structured_document !== null,
-        tests_covered: false,
-        industry_type: project.industry_type,
-        ai_confidence: project.structured_document ? 98 : 0
-      }));
+      return data;
     }
   });
   
   const filteredRequirements = requirements.filter(req => 
-    req.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    req.id.toLowerCase().includes(searchQuery.toLowerCase())
+    req.project_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    req.requirement_id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getStatusBadge = (status: Requirement["status"]) => {
-    switch (status) {
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
       case "approved":
         return <AIBadge variant="complete">Approved</AIBadge>;
       case "in-review":
@@ -87,6 +71,8 @@ const RequirementsList = () => {
         return <AIBadge variant="neural">Draft</AIBadge>;
       case "rejected":
         return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Rejected</Badge>;
+      default:
+        return <AIBadge variant="neural">Draft</AIBadge>;
     }
   };
   
@@ -132,7 +118,7 @@ const RequirementsList = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead className="w-[300px]">Title</TableHead>
+                  <TableHead className="w-[300px]">Project</TableHead>
                   <TableHead>Industry</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead>Status</TableHead>
@@ -170,42 +156,36 @@ const RequirementsList = () => {
                 ) : filteredRequirements.length > 0 ? (
                   filteredRequirements.map((req) => (
                     <TableRow key={req.id}>
-                      <TableCell className="font-medium">{req.id}</TableCell>
-                      <TableCell>{req.title}</TableCell>
+                      <TableCell className="font-medium">{req.requirement_id}</TableCell>
+                      <TableCell>{req.project_name}</TableCell>
                       <TableCell>{req.industry_type}</TableCell>
-                      <TableCell>{req.created_at}</TableCell>
+                      <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
                       <TableCell>
-                        {req.ai_validated 
-                          ? (
-                            <div className="flex items-center gap-2">
-                              <CheckCircle size={16} className="text-green-500" />
-                              <span className="text-xs text-muted-foreground">{req.ai_confidence}% confidence</span>
-                            </div>
-                          ) 
-                          : (
-                            <div className="flex items-center gap-2">
-                              <Clock size={16} className="text-amber-500" />
-                              <span className="text-xs text-muted-foreground">Pending</span>
-                            </div>
-                          )
-                        }
+                        {req.structured_document ? (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle size={16} className="text-green-500" />
+                            <span className="text-xs text-muted-foreground">Completed</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Clock size={16} className="text-amber-500" />
+                            <span className="text-xs text-muted-foreground">Pending</span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {req.tests_covered 
-                          ? (
-                            <div className="flex items-center gap-2">
-                              <CheckCircle size={16} className="text-green-500" />
-                              <span className="text-xs text-muted-foreground">Generated</span>
-                            </div>
-                          ) 
-                          : (
-                            <div className="flex items-center gap-2">
-                              <XCircle size={16} className="text-gray-300" />
-                              <span className="text-xs text-muted-foreground">Not covered</span>
-                            </div>
-                          )
-                        }
+                        {false ? (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle size={16} className="text-green-500" />
+                            <span className="text-xs text-muted-foreground">Generated</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <XCircle size={16} className="text-gray-300" />
+                            <span className="text-xs text-muted-foreground">Not covered</span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="outline" asChild size="sm" className="border-primary/20 hover:border-primary/50">

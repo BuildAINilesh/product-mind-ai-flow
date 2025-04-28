@@ -36,54 +36,54 @@ export type Database = {
         }
         Relationships: []
       }
-      projects: {
+      requirements: {
         Row: {
-          audio_upload_url: string | null
-          chat_upload_url: string | null
-          company_name: string
-          created_at: string
-          document_upload_url: string | null
-          email_upload_url: string | null
+          ai_analysis_status: string | null
+          company_name: string | null
+          created_at: string | null
+          file_urls: string[] | null
           id: string
-          industry_type: string
+          industry_type: Database["public"]["Enums"]["industry_enum"]
+          input_methods_used: string[] | null
           project_idea: string | null
           project_name: string
-          updated_at: string
-          user_id: string
-          username: string
-          voice_upload_url: string | null
+          requirement_id: string | null
+          status: string | null
+          structured_document: Json | null
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          audio_upload_url?: string | null
-          chat_upload_url?: string | null
-          company_name: string
-          created_at?: string
-          document_upload_url?: string | null
-          email_upload_url?: string | null
+          ai_analysis_status?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          file_urls?: string[] | null
           id?: string
-          industry_type: string
+          industry_type: Database["public"]["Enums"]["industry_enum"]
+          input_methods_used?: string[] | null
           project_idea?: string | null
           project_name: string
-          updated_at?: string
-          user_id: string
-          username: string
-          voice_upload_url?: string | null
+          requirement_id?: string | null
+          status?: string | null
+          structured_document?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          audio_upload_url?: string | null
-          chat_upload_url?: string | null
-          company_name?: string
-          created_at?: string
-          document_upload_url?: string | null
-          email_upload_url?: string | null
+          ai_analysis_status?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          file_urls?: string[] | null
           id?: string
-          industry_type?: string
+          industry_type?: Database["public"]["Enums"]["industry_enum"]
+          input_methods_used?: string[] | null
           project_idea?: string | null
           project_name?: string
-          updated_at?: string
-          user_id?: string
-          username?: string
-          voice_upload_url?: string | null
+          requirement_id?: string | null
+          status?: string | null
+          structured_document?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -95,7 +95,18 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      industry_enum:
+        | "technology"
+        | "healthcare"
+        | "finance"
+        | "education"
+        | "retail"
+        | "manufacturing"
+        | "logistics"
+        | "entertainment"
+        | "energy"
+        | "automotive"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -210,6 +221,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      industry_enum: [
+        "technology",
+        "healthcare",
+        "finance",
+        "education",
+        "retail",
+        "manufacturing",
+        "logistics",
+        "entertainment",
+        "energy",
+        "automotive",
+        "other",
+      ],
+    },
   },
 } as const
