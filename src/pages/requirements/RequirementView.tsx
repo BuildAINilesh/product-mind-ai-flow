@@ -19,7 +19,7 @@ const RequirementView = () => {
     const fetchProject = async () => {
       try {
         const { data, error } = await supabase
-          .from('projects')
+          .from('requirements')
           .select('*')
           .eq('id', id)
           .single();
@@ -30,10 +30,10 @@ const RequirementView = () => {
 
         setProject(data);
       } catch (error) {
-        console.error('Error fetching project:', error);
+        console.error('Error fetching requirement:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load project details.',
+          description: 'Failed to load requirement details.',
           variant: 'destructive',
         });
       } finally {
@@ -68,7 +68,7 @@ const RequirementView = () => {
       
       // Refetch the project with updated structured document
       const { data: updatedProject, error: fetchError } = await supabase
-        .from('projects')
+        .from('requirements')
         .select('*')
         .eq('id', id)
         .single();

@@ -28,6 +28,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+// Type for the industry enum
+type IndustryType = Database["public"]["Enums"]["industry_enum"];
 
 const NewRequirement = () => {
   const navigate = useNavigate();
@@ -38,22 +42,22 @@ const NewRequirement = () => {
   const [formData, setFormData] = useState({
     projectName: "",
     companyName: "",
-    industryType: "",
+    industryType: "" as IndustryType,
     username: "",
     projectIdea: "",
-    voiceUploadUrl: null,
-    emailUploadUrl: null,
-    chatUploadUrl: null,
-    documentUploadUrl: null,
-    audioUploadUrl: null
+    voiceUploadUrl: null as string | null,
+    emailUploadUrl: null as string | null,
+    chatUploadUrl: null as string | null,
+    documentUploadUrl: null as string | null,
+    audioUploadUrl: null as string | null
   });
 
   const [uploadedFiles, setUploadedFiles] = useState({
-    voice: null,
-    email: null,
-    chat: null,
-    document: null,
-    audio: null
+    voice: null as string | null,
+    email: null as string | null,
+    chat: null as string | null,
+    document: null as string | null,
+    audio: null as string | null
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -62,7 +66,7 @@ const NewRequirement = () => {
   };
 
   const handleSelectChange = (value: string) => {
-    setFormData(prev => ({ ...prev, industryType: value }));
+    setFormData(prev => ({ ...prev, industryType: value as IndustryType }));
   };
 
   const handleFileUpload = async (type: string, file: File) => {
@@ -134,21 +138,36 @@ const NewRequirement = () => {
         throw new Error("No user found");
       }
 
-      // First, insert the project to get the project ID
-      const { data: newProject, error } = await supabase
-        .from('projects')
+      // Create an array of input methods used
+      const inputMethodsUsed: string[] = [];
+      if (formData.voiceUploadUrl) inputMethodsUsed.push('Voice Input');
+      if (formData.emailUploadUrl) inputMethodsUsed.push('Email Upload');
+      if (formData.chatUploadUrl) inputMethodsUsed.push('Chat Upload');
+      if (formData.documentUploadUrl) inputMethodsUsed.push('Document Upload');
+      if (formData.audioUploadUrl) inputMethodsUsed.push('Audio Upload');
+      
+      // Create array of file URLs
+      const fileUrls: string[] = [
+        formData.voiceUploadUrl,
+        formData.emailUploadUrl,
+        formData.chatUploadUrl,
+        formData.documentUploadUrl,
+        formData.audioUploadUrl
+      ].filter(url => url !== null) as string[];
+
+      // Insert into requirements table
+      const { data: newRequirement, error } = await supabase
+        .from('requirements')
         .insert({
           user_id: user.id,
           project_name: formData.projectName,
           company_name: formData.companyName,
           industry_type: formData.industryType,
-          username: formData.username,
           project_idea: formData.projectIdea,
-          voice_upload_url: formData.voiceUploadUrl,
-          email_upload_url: formData.emailUploadUrl,
-          chat_upload_url: formData.chatUploadUrl,
-          document_upload_url: formData.documentUploadUrl,
-          audio_upload_url: formData.audioUploadUrl
+          input_methods_used: inputMethodsUsed,
+          file_urls: fileUrls,
+          status: 'Draft',
+          ai_analysis_status: 'Pending'
         })
         .select()
         .single();
@@ -156,8 +175,8 @@ const NewRequirement = () => {
       if (error) throw error;
 
       toast({
-        title: "Project created",
-        description: "Your new project has been successfully created.",
+        title: "Requirement created",
+        description: "Your new requirement has been successfully created.",
       });
       
       // Now that we have the project ID, trigger the AI processing
@@ -165,32 +184,32 @@ const NewRequirement = () => {
       
       toast({
         title: "Processing with AI",
-        description: "Analyzing your project information...",
+        description: "Analyzing your requirement information...",
       });
       
       try {
         // Call the process-project function
         const { data, error: functionError } = await supabase.functions.invoke('process-project', {
-          body: { projectId: newProject.id }
+          body: { projectId: newRequirement.id }
         });
         
         if (functionError) {
           console.error('Error calling process-project:', functionError);
-          throw new Error('AI processing failed. Project was created but without AI analysis.');
+          throw new Error('AI processing failed. Requirement was created but without AI analysis.');
         }
         
         toast({
           title: "AI Analysis Complete",
-          description: "Your project details have been analyzed and structured.",
+          description: "Your requirement details have been analyzed and structured.",
         });
         
         // Redirect to the project view page
-        navigate(`/dashboard/requirements/${newProject.id}`);
+        navigate(`/dashboard/requirements/${newRequirement.id}`);
       } catch (aiError) {
         console.error('AI processing error:', aiError);
         toast({
           title: "AI Processing Warning",
-          description: "Project was created, but AI analysis encountered an issue.",
+          description: "Requirement was created, but AI analysis encountered an issue.",
           variant: "destructive",
         });
         // Still redirect to the requirements list
@@ -200,10 +219,10 @@ const NewRequirement = () => {
       }
       
     } catch (error) {
-      console.error('Error creating project:', error);
+      console.error('Error creating requirement:', error);
       toast({
         title: "Error",
-        description: "There was an error creating your project. Please try again.",
+        description: "There was an error creating your requirement. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -215,9 +234,9 @@ const NewRequirement = () => {
     <div className="min-h-screen bg-background">
       <Card className="max-w-4xl mx-auto my-8 shadow-none border-none">
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl font-bold">Create New Project</CardTitle>
+          <CardTitle className="text-2xl font-bold">Create New Requirement</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Get started with a new project. Fill in the details below to begin.
+            Get started with a new requirement. Fill in the details below to begin.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -259,13 +278,19 @@ const NewRequirement = () => {
                 </label>
                 <Select value={formData.industryType} onValueChange={handleSelectChange}>
                   <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Enter industry type" />
+                    <SelectValue placeholder="Select industry type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="technology">Technology</SelectItem>
                     <SelectItem value="healthcare">Healthcare</SelectItem>
                     <SelectItem value="finance">Finance</SelectItem>
                     <SelectItem value="education">Education</SelectItem>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                    <SelectItem value="logistics">Logistics</SelectItem>
+                    <SelectItem value="entertainment">Entertainment</SelectItem>
+                    <SelectItem value="energy">Energy</SelectItem>
+                    <SelectItem value="automotive">Automotive</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -320,9 +345,9 @@ const NewRequirement = () => {
                 >
                   <Icon className="h-4 w-4" />
                   <span>{label}</span>
-                  {uploadedFiles[type] && (
+                  {uploadedFiles[type as keyof typeof uploadedFiles] && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      {uploadedFiles[type]}
+                      {uploadedFiles[type as keyof typeof uploadedFiles]}
                     </span>
                   )}
                 </Button>
@@ -334,9 +359,9 @@ const NewRequirement = () => {
               className="w-full bg-[#4744E0] hover:bg-[#4744E0]/90"
               disabled={loading || processingWithAI}
             >
-              {loading ? "Creating Project..." : 
+              {loading ? "Creating Requirement..." : 
                processingWithAI ? "Processing with AI..." : 
-               "Create Project"}
+               "Create Requirement"}
             </Button>
           </form>
         </CardContent>
