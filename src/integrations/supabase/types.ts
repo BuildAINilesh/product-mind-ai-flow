@@ -108,6 +108,7 @@ export type Database = {
         Row: {
           company_name: string | null
           created_at: string | null
+          document_summary: string | null
           file_urls: string[] | null
           id: string
           industry_type: Database["public"]["Enums"]["industry_enum"]
@@ -122,6 +123,7 @@ export type Database = {
         Insert: {
           company_name?: string | null
           created_at?: string | null
+          document_summary?: string | null
           file_urls?: string[] | null
           id?: string
           industry_type: Database["public"]["Enums"]["industry_enum"]
@@ -136,6 +138,7 @@ export type Database = {
         Update: {
           company_name?: string | null
           created_at?: string | null
+          document_summary?: string | null
           file_urls?: string[] | null
           id?: string
           industry_type?: Database["public"]["Enums"]["industry_enum"]

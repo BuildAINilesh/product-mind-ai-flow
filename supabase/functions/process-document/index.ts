@@ -112,10 +112,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Helper function to extract sections from text if JSON parsing fails
-function extractSection(text, sectionName) {
-  const regex = new RegExp(`${sectionName}[:\\s]+(.*?)(?=\\n\\s*\\d+\\.\\s|$)`, 'is');
-  const match = text.match(regex);
-  return match ? match[1].trim() : '';
-}
