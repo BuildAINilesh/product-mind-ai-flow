@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,6 @@ const NewRequirement = () => {
     projectName: "",
     companyName: "",
     industryType: "" as IndustryType,
-    username: "",
     projectIdea: "",
     voiceUploadUrl: null as string | null,
     emailUploadUrl: null as string | null,
@@ -71,12 +69,10 @@ const NewRequirement = () => {
 
   const handleFileUpload = async (type: string, file: File) => {
     try {
-      // Generate a unique filename
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}.${fileExt}`
       const filePath = `${type}/${fileName}`
 
-      // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('project-uploads')
         .upload(filePath, file)
@@ -85,12 +81,10 @@ const NewRequirement = () => {
         throw uploadError
       }
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('project-uploads')
         .getPublicUrl(filePath)
 
-      // Update form data and uploaded files state
       setFormData(prev => ({ 
         ...prev, 
         [`${type}UploadUrl`]: publicUrl 
@@ -138,7 +132,6 @@ const NewRequirement = () => {
         throw new Error("No user found");
       }
 
-      // Create an array of input methods used
       const inputMethodsUsed: string[] = [];
       if (formData.voiceUploadUrl) inputMethodsUsed.push('Voice Input');
       if (formData.emailUploadUrl) inputMethodsUsed.push('Email Upload');
@@ -146,7 +139,6 @@ const NewRequirement = () => {
       if (formData.documentUploadUrl) inputMethodsUsed.push('Document Upload');
       if (formData.audioUploadUrl) inputMethodsUsed.push('Audio Upload');
       
-      // Create array of file URLs
       const fileUrls: string[] = [
         formData.voiceUploadUrl,
         formData.emailUploadUrl,
@@ -155,7 +147,6 @@ const NewRequirement = () => {
         formData.audioUploadUrl
       ].filter(url => url !== null) as string[];
 
-      // Insert into requirements table
       const { data: newRequirement, error } = await supabase
         .from('requirements')
         .insert({
@@ -179,7 +170,6 @@ const NewRequirement = () => {
         description: "Your new requirement has been successfully created.",
       });
       
-      // Now that we have the project ID, trigger the AI processing
       setProcessingWithAI(true);
       
       toast({
@@ -188,13 +178,11 @@ const NewRequirement = () => {
       });
       
       try {
-        // Call the process-project function
         const { data, error: functionError } = await supabase.functions.invoke('process-project', {
           body: { projectId: newRequirement.id }
         });
         
         if (functionError) {
-          console.error('Error calling process-project:', functionError);
           throw new Error('AI processing failed. Requirement was created but without AI analysis.');
         }
         
@@ -203,7 +191,6 @@ const NewRequirement = () => {
           description: "Your requirement details have been analyzed and structured.",
         });
         
-        // Redirect to the project view page
         navigate(`/dashboard/requirements/${newRequirement.id}`);
       } catch (aiError) {
         console.error('AI processing error:', aiError);
@@ -212,10 +199,7 @@ const NewRequirement = () => {
           description: "Requirement was created, but AI analysis encountered an issue.",
           variant: "destructive",
         });
-        // Still redirect to the requirements list
         navigate("/dashboard/requirements");
-      } finally {
-        setProcessingWithAI(false);
       }
       
     } catch (error) {
@@ -227,6 +211,7 @@ const NewRequirement = () => {
       });
     } finally {
       setLoading(false);
+      setProcessingWithAI(false);
     }
   };
 
@@ -294,21 +279,6 @@ const NewRequirement = () => {
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="username" className="text-sm font-medium">
-                  Username
-                </label>
-                <Input
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  placeholder="Enter username"
-                  required
-                  className="w-full bg-background"
-                />
               </div>
             </div>
 
