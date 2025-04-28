@@ -36,6 +36,74 @@ export type Database = {
         }
         Relationships: []
       }
+      requirement_analysis: {
+        Row: {
+          acceptance_criteria: string | null
+          analysis_confidence_score: number | null
+          appendices: string[] | null
+          business_goals: string | null
+          competitive_landscape: string | null
+          constraints_assumptions: string | null
+          created_at: string
+          id: string
+          key_features: string | null
+          problem_statement: string | null
+          project_overview: string | null
+          proposed_solution: string | null
+          requirement_id: string
+          risks_mitigations: string | null
+          target_audience: string | null
+          updated_at: string
+          user_stories: string | null
+        }
+        Insert: {
+          acceptance_criteria?: string | null
+          analysis_confidence_score?: number | null
+          appendices?: string[] | null
+          business_goals?: string | null
+          competitive_landscape?: string | null
+          constraints_assumptions?: string | null
+          created_at?: string
+          id?: string
+          key_features?: string | null
+          problem_statement?: string | null
+          project_overview?: string | null
+          proposed_solution?: string | null
+          requirement_id: string
+          risks_mitigations?: string | null
+          target_audience?: string | null
+          updated_at?: string
+          user_stories?: string | null
+        }
+        Update: {
+          acceptance_criteria?: string | null
+          analysis_confidence_score?: number | null
+          appendices?: string[] | null
+          business_goals?: string | null
+          competitive_landscape?: string | null
+          constraints_assumptions?: string | null
+          created_at?: string
+          id?: string
+          key_features?: string | null
+          problem_statement?: string | null
+          project_overview?: string | null
+          proposed_solution?: string | null
+          requirement_id?: string
+          risks_mitigations?: string | null
+          target_audience?: string | null
+          updated_at?: string
+          user_stories?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requirement_analysis_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: true
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requirements: {
         Row: {
           company_name: string | null

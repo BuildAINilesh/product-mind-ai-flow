@@ -5,29 +5,48 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import ProjectStructuredView from "@/components/ProjectStructuredView";
+import RequirementAnalysisView from "@/components/RequirementAnalysisView";
 
 const RequirementView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [project, setProject] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchProjectData = async () => {
       try {
-        const { data, error } = await supabase
+        setLoading(true);
+        
+        // Fetch the basic project info
+        const { data: projectData, error: projectError } = await supabase
           .from('requirements')
           .select('*')
           .eq('id', id)
           .single();
 
-        if (error) {
-          throw error;
+        if (projectError) {
+          throw projectError;
         }
 
-        setProject(data);
+        setProject(projectData);
+
+        // If project is completed, fetch the analysis data
+        if (projectData.status === "Completed") {
+          const { data: analysisData, error: analysisError } = await supabase
+            .from('requirement_analysis')
+            .select('*')
+            .eq('requirement_id', id)
+            .maybeSingle();
+
+          if (analysisError) {
+            console.error('Error fetching analysis:', analysisError);
+          } else {
+            setAnalysis(analysisData);
+          }
+        }
       } catch (error) {
         console.error('Error fetching requirement:', error);
         toast({
@@ -41,7 +60,7 @@ const RequirementView = () => {
     };
 
     if (id) {
-      fetchProject();
+      fetchProjectData();
     }
   }, [id, toast]);
 
@@ -92,6 +111,19 @@ const RequirementView = () => {
       }
       
       setProject(updatedProject);
+
+      // Fetch the newly created analysis
+      const { data: analysisData, error: analysisError } = await supabase
+        .from('requirement_analysis')
+        .select('*')
+        .eq('requirement_id', id)
+        .maybeSingle();
+
+      if (analysisError) {
+        console.error('Error fetching analysis:', analysisError);
+      } else {
+        setAnalysis(analysisData);
+      }
       
       toast({
         title: "Success",
@@ -162,7 +194,7 @@ const RequirementView = () => {
         </div>
       </div>
 
-      <ProjectStructuredView project={project} loading={loading} />
+      <RequirementAnalysisView project={project} analysis={analysis} loading={loading} />
     </div>
   );
 };
