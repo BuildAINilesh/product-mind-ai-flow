@@ -81,20 +81,27 @@ const NewRequirement = () => {
         description: "Generating document summary...",
       });
       
-      // Process the document with the edge function to get a summary
-      // We're using a temporary ID just for processing
-      const tempId = "temp-" + Date.now();
-      const { data, error } = await supabase.functions.invoke('process-document', {
-        body: { 
-          documentUrl: documentUrl,
-          requirementId: tempId
-        }
+      // Call the Edge Function directly
+      const response = await fetch('https://nbjajaafqswspkytekun.supabase.co/functions/v1/process-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.auth.getSession() ? 'authenticated' : 'anonymous'}`
+        },
+        body: JSON.stringify({ 
+          documentUrl: documentUrl 
+          // We don't pass requirementId here since it doesn't exist yet
+        })
       });
-
-      if (error) {
-        throw error;
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response from process-document function:', errorText);
+        throw new Error(`Failed to process document: ${response.statusText}`);
       }
-
+      
+      const data = await response.json();
+      
       if (data && data.summary) {
         setFormData(prev => ({
           ...prev,
@@ -105,9 +112,11 @@ const NewRequirement = () => {
           title: "Summary Complete",
           description: "Document processed and summarized successfully.",
         });
+        
+        return data.summary;
       }
       
-      return data?.summary || null;
+      throw new Error("No summary generated");
     } catch (error) {
       console.error('Error processing document:', error);
       toast({

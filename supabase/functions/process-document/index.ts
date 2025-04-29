@@ -17,19 +17,14 @@ serve(async (req) => {
 
   try {
     console.log("Document processing function called");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
     const { documentUrl, requirementId } = await req.json();
     
-    if (!documentUrl || !requirementId) {
-      throw new Error("Document URL and requirement ID are required");
+    if (!documentUrl) {
+      throw new Error("Document URL is required");
     }
     
-    console.log(`Processing document: ${documentUrl} for requirement: ${requirementId}`);
+    console.log(`Processing document: ${documentUrl}`);
+    console.log(`Requirement ID (if provided): ${requirementId}`);
     
     // Fetch the document content
     console.log(`Attempting to fetch document from URL: ${documentUrl}`);
@@ -91,10 +86,16 @@ serve(async (req) => {
 
     console.log("Calling OpenAI to generate document summary");
     // Generate summary using OpenAI
+    const openAIApiKey = Deno.env.get("OPENAI_API_KEY") || "";
+    
+    if (!openAIApiKey) {
+      throw new Error("OPENAI_API_KEY environment variable is not set");
+    }
+    
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -122,21 +123,36 @@ serve(async (req) => {
     console.log("OpenAI response received");
     const summary = data.choices[0].message.content;
     
-    // Update the requirement with the document summary
-    const { error: updateError } = await supabase
-      .from("requirements")
-      .update({ 
-        document_summary: summary,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", requirementId);
+    // If a requirementId was provided, update the database
+    if (requirementId && requirementId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
       
-    if (updateError) {
-      console.error("Error updating requirement with summary:", updateError);
-      throw updateError;
+      if (!supabaseUrl || !supabaseServiceKey) {
+        throw new Error("Supabase environment variables are not set");
+      }
+      
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      console.log(`Updating requirement ${requirementId} with document summary`);
+      
+      const { error: updateError } = await supabase
+        .from("requirements")
+        .update({ 
+          document_summary: summary,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", requirementId);
+        
+      if (updateError) {
+        console.error("Error updating requirement with summary:", updateError);
+        throw updateError;
+      }
+      
+      console.log("Successfully updated requirement with document summary");
+    } else {
+      console.log("No valid requirement ID provided, skipping database update");
     }
-    
-    console.log("Successfully updated requirement with document summary");
     
     return new Response(
       JSON.stringify({ 
