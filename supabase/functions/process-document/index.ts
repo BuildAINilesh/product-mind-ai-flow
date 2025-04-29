@@ -197,7 +197,9 @@ async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<string> {
     // DOCX files store content in word/document.xml
     const documentXml = await zip.file("word/document.xml")?.async("string");
     if (!documentXml) {
-      throw new Error("Could not find document.xml in the DOCX file");
+      // List available files for debugging
+      const allFiles = Object.keys(zip.files).join(", ");
+      throw new Error(`Could not find document.xml in the DOCX file. Available files: ${allFiles}`);
     }
     
     // Extract only text from XML (remove tags)
