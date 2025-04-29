@@ -81,16 +81,22 @@ const NewRequirement = () => {
         description: "Generating document summary...",
       });
       
-      // Call the Edge Function directly
+      // Get the current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("No active session found");
+      }
+      
+      // Call the Edge Function with proper auth headers
       const response = await fetch('https://nbjajaafqswspkytekun.supabase.co/functions/v1/process-document', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.getSession() ? 'authenticated' : 'anonymous'}`
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({ 
           documentUrl: documentUrl 
-          // We don't pass requirementId here since it doesn't exist yet
         })
       });
       

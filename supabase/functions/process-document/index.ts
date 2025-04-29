@@ -17,14 +17,13 @@ serve(async (req) => {
 
   try {
     console.log("Document processing function called");
-    const { documentUrl, requirementId } = await req.json();
+    const { documentUrl } = await req.json();
     
     if (!documentUrl) {
       throw new Error("Document URL is required");
     }
     
     console.log(`Processing document: ${documentUrl}`);
-    console.log(`Requirement ID (if provided): ${requirementId}`);
     
     // Fetch the document content
     console.log(`Attempting to fetch document from URL: ${documentUrl}`);
@@ -122,37 +121,6 @@ serve(async (req) => {
     const data = await openAIResponse.json();
     console.log("OpenAI response received");
     const summary = data.choices[0].message.content;
-    
-    // If a requirementId was provided, update the database
-    if (requirementId && requirementId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-      
-      if (!supabaseUrl || !supabaseServiceKey) {
-        throw new Error("Supabase environment variables are not set");
-      }
-      
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
-      console.log(`Updating requirement ${requirementId} with document summary`);
-      
-      const { error: updateError } = await supabase
-        .from("requirements")
-        .update({ 
-          document_summary: summary,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", requirementId);
-        
-      if (updateError) {
-        console.error("Error updating requirement with summary:", updateError);
-        throw updateError;
-      }
-      
-      console.log("Successfully updated requirement with document summary");
-    } else {
-      console.log("No valid requirement ID provided, skipping database update");
-    }
     
     return new Response(
       JSON.stringify({ 
