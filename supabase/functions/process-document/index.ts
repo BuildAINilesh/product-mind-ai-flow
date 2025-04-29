@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts"; // For fetch() in Edge Functions
+import * as JSZip from "https://esm.sh/jszip@3.10.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,9 +36,9 @@ serve(async (req) => {
     
     // Get file as array buffer for processing
     const arrayBuffer = await response.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
     
     // Create a hex dump of first few bytes for debugging
+    const uint8Array = new Uint8Array(arrayBuffer);
     const hexDump = Array.from(uint8Array.slice(0, 50)).map(b => b.toString(16).padStart(2, '0')).join(' ');
     console.log(`File hex dump (first 50 bytes): ${hexDump}`);
     
@@ -47,40 +48,37 @@ serve(async (req) => {
     
     if (contentType?.includes('pdf')) {
       console.log("Processing PDF document");
-      // For PDFs, attempt to extract text through content parsing
-      extractedText = await extractTextFromPDF(uint8Array);
-      extractionMethod = "PDF Parser";
+      extractedText = await extractTextFromPDF(arrayBuffer);
+      extractionMethod = "PDF Text Extraction";
       
     } else if (contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument')) {
       console.log("Processing Word document");
-      // For DOCX/DOC, extract text through XML parsing
-      extractedText = await extractTextFromDOCX(uint8Array);
-      extractionMethod = "DOCX/Word Parser";
+      extractedText = await extractTextFromDOCX(arrayBuffer);
+      extractionMethod = "DOCX/Word Text Extraction";
       
     } else {
       console.log("Processing as plain text document");
-      // For plain text files, we can decode the array buffer
       extractedText = new TextDecoder().decode(arrayBuffer);
       extractionMethod = "Plain Text Decoder";
     }
     
     // Check if we successfully extracted text
     if (!extractedText || extractedText.trim().length < 10) {
-      console.log("Warning: Extracted text is empty or too short");
+      console.log("Warning: Extracted text is too short or empty");
       
-      // Fallback approach: try simple text decoding for any format
-      const fallbackText = new TextDecoder().decode(arrayBuffer).replace(/[^\x20-\x7E\n\r\t]/g, ' ');
-      
-      if (fallbackText && fallbackText.trim().length > 100) {
-        console.log("Using fallback text extraction method");
-        extractedText = fallbackText;
+      // Try fallback extraction if main method failed
+      extractedText = await fallbackExtraction(arrayBuffer, contentType || "");
+      if (extractedText) {
         extractionMethod += " (with Fallback)";
       } else {
         throw new Error("Failed to extract meaningful text content from the document");
       }
     }
 
-    // Limit text size for OpenAI
+    console.log(`Extracted text length: ${extractedText.length} characters`);
+    console.log("Sample of extracted text:", extractedText.substring(0, 200));
+    
+    // Limit text size for OpenAI API
     const maxChars = 15000; // OpenAI can handle ~4k tokens, approximately 16k chars
     let truncatedText = extractedText;
     let wasTruncated = false;
@@ -90,9 +88,6 @@ serve(async (req) => {
       truncatedText = extractedText.substring(0, maxChars);
       wasTruncated = true;
     }
-    
-    console.log(`Extracted text length: ${extractedText.length} characters`);
-    console.log("Sample of extracted text:", extractedText.substring(0, 200));
     
     // Create a prompt for the document analysis
     const prompt = `
@@ -193,69 +188,117 @@ serve(async (req) => {
 
 // --- Helper Functions ---
 
-async function extractTextFromPDF(data: Uint8Array): Promise<string> {
+async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<string> {
   try {
-    // Basic PDF text extraction
-    // Look for text objects in PDF content
-    const textContent = new TextDecoder().decode(data);
+    // Parse the DOCX file using JSZip
+    const zip = new JSZip();
+    await zip.loadAsync(arrayBuffer);
     
-    // Extract text between PDF text markers
-    let extractedText = "";
-    const textObjects = textContent.match(/\(([^)]+)\)/g) || [];
+    // DOCX files store content in word/document.xml
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+    if (!documentXml) {
+      throw new Error("Could not find document.xml in the DOCX file");
+    }
     
-    for (const textObj of textObjects) {
-      // Remove parentheses and decode PDF escapes
-      const text = textObj.slice(1, -1).replace(/\\(\d{3})/g, (match, octal) => {
-        return String.fromCharCode(parseInt(octal, 8));
-      });
-      
-      extractedText += text + " ";
+    // Extract only text from XML (remove tags)
+    let textContent = "";
+    
+    // Extract content between <w:t> tags (these contain the actual text)
+    const textRegex = /<w:t[^>]*>(.*?)<\/w:t>/g;
+    let match;
+    
+    while ((match = textRegex.exec(documentXml)) !== null) {
+      textContent += match[1] + " ";
     }
     
     // Clean up the text
-    extractedText = extractedText
-      .replace(/\s+/g, " ")      // Replace multiple spaces with single space
-      .replace(/[^\x20-\x7E\n\r\t]/g, " "); // Remove non-printable characters
+    textContent = textContent
+      .replace(/\s+/g, " ") // Replace multiple spaces with a single space
+      .trim();
+      
+    return textContent;
+  } catch (error) {
+    console.error("Error extracting text from DOCX:", error);
+    return "";
+  }
+}
+
+async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
+  try {
+    // Since we can't use a PDF parsing library directly in Deno,
+    // we'll use basic text extraction by looking for text blocks
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const textContent = new TextDecoder().decode(uint8Array);
     
-    return extractedText || "";
+    // Look for text objects in PDF content (very simplified approach)
+    let extractedText = "";
+    
+    // Look for beginnings of text objects
+    const textBlockStart = /BT\s*(\(|\[)/g;
+    const textBlockEnd = /\s*ET/g;
+    
+    let startIndex = 0;
+    let endIndex = 0;
+    
+    while ((startIndex = textBlockStart.exec(textContent)?.index) !== undefined) {
+      textBlockEnd.lastIndex = startIndex;
+      const endMatch = textBlockEnd.exec(textContent);
+      
+      if (endMatch && endMatch.index > startIndex) {
+        const textBlock = textContent.substring(startIndex, endMatch.index);
+        
+        // Extract text between parentheses
+        const textInParentheses = textBlock.match(/\(([^)]+)\)/g);
+        if (textInParentheses) {
+          extractedText += textInParentheses
+            .map(t => t.substring(1, t.length - 1))
+            .join(" ");
+        }
+      }
+    }
+    
+    // If we couldn't extract anything using the above method,
+    // try a more brute-force approach
+    if (!extractedText.trim()) {
+      const simpleMatches = textContent.match(/\((\w+[\w\s.,;:'"!?-]*)\)/g);
+      if (simpleMatches) {
+        extractedText = simpleMatches
+          .map(t => t.substring(1, t.length - 1))
+          .join(" ");
+      }
+    }
+    
+    return extractedText;
   } catch (error) {
     console.error("Error extracting text from PDF:", error);
     return "";
   }
 }
 
-async function extractTextFromDOCX(data: Uint8Array): Promise<string> {
+async function fallbackExtraction(arrayBuffer: ArrayBuffer, contentType: string): Promise<string> {
   try {
-    // Convert to string to look for XML content
-    const textContent = new TextDecoder().decode(data);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const fullText = new TextDecoder().decode(uint8Array);
     
-    // Look for text content in DOCX XML
+    // Try to find any textual content among the binary data
     let extractedText = "";
     
-    // Try to extract text between <w:t> tags (common in DOCX)
-    const matches = textContent.match(/<w:t[^>]*>(.*?)<\/w:t>/g);
+    // Pattern to match readable text sequences (3+ consecutive printable ASCII chars)
+    const textChunks = fullText.match(/[A-Za-z0-9\s.,;:'"!?-]{3,}/g) || [];
     
-    if (matches && matches.length > 0) {
-      extractedText = matches
-        .map(match => {
-          // Extract the content between the tags
-          const content = match.replace(/<[^>]+>/g, "");
-          return content;
-        })
-        .join(" ");
-    } else {
-      // Fallback: Strip all XML tags if specific tags not found
-      extractedText = textContent.replace(/<[^>]+>/g, " ");
+    extractedText = textChunks
+      .filter(chunk => chunk.trim().length > 5) // Skip very short chunks
+      .join(" ");
+      
+    console.log("Fallback extraction found text chunks:", textChunks.length);
+    
+    if (extractedText.length > 100) {
+      return extractedText;
     }
     
-    // Clean up the text
-    extractedText = extractedText
-      .replace(/\s+/g, " ")      // Replace multiple spaces with single space
-      .replace(/[^\x20-\x7E\n\r\t]/g, " "); // Remove non-printable characters
-    
-    return extractedText || "";
+    return "";
   } catch (error) {
-    console.error("Error extracting text from DOCX:", error);
+    console.error("Error in fallback extraction:", error);
     return "";
   }
 }
