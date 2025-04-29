@@ -40,72 +40,44 @@ serve(async (req) => {
     let debugContent = "";
     
     if (contentType?.includes('pdf')) {
-      console.log("Processing PDF file");
-      const pdfText = await response.text();
+      console.log("Processing PDF file - using OpenAI directly to interpret the PDF");
       
-      // Save first 500 chars of raw content for debugging
-      debugContent = pdfText.substring(0, 500);
-      console.log("Raw PDF content (first 500 chars):", debugContent);
+      // Get the raw bytes for debugging
+      const rawBytes = await response.clone().arrayBuffer();
+      debugContent = `PDF file detected. Size: ${rawBytes.byteLength} bytes. Binary format, showing first 100 bytes in hex: ${[...new Uint8Array(rawBytes.slice(0, 100))].map(b => b.toString(16).padStart(2, '0')).join(' ')}`;
+      console.log(debugContent);
       
-      // Basic text extraction - attempt to pull out text content
-      textContent = pdfText
-        // Remove PDF syntax and formatting
-        .replace(/\n\r/g, " ")
-        .replace(/(\/\w+|\/|\(|\)|\[|\]|\<|\>)/g, " ")
-        // Clean up excess whitespace
-        .replace(/\s+/g, " ")
-        .trim();
-        
-      console.log("PDF basic text extraction completed, length:", textContent.length);
-      
-      // If text extraction yields very little content, inform the user
-      if (textContent.length < 100) {
-        console.log("PDF extraction yielded minimal text, using fallback message");
-        textContent += "\n\nNote: Limited text could be extracted from this PDF. For best results, consider uploading a text-based PDF rather than a scanned document.";
-      }
+      // Instead of trying to parse PDF, we'll ask OpenAI to summarize it directly using the URL
+      textContent = `This is a PDF file located at: ${documentUrl}. PDF extraction requires specialized libraries.`;
     } else if (contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument.wordprocessingml.document')) {
-      console.log("Processing DOC/DOCX file");
+      console.log("Processing DOC/DOCX file - using basic text extraction approach");
+      
+      // For DOCX files, we'll use a simple text extraction approach
+      // Get raw content for debugging
       const fileText = await response.text();
-      
-      // Save first 500 chars of raw content for debugging
       debugContent = fileText.substring(0, 500);
-      console.log("Raw Word content (first 500 chars):", debugContent);
       
-      // Try to extract from docx XML structure
-      try {
-        // Look for actual content in document.xml part if exists
-        const contentMatch = fileText.match(/<w:document[^>]*>[\s\S]*?<\/w:document>/i);
-        if (contentMatch) {
-          console.log("Found document.xml content section");
-          const documentContent = contentMatch[0];
+      console.log("Raw Word content sample (first 500 chars):", debugContent);
+      
+      // Try to extract readable text by looking for words between XML tags
+      const wordMatches = fileText.match(/<w:t[^>]*>(.*?)<\/w:t>/g) || [];
+      if (wordMatches.length > 0) {
+        // Extract text from XML tags
+        textContent = wordMatches
+          .map(tag => tag.replace(/<\/?w:t[^>]*>/g, ''))
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
           
-          // Extract text paragraphs
-          const paragraphs = documentContent.match(/<w:p[^>]*>[\s\S]*?<\/w:p>/gi) || [];
-          console.log(`Found ${paragraphs.length} paragraphs in document.xml`);
-          
-          if (paragraphs.length > 0) {
-            // Extract text from each paragraph
-            const extractedTexts = paragraphs.map(p => {
-              const textRuns = p.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/gi) || [];
-              return textRuns.map(t => t.replace(/<[^>]+>/g, '')).join(' ');
-            });
-            
-            textContent = extractedTexts.join('\n\n');
-            console.log("Extracted text from XML structure, length:", textContent.length);
-          }
-        }
-        
-        // If we couldn't extract text from XML structure, fall back to basic extraction
-        if (!textContent || textContent.length < 10) {
-          console.log("Falling back to basic text extraction");
-          textContent = fileText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        }
-      } catch (extractError) {
-        console.error("Error in advanced extraction, falling back to basic:", extractError);
-        textContent = fileText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        console.log(`Extracted ${wordMatches.length} text segments from DOCX XML structure`);
+      } else {
+        // Fallback to basic XML tag stripping if no word tags found
+        textContent = fileText
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        console.log("Using fallback text extraction method (basic XML tag stripping)");
       }
-      
-      console.log("Word text extraction completed, length:", textContent.length);
     } else {
       console.log("Processing as plain text");
       const fileText = await response.text();
@@ -138,18 +110,35 @@ serve(async (req) => {
 
     console.log("Calling OpenAI to generate document summary");
     
-    // Add debugging info to prompt for OpenAI
-    const promptWithDebugInfo = `
-    Document type: ${contentType}
-    Raw content sample: ${debugContent}
+    // Create prompt for OpenAI
+    let promptContent;
     
-    Extracted text: ${textContent}
-    
-    Please analyze this content and provide the following:
-    1. A summary of what actual content you can detect in this document
-    2. An explanation of the document structure and format issues
-    3. Recommendations for better text extraction from this document type
-    `;
+    if (contentType?.includes('pdf')) {
+      // For PDFs, we ask OpenAI to interpret the document from the URL
+      promptContent = `
+      You are given a PDF document located at this URL: ${documentUrl}
+      
+      Your task is to:
+      1. Try to access and extract text from this PDF file if possible
+      2. If you cannot access the file directly, please explain that you're unable to access the PDF directly
+      3. Provide advice on how the user could extract text from their PDF files through proper PDF parsing libraries
+      
+      Please format your response as a document summary with helpful information.
+      `;
+    } else {
+      // For other file types, we send the extracted text
+      promptContent = `
+      Document type: ${contentType}
+      Raw content sample: ${debugContent}
+      
+      Extracted text: ${textContent}
+      
+      Please analyze this content and provide the following:
+      1. A summary of what actual content you can detect in this document
+      2. An explanation of the document structure and format issues
+      3. Recommendations for better text extraction from this document type
+      `;
+    }
     
     // Generate summary using OpenAI
     const openAIApiKey = Deno.env.get("OPENAI_API_KEY") || "";
@@ -173,7 +162,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: promptWithDebugInfo
+            content: promptContent
           }
         ]
       })
