@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts"; // For fetch() in Edge Functions
-import * as JSZip from "https://esm.sh/jszip@3.10.1";
+import { JSZip } from "https://esm.sh/jszip@3.10.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,6 +45,7 @@ serve(async (req) => {
     // Extract text content based on file type
     let extractedText = "";
     let extractionMethod = "";
+    let rawContentSample = "";
     
     if (contentType?.includes('pdf')) {
       console.log("Processing PDF document");
@@ -53,12 +54,15 @@ serve(async (req) => {
       
     } else if (contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument')) {
       console.log("Processing Word document");
-      extractedText = await extractTextFromDOCX(arrayBuffer);
+      const result = await extractTextFromDOCX(arrayBuffer);
+      extractedText = result.text;
+      rawContentSample = result.rawSample;
       extractionMethod = "DOCX/Word Text Extraction";
       
     } else {
       console.log("Processing as plain text document");
       extractedText = new TextDecoder().decode(arrayBuffer);
+      rawContentSample = extractedText.substring(0, 500);
       extractionMethod = "Plain Text Decoder";
     }
     
@@ -67,7 +71,13 @@ serve(async (req) => {
       console.log("Warning: Extracted text is too short or empty");
       
       // Try fallback extraction if main method failed
-      extractedText = await fallbackExtraction(arrayBuffer, contentType || "");
+      const fallbackResult = await fallbackExtraction(arrayBuffer, contentType || "");
+      extractedText = fallbackResult.text;
+      
+      if (!rawContentSample && fallbackResult.rawSample) {
+        rawContentSample = fallbackResult.rawSample;
+      }
+      
       if (extractedText) {
         extractionMethod += " (with Fallback)";
       } else {
@@ -163,6 +173,7 @@ serve(async (req) => {
           extractionMethod: extractionMethod,
           extractedTextSample: extractedTextSample,
           extractedTextLength: extractedText.length,
+          rawContentSample: rawContentSample
         }
       }),
       {
@@ -188,19 +199,25 @@ serve(async (req) => {
 
 // --- Helper Functions ---
 
-async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<string> {
+async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<{text: string, rawSample: string}> {
   try {
     // Parse the DOCX file using JSZip
     const zip = new JSZip();
     await zip.loadAsync(arrayBuffer);
     
-    // DOCX files store content in word/document.xml
-    const documentXml = await zip.file("word/document.xml")?.async("string");
-    if (!documentXml) {
-      // List available files for debugging
+    // Check if word/document.xml exists
+    const documentXmlFile = zip.file("word/document.xml");
+    if (!documentXmlFile) {
       const allFiles = Object.keys(zip.files).join(", ");
-      throw new Error(`Could not find document.xml in the DOCX file. Available files: ${allFiles}`);
+      throw new Error(`Could not find 'word/document.xml'. Available files: ${allFiles}`);
     }
+    
+    // Get the document.xml content
+    const documentXml = await documentXmlFile.async("string");
+    const rawDocumentXmlSample = documentXml.substring(0, 500);
+    
+    console.log("Successfully extracted document.xml, length:", documentXml.length);
+    console.log("Sample of document.xml:", rawDocumentXmlSample.substring(0, 100));
     
     // Extract only text from XML (remove tags)
     let textContent = "";
@@ -218,10 +235,15 @@ async function extractTextFromDOCX(arrayBuffer: ArrayBuffer): Promise<string> {
       .replace(/\s+/g, " ") // Replace multiple spaces with a single space
       .trim();
       
-    return textContent;
+    console.log("Extracted text from DOCX using regex, length:", textContent.length);
+    
+    return {
+      text: textContent,
+      rawSample: rawDocumentXmlSample
+    };
   } catch (error) {
     console.error("Error extracting text from DOCX:", error);
-    return "";
+    return { text: "", rawSample: `Error: ${error.message}` };
   }
 }
 
@@ -277,10 +299,11 @@ async function extractTextFromPDF(arrayBuffer: ArrayBuffer): Promise<string> {
   }
 }
 
-async function fallbackExtraction(arrayBuffer: ArrayBuffer, contentType: string): Promise<string> {
+async function fallbackExtraction(arrayBuffer: ArrayBuffer, contentType: string): Promise<{text: string, rawSample: string}> {
   try {
     const uint8Array = new Uint8Array(arrayBuffer);
     const fullText = new TextDecoder().decode(uint8Array);
+    const rawSample = fullText.substring(0, 500);
     
     // Try to find any textual content among the binary data
     let extractedText = "";
@@ -295,12 +318,12 @@ async function fallbackExtraction(arrayBuffer: ArrayBuffer, contentType: string)
     console.log("Fallback extraction found text chunks:", textChunks.length);
     
     if (extractedText.length > 100) {
-      return extractedText;
+      return { text: extractedText, rawSample };
     }
     
-    return "";
+    return { text: "", rawSample };
   } catch (error) {
     console.error("Error in fallback extraction:", error);
-    return "";
+    return { text: "", rawSample: `Error: ${error.message}` };
   }
 }

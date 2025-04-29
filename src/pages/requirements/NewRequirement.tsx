@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -363,12 +362,17 @@ const NewRequirement = () => {
                 <h3 className="text-sm font-medium text-amber-700 dark:text-amber-300">Debug Information</h3>
                 <div className="text-xs font-mono overflow-auto">
                   <p><strong>Content Type:</strong> {debugInfo.contentType}</p>
-                  <div className="mt-2">
-                    <p><strong>Raw Content Sample (First 500 chars):</strong></p>
-                    <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-                      {debugInfo.rawContentSample}
-                    </pre>
-                  </div>
+                  <p><strong>Extraction Method:</strong> {debugInfo.extractionMethod}</p>
+                  
+                  {debugInfo.rawContentSample && (
+                    <div className="mt-2">
+                      <p><strong>Raw Document XML Sample:</strong></p>
+                      <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                        {debugInfo.rawContentSample}
+                      </pre>
+                    </div>
+                  )}
+                  
                   <div className="mt-2">
                     <p><strong>Extracted Text Sample (First 1000 chars):</strong></p>
                     <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap">
