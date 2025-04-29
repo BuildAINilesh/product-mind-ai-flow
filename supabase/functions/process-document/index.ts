@@ -1,12 +1,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts"; // For fetch() in Edge Functions
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
 };
 
 serve(async (req) => {
@@ -38,72 +36,79 @@ serve(async (req) => {
     // Extract text content based on file type
     let textContent = "";
     let debugContent = "";
+    let extractedTextSample = "";
+    let extractedTextLength = 0;
+    
+    // Get file as array buffer for binary analysis
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Create a hex dump of first few bytes for debugging
+    const hexDump = Array.from(uint8Array.slice(0, 50)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    console.log(`File hex dump (first 50 bytes): ${hexDump}`);
     
     if (contentType?.includes('pdf')) {
-      console.log("Processing PDF file - using OpenAI directly to interpret the PDF");
+      console.log("Processing PDF file - using OpenAI directly");
       
-      // For PDFs, we'll send the URL directly to OpenAI for interpretation
-      textContent = `This is a PDF file located at: ${documentUrl}. PDF extraction requires specialized libraries.`;
-      debugContent = `PDF file detected. Direct URL will be sent to OpenAI for interpretation.`;
+      // For PDFs, we'll use OpenAI to analyze the file via URL
+      textContent = `This is a PDF document located at: ${documentUrl}`;
+      debugContent = `PDF file detected. The file will be analyzed by OpenAI via URL.`;
       
-    } else if (contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument.wordprocessingml.document')) {
-      console.log("Processing DOC/DOCX file - attempting to extract text");
+    } else if (contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument')) {
+      console.log("Processing DOCX file - using OpenAI directly");
       
-      // For DOCX files, we need to properly handle the binary format
-      // First, let's get the file as an array buffer
-      const fileBuffer = await response.arrayBuffer();
+      // For DOCX files, we'll use OpenAI to analyze the file via URL
+      textContent = `This is a Word document located at: ${documentUrl}`;
+      debugContent = `Word document detected. The file will be analyzed by OpenAI via URL.`;
       
-      // Create a hex dump of first few bytes for debugging
-      const uint8Array = new Uint8Array(fileBuffer.slice(0, 100));
-      const hexDump = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join(' ');
-      debugContent = `DOCX file detected. First 100 bytes: ${hexDump}`;
-      
-      // Instead of trying to parse the binary DOCX directly, let's use OpenAI to help
-      textContent = `This is a Word document located at: ${documentUrl}. We'll use OpenAI's capabilities to extract and summarize its content.`;
-      
-      console.log("Binary Word document detected, will use OpenAI to analyze");
     } else {
       console.log("Processing as plain text");
-      // For plain text files, we can just read the text
-      textContent = await response.text();
-      debugContent = textContent.substring(0, 500);
+      
+      // For plain text files, we can decode the array buffer
+      textContent = new TextDecoder().decode(arrayBuffer);
+      extractedTextSample = textContent.substring(0, 1000) + (textContent.length > 1000 ? "..." : "");
+      extractedTextLength = textContent.length;
+      debugContent = textContent.substring(0, 500) + (textContent.length > 500 ? "..." : "");
+      console.log(`Plain text extracted, length: ${textContent.length} characters`);
     }
     
-    console.log(`Document content length: ${textContent.length} characters`);
-    console.log(`Document content first 200 chars: ${textContent.substring(0, 200)}...`);
-    
-    // Create prompt for OpenAI
+    // Prepare a more detailed prompt for OpenAI based on file type
     let promptContent = "";
     
     if (contentType?.includes('pdf') || contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument')) {
-      // For binary document formats, ask OpenAI to interpret from the URL
+      // For binary document formats, ask OpenAI to interpret from the URL directly
       promptContent = `
-      You are an expert document analyzer. Please analyze this document located at: ${documentUrl}
+      You are a document analyzer specialized in extracting information from various document types.
       
+      Please analyze this document located at: ${documentUrl}
       Document type: ${contentType}
       
       Your tasks:
-      1. Access the document at the URL if possible
-      2. Extract and summarize the key information from the document
-      3. Format your response as a comprehensive document summary with the main points, context, and purpose
-      4. If you cannot access the document directly, please state that clearly and provide general information about this document type
+      1. Access and analyze the document at the URL
+      2. Extract all key information, focusing on main topics, key points, and significant details
+      3. Provide a comprehensive, well-structured summary that captures the essence of the document
+      4. Format your summary with clear headings and bullet points when appropriate
+      5. If there are any tables, charts or structured data, describe their contents clearly
       
-      Aim to provide a summary that would be helpful to someone who hasn't read the document.
+      NOTE: The reader has not seen the document, so make your summary informative and standalone.
       `;
     } else {
-      // For text-based formats, send the extracted text
+      // For text-based formats, use the extracted text
       promptContent = `
+      You are a document analyzer specialized in extracting information from text documents.
+      
+      Please analyze the following document content:
       Document type: ${contentType}
       
-      Here is the document content to analyze:
       ${textContent}
       
-      Please provide:
-      1. A comprehensive summary of the document content
-      2. The key points and information contained within
-      3. The apparent purpose or context of this document
+      Your tasks:
+      1. Extract all key information, focusing on main topics, key points, and significant details
+      2. Provide a comprehensive, well-structured summary that captures the essence of the document
+      3. Format your summary with clear headings and bullet points when appropriate
+      4. If there are any tables or structured data, describe their contents clearly
       
-      Format your response as a well-structured document summary.
+      NOTE: The reader has not seen the document, so make your summary informative and standalone.
       `;
     }
     
@@ -127,7 +132,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a document analysis expert that summarizes documents accurately and extracts key information. You focus on providing comprehensive summaries that capture the essence of documents.'
+            content: 'You are an expert document analyst that extracts key information from documents and produces clear, comprehensive summaries.'
           },
           {
             role: 'user',
@@ -156,6 +161,8 @@ serve(async (req) => {
           contentType: contentType,
           documentUrl: documentUrl,
           rawContentSample: debugContent,
+          extractedTextSample: extractedTextSample,
+          extractedTextLength: extractedTextLength,
           processMethod: contentType?.includes('pdf') || contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument') 
             ? "OpenAI URL Analysis" 
             : "Direct Text Extraction"
