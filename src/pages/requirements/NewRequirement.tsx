@@ -40,6 +40,7 @@ const NewRequirement = () => {
   const [loading, setLoading] = useState(false);
   const [processingSummary, setProcessingSummary] = useState(false);
   const [processingFile, setProcessingFile] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     projectName: "",
@@ -75,6 +76,7 @@ const NewRequirement = () => {
     try {
       setProcessingSummary(true);
       setProcessingFile('document');
+      setDebugInfo(null);
       
       toast({
         title: "Processing Document",
@@ -113,6 +115,12 @@ const NewRequirement = () => {
           ...prev,
           documentSummary: data.summary
         }));
+        
+        // Save debug information if available
+        if (data.debug) {
+          setDebugInfo(data.debug);
+          console.log("Debug info received:", data.debug);
+        }
         
         toast({
           title: "Summary Complete",
@@ -347,6 +355,28 @@ const NewRequirement = () => {
               <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-md border">
                 <h3 className="text-sm font-medium">Document Summary</h3>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{formData.documentSummary}</p>
+              </div>
+            )}
+
+            {debugInfo && (
+              <div className="space-y-2 p-4 bg-amber-50 dark:bg-amber-950 rounded-md border border-amber-200 dark:border-amber-800">
+                <h3 className="text-sm font-medium text-amber-700 dark:text-amber-300">Debug Information</h3>
+                <div className="text-xs font-mono overflow-auto">
+                  <p><strong>Content Type:</strong> {debugInfo.contentType}</p>
+                  <div className="mt-2">
+                    <p><strong>Raw Content Sample (First 500 chars):</strong></p>
+                    <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                      {debugInfo.rawContentSample}
+                    </pre>
+                  </div>
+                  <div className="mt-2">
+                    <p><strong>Extracted Text Sample (First 1000 chars):</strong></p>
+                    <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                      {debugInfo.extractedTextSample}
+                    </pre>
+                  </div>
+                  <p><strong>Total Extracted Text Length:</strong> {debugInfo.extractedTextLength} characters</p>
+                </div>
               </div>
             )}
 

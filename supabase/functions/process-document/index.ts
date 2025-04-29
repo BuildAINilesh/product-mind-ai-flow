@@ -37,10 +37,16 @@ serve(async (req) => {
     
     // Extract text content based on file type
     let textContent = "";
+    let debugContent = "";
     
     if (contentType?.includes('pdf')) {
       console.log("Processing PDF file");
       const pdfText = await response.text();
+      
+      // Save first 500 chars of raw content for debugging
+      debugContent = pdfText.substring(0, 500);
+      console.log("Raw PDF content (first 500 chars):", debugContent);
+      
       // Basic text extraction - attempt to pull out text content
       textContent = pdfText
         // Remove PDF syntax and formatting
@@ -60,12 +66,55 @@ serve(async (req) => {
     } else if (contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument.wordprocessingml.document')) {
       console.log("Processing DOC/DOCX file");
       const fileText = await response.text();
-      // Extract text from Word XML (very simplified)
-      textContent = fileText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      
+      // Save first 500 chars of raw content for debugging
+      debugContent = fileText.substring(0, 500);
+      console.log("Raw Word content (first 500 chars):", debugContent);
+      
+      // Try to extract from docx XML structure
+      try {
+        // Look for actual content in document.xml part if exists
+        const contentMatch = fileText.match(/<w:document[^>]*>[\s\S]*?<\/w:document>/i);
+        if (contentMatch) {
+          console.log("Found document.xml content section");
+          const documentContent = contentMatch[0];
+          
+          // Extract text paragraphs
+          const paragraphs = documentContent.match(/<w:p[^>]*>[\s\S]*?<\/w:p>/gi) || [];
+          console.log(`Found ${paragraphs.length} paragraphs in document.xml`);
+          
+          if (paragraphs.length > 0) {
+            // Extract text from each paragraph
+            const extractedTexts = paragraphs.map(p => {
+              const textRuns = p.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/gi) || [];
+              return textRuns.map(t => t.replace(/<[^>]+>/g, '')).join(' ');
+            });
+            
+            textContent = extractedTexts.join('\n\n');
+            console.log("Extracted text from XML structure, length:", textContent.length);
+          }
+        }
+        
+        // If we couldn't extract text from XML structure, fall back to basic extraction
+        if (!textContent || textContent.length < 10) {
+          console.log("Falling back to basic text extraction");
+          textContent = fileText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+      } catch (extractError) {
+        console.error("Error in advanced extraction, falling back to basic:", extractError);
+        textContent = fileText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+      
       console.log("Word text extraction completed, length:", textContent.length);
     } else {
       console.log("Processing as plain text");
-      textContent = await response.text();
+      const fileText = await response.text();
+      
+      // Save first 500 chars of raw content for debugging
+      debugContent = fileText.substring(0, 500);
+      console.log("Raw plain text content (first 500 chars):", debugContent);
+      
+      textContent = fileText;
     }
     
     // Truncate text if it's extremely long to avoid overwhelming the API
@@ -78,12 +127,30 @@ serve(async (req) => {
     console.log(`Document content length: ${textContent.length} characters`);
     console.log(`Document content first 200 chars: ${textContent.substring(0, 200)}...`);
     
+    // For debugging - include more of the extracted text
+    const debugTextSample = textContent.substring(0, 1000);
+    console.log(`Extended sample of extracted text (1000 chars): ${debugTextSample}`);
+    
     if (textContent.length < 10) {
       console.error("Extracted text is too short:", textContent);
       throw new Error("Could not extract meaningful text from document");
     }
 
     console.log("Calling OpenAI to generate document summary");
+    
+    // Add debugging info to prompt for OpenAI
+    const promptWithDebugInfo = `
+    Document type: ${contentType}
+    Raw content sample: ${debugContent}
+    
+    Extracted text: ${textContent}
+    
+    Please analyze this content and provide the following:
+    1. A summary of what actual content you can detect in this document
+    2. An explanation of the document structure and format issues
+    3. Recommendations for better text extraction from this document type
+    `;
+    
     // Generate summary using OpenAI
     const openAIApiKey = Deno.env.get("OPENAI_API_KEY") || "";
     
@@ -102,11 +169,11 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that summarizes documents concisely and accurately. Focus on capturing the main points and key information in 3-5 paragraphs.'
+            content: 'You are a helpful debugging assistant that analyzes document text extraction issues and provides clear technical explanations.'
           },
           {
             role: 'user',
-            content: `Please summarize the following document content: ${textContent}`
+            content: promptWithDebugInfo
           }
         ]
       })
@@ -126,7 +193,13 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: "Document processed and summarized successfully",
-        summary: summary
+        summary: summary,
+        debug: {
+          contentType: contentType,
+          rawContentSample: debugContent,
+          extractedTextSample: debugTextSample,
+          extractedTextLength: textContent.length
+        }
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
