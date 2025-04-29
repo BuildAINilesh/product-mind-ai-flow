@@ -42,103 +42,72 @@ serve(async (req) => {
     if (contentType?.includes('pdf')) {
       console.log("Processing PDF file - using OpenAI directly to interpret the PDF");
       
-      // Get the raw bytes for debugging
-      const rawBytes = await response.clone().arrayBuffer();
-      debugContent = `PDF file detected. Size: ${rawBytes.byteLength} bytes. Binary format, showing first 100 bytes in hex: ${[...new Uint8Array(rawBytes.slice(0, 100))].map(b => b.toString(16).padStart(2, '0')).join(' ')}`;
-      console.log(debugContent);
-      
-      // Instead of trying to parse PDF, we'll ask OpenAI to summarize it directly using the URL
+      // For PDFs, we'll send the URL directly to OpenAI for interpretation
       textContent = `This is a PDF file located at: ${documentUrl}. PDF extraction requires specialized libraries.`;
+      debugContent = `PDF file detected. Direct URL will be sent to OpenAI for interpretation.`;
+      
     } else if (contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument.wordprocessingml.document')) {
-      console.log("Processing DOC/DOCX file - using basic text extraction approach");
+      console.log("Processing DOC/DOCX file - attempting to extract text");
       
-      // For DOCX files, we'll use a simple text extraction approach
-      // Get raw content for debugging
-      const fileText = await response.text();
-      debugContent = fileText.substring(0, 500);
+      // For DOCX files, we need to properly handle the binary format
+      // First, let's get the file as an array buffer
+      const fileBuffer = await response.arrayBuffer();
       
-      console.log("Raw Word content sample (first 500 chars):", debugContent);
+      // Create a hex dump of first few bytes for debugging
+      const uint8Array = new Uint8Array(fileBuffer.slice(0, 100));
+      const hexDump = Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      debugContent = `DOCX file detected. First 100 bytes: ${hexDump}`;
       
-      // Try to extract readable text by looking for words between XML tags
-      const wordMatches = fileText.match(/<w:t[^>]*>(.*?)<\/w:t>/g) || [];
-      if (wordMatches.length > 0) {
-        // Extract text from XML tags
-        textContent = wordMatches
-          .map(tag => tag.replace(/<\/?w:t[^>]*>/g, ''))
-          .join(' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-          
-        console.log(`Extracted ${wordMatches.length} text segments from DOCX XML structure`);
-      } else {
-        // Fallback to basic XML tag stripping if no word tags found
-        textContent = fileText
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-        console.log("Using fallback text extraction method (basic XML tag stripping)");
-      }
+      // Instead of trying to parse the binary DOCX directly, let's use OpenAI to help
+      textContent = `This is a Word document located at: ${documentUrl}. We'll use OpenAI's capabilities to extract and summarize its content.`;
+      
+      console.log("Binary Word document detected, will use OpenAI to analyze");
     } else {
       console.log("Processing as plain text");
-      const fileText = await response.text();
-      
-      // Save first 500 chars of raw content for debugging
-      debugContent = fileText.substring(0, 500);
-      console.log("Raw plain text content (first 500 chars):", debugContent);
-      
-      textContent = fileText;
-    }
-    
-    // Truncate text if it's extremely long to avoid overwhelming the API
-    const maxLength = 10000; // 10K characters should be enough for most documents
-    if (textContent.length > maxLength) {
-      console.log(`Text truncated from ${textContent.length} to ${maxLength} characters`);
-      textContent = textContent.substring(0, maxLength) + "... [content truncated]";
+      // For plain text files, we can just read the text
+      textContent = await response.text();
+      debugContent = textContent.substring(0, 500);
     }
     
     console.log(`Document content length: ${textContent.length} characters`);
     console.log(`Document content first 200 chars: ${textContent.substring(0, 200)}...`);
     
-    // For debugging - include more of the extracted text
-    const debugTextSample = textContent.substring(0, 1000);
-    console.log(`Extended sample of extracted text (1000 chars): ${debugTextSample}`);
-    
-    if (textContent.length < 10) {
-      console.error("Extracted text is too short:", textContent);
-      throw new Error("Could not extract meaningful text from document");
-    }
-
-    console.log("Calling OpenAI to generate document summary");
-    
     // Create prompt for OpenAI
-    let promptContent;
+    let promptContent = "";
     
-    if (contentType?.includes('pdf')) {
-      // For PDFs, we ask OpenAI to interpret the document from the URL
+    if (contentType?.includes('pdf') || contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument')) {
+      // For binary document formats, ask OpenAI to interpret from the URL
       promptContent = `
-      You are given a PDF document located at this URL: ${documentUrl}
+      You are an expert document analyzer. Please analyze this document located at: ${documentUrl}
       
-      Your task is to:
-      1. Try to access and extract text from this PDF file if possible
-      2. If you cannot access the file directly, please explain that you're unable to access the PDF directly
-      3. Provide advice on how the user could extract text from their PDF files through proper PDF parsing libraries
+      Document type: ${contentType}
       
-      Please format your response as a document summary with helpful information.
+      Your tasks:
+      1. Access the document at the URL if possible
+      2. Extract and summarize the key information from the document
+      3. Format your response as a comprehensive document summary with the main points, context, and purpose
+      4. If you cannot access the document directly, please state that clearly and provide general information about this document type
+      
+      Aim to provide a summary that would be helpful to someone who hasn't read the document.
       `;
     } else {
-      // For other file types, we send the extracted text
+      // For text-based formats, send the extracted text
       promptContent = `
       Document type: ${contentType}
-      Raw content sample: ${debugContent}
       
-      Extracted text: ${textContent}
+      Here is the document content to analyze:
+      ${textContent}
       
-      Please analyze this content and provide the following:
-      1. A summary of what actual content you can detect in this document
-      2. An explanation of the document structure and format issues
-      3. Recommendations for better text extraction from this document type
+      Please provide:
+      1. A comprehensive summary of the document content
+      2. The key points and information contained within
+      3. The apparent purpose or context of this document
+      
+      Format your response as a well-structured document summary.
       `;
     }
+    
+    console.log("Calling OpenAI to generate document summary");
     
     // Generate summary using OpenAI
     const openAIApiKey = Deno.env.get("OPENAI_API_KEY") || "";
@@ -158,7 +127,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful debugging assistant that analyzes document text extraction issues and provides clear technical explanations.'
+            content: 'You are a document analysis expert that summarizes documents accurately and extracts key information. You focus on providing comprehensive summaries that capture the essence of documents.'
           },
           {
             role: 'user',
@@ -185,9 +154,11 @@ serve(async (req) => {
         summary: summary,
         debug: {
           contentType: contentType,
+          documentUrl: documentUrl,
           rawContentSample: debugContent,
-          extractedTextSample: debugTextSample,
-          extractedTextLength: textContent.length
+          processMethod: contentType?.includes('pdf') || contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument') 
+            ? "OpenAI URL Analysis" 
+            : "Direct Text Extraction"
         }
       }),
       {
