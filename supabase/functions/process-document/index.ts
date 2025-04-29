@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { OpenAI } from "https://esm.sh/openai@4.20.1";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
@@ -17,12 +16,12 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Document processing function called");
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const openai = new OpenAI({ apiKey: openaiApiKey });
     
     const { documentUrl, requirementId } = await req.json();
     
@@ -39,96 +38,95 @@ serve(async (req) => {
       throw new Error(`Failed to fetch document: ${response.statusText} (status code: ${response.status})`);
     }
     
-    // Check the content type to determine file format
     const contentType = response.headers.get("content-type");
-    console.log(`Document content type from headers: ${contentType}`);
+    console.log("File content type:", contentType);
     
-    // Extract text based on file type
-    let documentContent = "";
+    // Extract text content based on file type
+    let textContent = "";
     
     if (contentType?.includes('pdf')) {
       console.log("Processing PDF file");
       const pdfText = await response.text();
       // Basic text extraction - attempt to pull out text content
-      documentContent = pdfText
+      textContent = pdfText
         // Remove PDF syntax and formatting
         .replace(/\n\r/g, " ")
         .replace(/(\/\w+|\/|\(|\)|\[|\]|\<|\>)/g, " ")
         // Clean up excess whitespace
         .replace(/\s+/g, " ")
         .trim();
-      
-      console.log("PDF basic text extraction completed, length:", documentContent.length);
+        
+      console.log("PDF basic text extraction completed, length:", textContent.length);
       
       // If text extraction yields very little content, inform the user
-      if (documentContent.length < 100) {
+      if (textContent.length < 100) {
         console.log("PDF extraction yielded minimal text, using fallback message");
-        documentContent += "\n\nNote: Limited text could be extracted from this PDF. For best results, consider uploading a text-based PDF rather than a scanned document.";
+        textContent += "\n\nNote: Limited text could be extracted from this PDF. For best results, consider uploading a text-based PDF rather than a scanned document.";
       }
     } else if (contentType?.includes('msword') || contentType?.includes('openxmlformats-officedocument.wordprocessingml.document')) {
       console.log("Processing DOC/DOCX file");
       const fileText = await response.text();
       // Extract text from Word XML (very simplified)
-      documentContent = fileText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      console.log("Word text extraction completed, length:", documentContent.length);
+      textContent = fileText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      console.log("Word text extraction completed, length:", textContent.length);
     } else {
       console.log("Processing as plain text");
-      documentContent = await response.text();
+      textContent = await response.text();
     }
-    
-    // Try to detect if it's a binary file
-    const isBinary = /[\x00-\x08\x0E-\x1F]/.test(documentContent.substring(0, 1000));
-    console.log(`Document appears to be binary: ${isBinary}`);
     
     // Truncate text if it's extremely long to avoid overwhelming the API
-    const maxLength = 8000; // Reduced to 8K to stay within GPT limits
-    if (documentContent.length > maxLength) {
-      console.log(`Text truncated from ${documentContent.length} to ${maxLength} characters`);
-      documentContent = documentContent.substring(0, maxLength) + "... [content truncated]";
+    const maxLength = 10000; // 10K characters should be enough for most documents
+    if (textContent.length > maxLength) {
+      console.log(`Text truncated from ${textContent.length} to ${maxLength} characters`);
+      textContent = textContent.substring(0, maxLength) + "... [content truncated]";
     }
     
-    console.log(`Document content length: ${documentContent.length} characters`);
-    console.log(`Document content first 200 chars: ${documentContent.substring(0, 200)}...`);
+    console.log(`Document content length: ${textContent.length} characters`);
+    console.log(`Document content first 200 chars: ${textContent.substring(0, 200)}...`);
     
-    if (!documentContent || documentContent.length < 10) {
-      throw new Error("Document content is too short or empty");
+    if (textContent.length < 10) {
+      console.error("Extracted text is too short:", textContent);
+      throw new Error("Could not extract meaningful text from document");
     }
 
-    // Generate a document summary with OpenAI
-    const summaryPrompt = `
-      Please summarize the following document content in about 3-5 paragraphs.
-      Focus on capturing the main points and key information.
-      
-      Document content:
-      ${documentContent}
-    `;
-    
-    console.log("Sending request to OpenAI for document summarization...");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { 
-          role: "system", 
-          content: "You are an AI assistant that summarizes documents concisely and accurately." 
-        },
-        { 
-          role: "user", 
-          content: summaryPrompt 
-        }
-      ],
-      temperature: 0.5,
+    console.log("Calling OpenAI to generate document summary");
+    // Generate summary using OpenAI
+    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that summarizes documents concisely and accurately. Focus on capturing the main points and key information in 3-5 paragraphs.'
+          },
+          {
+            role: 'user',
+            content: `Please summarize the following document content: ${textContent}`
+          }
+        ]
+      })
     });
     
-    const documentSummary = completion.choices[0].message.content;
-    console.log("Received summary from OpenAI");
-    console.log(`Summary length: ${documentSummary.length} characters`);
-    console.log(`Summary preview: ${documentSummary.substring(0, 200)}...`);
+    if (!openAIResponse.ok) {
+      const errorData = await openAIResponse.json();
+      console.error("OpenAI API error:", errorData);
+      throw new Error(`OpenAI API error: ${openAIResponse.status} ${openAIResponse.statusText}`);
+    }
+    
+    const data = await openAIResponse.json();
+    console.log("OpenAI response received");
+    const summary = data.choices[0].message.content;
     
     // Update the requirement with the document summary
     const { error: updateError } = await supabase
       .from("requirements")
       .update({ 
-        document_summary: documentSummary,
+        document_summary: summary,
         updated_at: new Date().toISOString()
       })
       .eq("id", requirementId);
@@ -144,7 +142,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: "Document processed and summarized successfully",
-        summary: documentSummary
+        summary: summary
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ const NewRequirement = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [processingSummary, setProcessingSummary] = useState(false);
+  const [processingFile, setProcessingFile] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     projectName: "",
@@ -48,7 +50,8 @@ const NewRequirement = () => {
     emailUploadUrl: null as string | null,
     chatUploadUrl: null as string | null,
     documentUploadUrl: null as string | null,
-    audioUploadUrl: null as string | null
+    audioUploadUrl: null as string | null,
+    documentSummary: null as string | null
   });
 
   const [uploadedFiles, setUploadedFiles] = useState({
@@ -66,6 +69,57 @@ const NewRequirement = () => {
 
   const handleSelectChange = (value: string) => {
     setFormData(prev => ({ ...prev, industryType: value as IndustryType }));
+  };
+
+  const processDocument = async (documentUrl: string) => {
+    try {
+      setProcessingSummary(true);
+      setProcessingFile('document');
+      
+      toast({
+        title: "Processing Document",
+        description: "Generating document summary...",
+      });
+      
+      // Process the document with the edge function to get a summary
+      // We're using a temporary ID just for processing
+      const tempId = "temp-" + Date.now();
+      const { data, error } = await supabase.functions.invoke('process-document', {
+        body: { 
+          documentUrl: documentUrl,
+          requirementId: tempId
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.summary) {
+        setFormData(prev => ({
+          ...prev,
+          documentSummary: data.summary
+        }));
+        
+        toast({
+          title: "Summary Complete",
+          description: "Document processed and summarized successfully.",
+        });
+      }
+      
+      return data?.summary || null;
+    } catch (error) {
+      console.error('Error processing document:', error);
+      toast({
+        title: "Processing Error",
+        description: "Failed to generate document summary. Please try again later.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setProcessingSummary(false);
+      setProcessingFile(null);
+    }
   };
 
   const handleFileUpload = async (type: string, file: File) => {
@@ -100,6 +154,12 @@ const NewRequirement = () => {
         title: "File Uploaded",
         description: `${type.charAt(0).toUpperCase() + type.slice(1)} file uploaded successfully.`,
       });
+
+      // If it's a document, process it immediately
+      if (type === 'document') {
+        await processDocument(publicUrl);
+      }
+      
     } catch (error) {
       console.error(`Error uploading ${type} file:`, error);
       toast({
@@ -120,45 +180,6 @@ const NewRequirement = () => {
       }
     };
     input.click();
-  };
-
-  const processDocument = async (requirementId: string, documentUrl: string) => {
-    try {
-      setProcessingSummary(true);
-      toast({
-        title: "Processing Document",
-        description: "Generating document summary...",
-      });
-      
-      // Process the document with the edge function to get a summary
-      const { data, error } = await supabase.functions.invoke('process-document', {
-        body: { 
-          documentUrl: documentUrl,
-          requirementId: requirementId
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Summary Complete",
-        description: "Document processed and summarized successfully.",
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error processing document:', error);
-      toast({
-        title: "Processing Error",
-        description: "Failed to generate document summary. Please try again later.",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setProcessingSummary(false);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,6 +218,7 @@ const NewRequirement = () => {
           project_idea: formData.projectIdea,
           input_methods_used: inputMethodsUsed,
           file_urls: fileUrls,
+          document_summary: formData.documentSummary,
           status: 'Draft'
         })
         .select()
@@ -208,11 +230,6 @@ const NewRequirement = () => {
         title: "Requirement created",
         description: "Your new requirement has been successfully created.",
       });
-      
-      // If there's a document URL, process it to get a summary (but not full analysis)
-      if (formData.documentUploadUrl) {
-        await processDocument(newRequirement.id, formData.documentUploadUrl);
-      }
       
       // Navigate to the requirement view page
       navigate(`/dashboard/requirements/${newRequirement.id}`);
@@ -310,6 +327,13 @@ const NewRequirement = () => {
                 className="min-h-[120px] w-full bg-background"
               />
             </div>
+            
+            {formData.documentSummary && (
+              <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-md border">
+                <h3 className="text-sm font-medium">Document Summary</h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{formData.documentSummary}</p>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-3">
               {[
@@ -326,8 +350,13 @@ const NewRequirement = () => {
                   size="sm" 
                   className="flex items-center gap-2"
                   onClick={() => handleFileSelect(type)}
+                  disabled={processingFile === type}
                 >
-                  <Icon className="h-4 w-4" />
+                  {processingFile === type ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Icon className="h-4 w-4" />
+                  )}
                   <span>{label}</span>
                   {uploadedFiles[type as keyof typeof uploadedFiles] && (
                     <span className="text-xs text-muted-foreground ml-2">
@@ -343,13 +372,11 @@ const NewRequirement = () => {
               className="w-full bg-[#4744E0] hover:bg-[#4744E0]/90"
               disabled={loading || processingSummary}
             >
-              {processingSummary ? (
+              {loading ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Document Summary...
+                  Creating Requirement...
                 </>
-              ) : loading ? (
-                "Creating Requirement..."
               ) : (
                 "Create Requirement"
               )}
