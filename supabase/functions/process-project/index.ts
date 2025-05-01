@@ -17,6 +17,12 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
+    
+    if (!openaiApiKey) {
+      throw new Error("OPENAI_API_KEY is not set in environment variables");
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { projectId } = await req.json();
@@ -36,65 +42,118 @@ serve(async (req) => {
       throw new Error(`Error fetching requirement: ${requirementError.message}`);
     }
     
-    // Simple AI-like processing of the requirement
-    // In a real implementation, this would call a real AI model API
     console.log(`Processing project: ${requirement.project_name}`);
     
-    // Generate mock analysis data based on the project idea
-    const projectIdea = requirement.project_idea || "";
-    
-    // Extract key themes from project idea (simplified mock)
-    const words = projectIdea.split(/\s+/);
-    const keyWords = words.filter(word => word.length > 5).slice(0, 10);
-    
-    // Create some analysis sections based on the project idea
-    const problemStatement = `Based on the provided information, this project aims to address challenges related to ${keyWords.slice(0, 3).join(", ")}.`;
-    
-    const proposedSolution = `The proposed solution involves building a system that will handle ${keyWords.slice(3, 6).join(", ")} to effectively solve the identified problems.`;
-    
-    // Create analysis record
-    const analysisData = {
-      requirement_id: projectId,
-      project_overview: `This project named '${requirement.project_name}' aims to develop a solution for ${requirement.industry_type} industry. ${projectIdea.substring(0, 150)}...`,
-      problem_statement: problemStatement,
-      proposed_solution: proposedSolution,
-      business_goals: `The primary business goals include improving efficiency in ${requirement.industry_type} processes, increasing user satisfaction, and reducing operational costs.`,
-      target_audience: `The target audience includes professionals in the ${requirement.industry_type} industry who need better tools for their daily tasks.`,
-      key_features: `
-- User authentication and profile management
-- Dashboard with key metrics and insights
-- Integration with existing systems
-- Reporting and analytics capabilities
-- Mobile responsive interface
-      `,
-      user_stories: `
-As a user, I want to be able to quickly access my dashboard so I can see important metrics.
-As an administrator, I want to manage user permissions so I can control access to sensitive data.
-As a manager, I want to generate reports so I can track team performance.
-      `,
-      competitive_landscape: `The market has several existing solutions, but they lack the specific features addressing ${keyWords.slice(0, 2).join(" and ")}. This creates an opportunity to differentiate with a more focused approach.`,
-      constraints_assumptions: `
-- The system must be developed within 6 months
-- Budget limitations require efficient use of resources
-- Existing infrastructure will need to be integrated
-- User training will be required for optimal adoption
-      `,
-      risks_mitigations: `
-Risk: User adoption might be slow
-Mitigation: Develop intuitive UI and provide comprehensive training materials
-
-Risk: Integration with legacy systems could be challenging
-Mitigation: Plan for longer integration testing phase and have backup systems in place
-      `,
-      acceptance_criteria: `
-- System successfully handles all specified use cases
-- Performance benchmarks are met under expected load
-- Security testing passes with no critical vulnerabilities
-- User feedback indicates satisfaction with core features
-      `,
-      appendices: [],
-      analysis_confidence_score: 85,
+    // Prepare data for OpenAI prompt
+    const projectData = {
+      project_name: requirement.project_name || "",
+      company_name: requirement.company_name || "",
+      industry_type: requirement.industry_type || "",
+      project_idea: requirement.project_idea || "",
+      document_summary: requirement.document_summary || "None"
     };
+    
+    // Create the prompt for OpenAI
+    const prompt = `
+    You are acting as an expert Product Manager and Business Analyst.
+
+    Based on the provided project idea and basic details, create a structured Business Requirements Document (BRD) following the exact format below.
+
+    Project Details:
+    Project Name: ${projectData.project_name}
+    Company Name: ${projectData.company_name}
+    Industry Type: ${projectData.industry_type}
+    Project Idea: ${projectData.project_idea}
+    Uploaded Files Summary (if any): ${projectData.document_summary}
+
+    Instructions:
+    Stick to the structure below exactly.
+    Do not invent information. If some section cannot be confidently answered from the input, mention: "Details not provided. Please validate."
+    Use clear, simple professional English.
+    Use bullet points where needed (for Features, Goals, Risks, etc.).
+    Keep each section short, precise, and focused (no more than 4–5 lines unless needed).
+    For Business Goals, suggest 2–3 realistic success metrics related to the Industry Type.
+    For Competitive Landscape, suggest common competitor types or gaps typical for that industry.
+
+    Based on the product idea and basic project inputs above, generate a requirement analysis in valid JSON format that matches the following database schema:
+
+    {
+      "project_overview": string or null,
+      "problem_statement": string or null,
+      "proposed_solution": string or null,
+      "business_goals": string or null,
+      "target_audience": string or null,
+      "key_features": string or null,
+      "competitive_landscape": string or null,
+      "constraints_assumptions": string or null,
+      "risks_mitigations": string or null,
+      "acceptance_criteria": string or null,
+      "user_stories": string or null,
+      "appendices": [],
+      "analysis_confidence_score": number (0–100, estimate of AI's confidence)
+    }
+
+    Ensure the response is a valid JSON object that can be parsed.
+    `;
+    
+    // Call OpenAI API to generate the analysis
+    const openAIResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini", // Using a suitable OpenAI model
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2500
+      })
+    });
+    
+    if (!openAIResponse.ok) {
+      const errorData = await openAIResponse.json();
+      console.error("OpenAI API Error:", errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || "Unknown error"}`);
+    }
+    
+    const openAIData = await openAIResponse.json();
+    console.log("OpenAI response received");
+    
+    let analysisData;
+    try {
+      // Extract the JSON content from the OpenAI response
+      const content = openAIData.choices[0].message.content;
+      
+      // Sometimes OpenAI wraps the JSON in markdown code blocks, so we need to extract it
+      let jsonString = content;
+      
+      // Check if the response is wrapped in a code block
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
+        jsonString = jsonMatch[1];
+      }
+      
+      // Parse the JSON
+      analysisData = JSON.parse(jsonString);
+      console.log("Successfully parsed OpenAI response to JSON");
+    } catch (error) {
+      console.error("Error parsing OpenAI response:", error);
+      // If parsing fails, use a simplified format with the raw content
+      const content = openAIData.choices[0].message.content;
+      analysisData = {
+        project_overview: `Generated analysis could not be properly formatted. Raw content: ${content.substring(0, 100)}...`,
+        analysis_confidence_score: 50, // Lower confidence due to parsing issue
+      };
+    }
+    
+    // Add the requirement_id to the analysis data
+    analysisData.requirement_id = projectId;
     
     // Check if analysis already exists
     const { data: existingAnalysis } = await supabase
@@ -133,7 +192,7 @@ Mitigation: Plan for longer integration testing phase and have backup systems in
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Project processed successfully" 
+        message: "Project processed successfully with OpenAI analysis" 
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
