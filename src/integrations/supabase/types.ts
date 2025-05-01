@@ -9,6 +9,56 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      market_analysis: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          demand_insights: string | null
+          id: string
+          industry_benchmarks: string | null
+          market_gap_opportunity: string | null
+          market_trends: string | null
+          requirement_id: string | null
+          swot_analysis: string | null
+          top_competitors: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          demand_insights?: string | null
+          id?: string
+          industry_benchmarks?: string | null
+          market_gap_opportunity?: string | null
+          market_trends?: string | null
+          requirement_id?: string | null
+          swot_analysis?: string | null
+          top_competitors?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          demand_insights?: string | null
+          id?: string
+          industry_benchmarks?: string | null
+          market_gap_opportunity?: string | null
+          market_trends?: string | null
+          requirement_id?: string | null
+          swot_analysis?: string | null
+          top_competitors?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_analysis_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: true
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
