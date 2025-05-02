@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { 
@@ -44,6 +43,7 @@ const MarketSense = () => {
   const [allMarketAnalyses, setAllMarketAnalyses] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
+  const [generatingQueries, setGeneratingQueries] = useState(false);
   
   // Get requirementId from URL params
   const requirementId = searchParams.get('requirementId');
@@ -195,6 +195,72 @@ const MarketSense = () => {
     fetchData();
   }, [requirementId, toast]);
   
+  const generateSearchQueries = async () => {
+    if (!requirementId || !requirement) {
+      toast({
+        title: "Error",
+        description: "No requirement selected for analysis",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setGeneratingQueries(true);
+    toast({
+      title: "Processing",
+      description: "Generating search queries for market research...",
+    });
+    
+    try {
+      // Get the requirement analysis data to include in the prompt
+      const { data: analysisData, error: analysisError } = await supabase
+        .from('requirement_analysis')
+        .select('problem_statement, proposed_solution, key_features')
+        .eq('requirement_id', requirementId)
+        .maybeSingle();
+        
+      if (analysisError && analysisError.code !== 'PGRST116') {
+        throw analysisError;
+      }
+      
+      // Call the generate-market-queries function
+      const { data, error } = await supabase.functions.invoke('generate-market-queries', {
+        body: { 
+          requirementId: requirementId,
+          industryType: requirement.industry_type,
+          problemStatement: analysisData?.problem_statement || null,
+          proposedSolution: analysisData?.proposed_solution || null,
+          keyFeatures: analysisData?.key_features || null
+        }
+      });
+      
+      if (error) throw error;
+      
+      console.log("Generated queries response:", data);
+      
+      if (!data.success) {
+        throw new Error(data.message || "Failed to generate search queries");
+      }
+      
+      toast({
+        title: "Success",
+        description: `Generated ${data.queries.length} search queries for market research`,
+      });
+      
+      // After generating queries, proceed with market analysis
+      handleGenerateAnalysis();
+      
+    } catch (error) {
+      console.error("Error generating search queries:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate search queries",
+        variant: "destructive"
+      });
+      setGeneratingQueries(false);
+    }
+  };
+  
   const handleGenerateAnalysis = async () => {
     if (!requirementId) {
       toast({
@@ -243,6 +309,7 @@ const MarketSense = () => {
       });
     } finally {
       setAnalyzing(false);
+      setGeneratingQueries(false);
     }
   };
   
@@ -526,14 +593,14 @@ const MarketSense = () => {
             
             {(!marketAnalysis?.market_trends || marketAnalysis?.status === 'Draft') && (
               <Button 
-                onClick={handleGenerateAnalysis} 
-                disabled={analyzing}
+                onClick={generateSearchQueries} 
+                disabled={analyzing || generatingQueries}
                 className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
               >
-                {analyzing ? (
+                {analyzing || generatingQueries ? (
                   <>
                     <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
-                    Analyzing...
+                    {generatingQueries ? "Generating Queries..." : "Analyzing..."}
                   </>
                 ) : (
                   <>
@@ -683,14 +750,14 @@ const MarketSense = () => {
           </CardContent>
           <CardFooter className="justify-center">
             <Button 
-              onClick={handleGenerateAnalysis} 
-              disabled={analyzing}
+              onClick={generateSearchQueries} 
+              disabled={analyzing || generatingQueries}
               className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
             >
-              {analyzing ? (
+              {analyzing || generatingQueries ? (
                 <>
                   <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
-                  Analyzing...
+                  {generatingQueries ? "Generating Queries..." : "Analyzing..."}
                 </>
               ) : (
                 <>
