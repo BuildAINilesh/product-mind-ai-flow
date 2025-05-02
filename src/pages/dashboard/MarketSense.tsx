@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useSearchParams, useNavigate, Link } from "react-router-dom";
 import { 
@@ -820,7 +821,7 @@ const MarketSense = () => {
   }
 
   // Single requirement view (when requirementId is provided and requirement exists)
-  // Modified to show all sections on one page rather than tabs
+  // Display all market analysis sections on a single scrollable page
   return (
     <div className="space-y-6">
       <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
@@ -874,8 +875,148 @@ const MarketSense = () => {
       
       {marketAnalysis?.market_trends ? (
         <div className="space-y-6">
-          {/* Market Overview Card (Optional) */}
+          {/* Market Overview Card */}
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Market Analysis Overview</CardTitle>
               <CardDescription>
+                Comprehensive market insights for {requirement.project_name}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border rounded-lg p-4 bg-green-50">
+                    <h3 className="text-sm font-medium text-green-800 mb-1">Market Potential</h3>
+                    <div className="text-2xl font-bold text-green-700">
+                      {marketAnalysis.market_potential || "High"}
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-4 bg-blue-50">
+                    <h3 className="text-sm font-medium text-blue-800 mb-1">Competition Level</h3>
+                    <div className="text-2xl font-bold text-blue-700">
+                      {marketAnalysis.competition_level || "Medium"}
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-4 bg-purple-50">
+                    <h3 className="text-sm font-medium text-purple-800 mb-1">Entry Barriers</h3>
+                    <div className="text-2xl font-bold text-purple-700">
+                      {marketAnalysis.entry_barriers || "Moderate"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Market Trends Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-blue-500">
+              <CardTitle className="flex items-center">
+                <LineChart className="h-5 w-5 mr-2 text-blue-500" />
+                Market Trends
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.market_trends)}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Market Demand Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-green-500">
+              <CardTitle className="flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-green-500" />
+                Market Demand
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.market_demand)}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Competitive Analysis Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-amber-500">
+              <CardTitle className="flex items-center">
+                <FileText className="h-5 w-5 mr-2 text-amber-500" />
+                Competitive Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.competitive_analysis)}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Strategic Recommendations Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-purple-500">
+              <CardTitle className="flex items-center">
+                <Lightbulb className="h-5 w-5 mr-2 text-purple-500" />
+                Strategic Recommendations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.recommendations)}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Risks & Opportunities Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-red-500">
+              <CardTitle className="flex items-center">
+                <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
+                Risks & Opportunities
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.risks_opportunities)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Market Analysis Not Generated</CardTitle>
+            <CardDescription>
+              Generate a market analysis to get insights about the target market for your product.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <LineChart className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No market analysis available yet</h3>
+              <p className="text-muted-foreground max-w-md">
+                Click the "Generate Market Analysis" button to start the market analysis process.
+                The AI will analyze market trends, demand, competition, and provide strategic recommendations.
+              </p>
+              
+              {!analysisInProgress && (
+                <Button 
+                  onClick={handleGenerateAnalysis}
+                  className="mt-6 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                >
+                  <LineChart className="mr-2 h-4 w-4" />
+                  Generate Market Analysis
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default MarketSense;
+
