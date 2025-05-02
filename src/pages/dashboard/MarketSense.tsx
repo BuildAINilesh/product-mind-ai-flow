@@ -200,10 +200,7 @@ const MarketSense = () => {
     }
     
     setGeneratingQueries(true);
-    const generateToastId = toast("Processing", {
-      description: "Generating search queries for market research...",
-      duration: 30000,
-    });
+    const generateToastId = toast.loading("Generating search queries for market research...", { duration: 30000 });
     
     try {
       // Get the requirement analysis data to include in the prompt
@@ -237,9 +234,7 @@ const MarketSense = () => {
       }
       
       toast.dismiss(generateToastId);
-      toast("Success", {
-        description: `Generated ${data.queries.length} search queries for market research`
-      });
+      toast.success(`Generated ${data.queries.length} search queries for market research`);
       
       // After generating queries, process them with Firecrawl Search
       await processSearchQueries(requirementId);
@@ -247,19 +242,14 @@ const MarketSense = () => {
     } catch (error) {
       console.error("Error generating search queries:", error);
       toast.dismiss(generateToastId);
-      toast("Error", {
-        description: error.message || "Failed to generate search queries"
-      });
+      toast.error(error.message || "Failed to generate search queries");
       setGeneratingQueries(false);
     }
   };
   
   const processSearchQueries = async (reqId) => {
     setProcessingQueries(true);
-    const processToastId = toast("Processing", {
-      description: "Searching the web for market research data...",
-      duration: 60000,
-    });
+    const processToastId = toast.loading("Searching the web for market research data...", { duration: 60000 });
     
     try {
       // Call the process-market-queries function
@@ -286,87 +276,28 @@ const MarketSense = () => {
         : '';
       
       toast.dismiss(processToastId);
-      toast("Search Complete", {
-        description: `Processed ${data.processedQueries} queries and found ${data.savedSources} search results${errorMessage}${rateMessage}`
-      });
+      toast.success(`Processed ${data.processedQueries} queries and found ${data.savedSources} search results${errorMessage}${rateMessage}`);
       
-      // After processing queries, proceed with market analysis
-      handleGenerateAnalysis();
+      // After processing queries, proceed to scrape the sources
+      await scrapeResearchSources(reqId);
       
     } catch (error) {
       console.error("Error processing search queries:", error);
       toast.dismiss(processToastId);
-      toast("Error", {
-        description: error.message || "Failed to process search queries. Please try again later."
-      });
+      toast.error(error.message || "Failed to process search queries. Please try again later.");
       setProcessingQueries(false);
       setGeneratingQueries(false);
     }
   };
   
-  const handleGenerateAnalysis = async () => {
-    if (!requirementId) {
-      toast("Error", {
-        description: "No requirement selected for analysis"
-      });
-      return;
-    }
-    
-    setAnalyzing(true);
-    const analysisToastId = toast("Processing", {
-      description: "Generating market analysis from collected data...",
-      duration: 60000,
-    });
-    
-    try {
-      // Call the analyze-market edge function
-      const { data, error } = await supabase.functions.invoke('analyze-market', {
-        body: { requirementId }
-      });
-      
-      if (error) throw error;
-      
-      // Fetch the newly generated market analysis
-      const { data: marketData, error: marketError } = await supabase
-        .from('market_analysis')
-        .select('*')
-        .eq('requirement_id', requirementId)
-        .maybeSingle();
-        
-      if (marketError) throw marketError;
-      
-      setMarketAnalysis(marketData);
-      toast.dismiss(analysisToastId);
-      toast("Analysis Complete", {
-        description: "Market analysis generated successfully"
-      });
-      
-    } catch (error) {
-      console.error("Error generating market analysis:", error);
-      toast.dismiss(analysisToastId);
-      toast("Error", {
-        description: "Failed to generate market analysis. Please try again later."
-      });
-    } finally {
-      setAnalyzing(false);
-      setGeneratingQueries(false);
-      setProcessingQueries(false);
-    }
-  };
-  
-  const scrapeResearchSources = async () => {
-    if (!requirementId) {
-      toast("Error: No requirement selected for scraping");
-      return;
-    }
-    
+  const scrapeResearchSources = async (reqId) => {
     setScrapingSources(true);
-    toast.loading("Scraping research sources...", { duration: 30000 });
+    const scrapeToastId = toast.loading("Scraping research sources...", { duration: 30000 });
     
     try {
       // Call the scrape-research-urls function
       const { data, error } = await supabase.functions.invoke('scrape-research-urls', {
-        body: { requirementId }
+        body: { requirementId: reqId }
       });
       
       if (error) throw error;
@@ -387,20 +318,63 @@ const MarketSense = () => {
         ? ` with ${data.errorCount} errors`
         : '';
       
-      toast.dismiss();
+      toast.dismiss(scrapeToastId);
       toast.success(`Scraped ${data.processedUrls} sources${errorMessage}${rateMessage}`);
       
       // After scraping, proceed with market analysis
-      if (data.processedUrls > 0) {
-        handleGenerateAnalysis();
-      }
+      await handleGenerateAnalysis();
       
     } catch (error) {
       console.error("Error scraping research sources:", error);
-      toast.dismiss();
+      toast.dismiss(scrapeToastId);
       toast.error(error.message || "Failed to scrape research sources. Please try again later.");
-      
     } finally {
+      setScrapingSources(false);
+      setGeneratingQueries(false);
+      setProcessingQueries(false);
+    }
+  };
+  
+  const handleGenerateAnalysis = async () => {
+    if (!requirementId) {
+      toast("Error", {
+        description: "No requirement selected for analysis"
+      });
+      return;
+    }
+    
+    setAnalyzing(true);
+    const analysisToastId = toast.loading("Generating market analysis from collected data...", { duration: 60000 });
+    
+    try {
+      // Call the analyze-market edge function
+      const { data, error } = await supabase.functions.invoke('analyze-market', {
+        body: { requirementId }
+      });
+      
+      if (error) throw error;
+      
+      // Fetch the newly generated market analysis
+      const { data: marketData, error: marketError } = await supabase
+        .from('market_analysis')
+        .select('*')
+        .eq('requirement_id', requirementId)
+        .maybeSingle();
+        
+      if (marketError) throw marketError;
+      
+      setMarketAnalysis(marketData);
+      toast.dismiss(analysisToastId);
+      toast.success("Market analysis generated successfully");
+      
+    } catch (error) {
+      console.error("Error generating market analysis:", error);
+      toast.dismiss(analysisToastId);
+      toast.error("Failed to generate market analysis. Please try again later.");
+    } finally {
+      setAnalyzing(false);
+      setGeneratingQueries(false);
+      setProcessingQueries(false);
       setScrapingSources(false);
     }
   };
@@ -684,39 +658,25 @@ const MarketSense = () => {
             </Button>
             
             {(!marketAnalysis?.market_trends || marketAnalysis?.status === 'Draft') && (
-              <div className="flex gap-2">
-                {/* Generate Market Analysis Button */}
-                <Button 
-                  onClick={generateSearchQueries} 
-                  disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
-                  className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                >
-                  {analyzing || generatingQueries || processingQueries || scrapingSources ? (
-                    <>
-                      <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
-                      {generatingQueries ? "Generating Queries..." : 
-                       processingQueries ? "Searching Web..." : 
-                       scrapingSources ? "Scraping Content..." : "Analyzing..."}
-                    </>
-                  ) : (
-                    <>
-                      <LineChart className="mr-2 h-4 w-4" />
-                      Generate Market Analysis
-                    </>
-                  )}
-                </Button>
-                
-                {/* Scrape Content Button */}
-                <Button 
-                  onClick={scrapeResearchSources}
-                  disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
-                  variant="outline"
-                  className="flex items-center gap-1"
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  Scrape Content
-                </Button>
-              </div>
+              <Button 
+                onClick={generateSearchQueries} 
+                disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
+                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+              >
+                {analyzing || generatingQueries || processingQueries || scrapingSources ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
+                    {generatingQueries ? "Generating Queries..." : 
+                     processingQueries ? "Searching Web..." : 
+                     scrapingSources ? "Scraping Content..." : "Analyzing..."}
+                  </>
+                ) : (
+                  <>
+                    <LineChart className="mr-2 h-4 w-4" />
+                    Generate Market Analysis
+                  </>
+                )}
+              </Button>
             )}
           </div>
         </div>
@@ -856,7 +816,7 @@ const MarketSense = () => {
               )}
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row justify-center gap-2">
+          <CardFooter className="flex justify-center">
             <Button 
               onClick={generateSearchQueries} 
               disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
@@ -875,16 +835,6 @@ const MarketSense = () => {
                   Generate Market Analysis
                 </>
               )}
-            </Button>
-            
-            <Button 
-              onClick={scrapeResearchSources}
-              disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
-              variant="outline"
-              className="flex items-center gap-1"
-            >
-              <FileText className="h-4 w-4 mr-1" />
-              Scrape Content
             </Button>
           </CardFooter>
         </Card>
