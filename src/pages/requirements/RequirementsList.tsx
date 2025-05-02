@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -109,6 +108,10 @@ const RequirementsList = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const navigateToMarketSense = (requirementId: string) => {
+    navigate("/dashboard/market-sense", { state: { requirementId } });
   };
 
   const getStatusBadge = (status: string) => {
@@ -225,7 +228,7 @@ const RequirementsList = () => {
                               </DropdownMenuItem>
                             )}
                             {req.status === "Completed" && (
-                              <DropdownMenuItem onClick={() => navigate("/dashboard/market-sense", { state: { requirementId: req.id } })}>
+                              <DropdownMenuItem onClick={() => navigateToMarketSense(req.id)}>
                                 <Button variant="ghost" size="sm" className="w-full justify-start">
                                   MarketSense AI
                                 </Button>

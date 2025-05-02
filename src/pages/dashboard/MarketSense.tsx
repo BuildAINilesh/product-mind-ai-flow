@@ -69,7 +69,28 @@ const MarketSense = () => {
           .maybeSingle();
           
         if (marketError && marketError.code !== 'PGRST116') throw marketError;
-        setMarketAnalysis(marketData || null);
+        
+        // If market analysis doesn't exist, create a draft entry
+        if (!marketData) {
+          const { data: newMarketData, error: createError } = await supabase
+            .from('market_analysis')
+            .insert({
+              requirement_id: requirementId,
+              status: 'Draft',
+            })
+            .select()
+            .single();
+            
+          if (createError) throw createError;
+          setMarketAnalysis(newMarketData);
+          
+          toast({
+            title: "Draft Created",
+            description: "New market analysis draft has been created",
+          });
+        } else {
+          setMarketAnalysis(marketData);
+        }
         
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -217,7 +238,7 @@ const MarketSense = () => {
               Back
             </Button>
             
-            {!marketAnalysis && (
+            {(!marketAnalysis?.market_trends || marketAnalysis?.status === 'Draft') && (
               <Button 
                 onClick={handleGenerateAnalysis} 
                 disabled={analyzing}
@@ -240,7 +261,7 @@ const MarketSense = () => {
         </div>
       </AIBackground>
       
-      {marketAnalysis ? (
+      {marketAnalysis?.market_trends ? (
         <Tabs defaultValue="market-trends">
           <TabsList className="grid grid-cols-3 lg:grid-cols-6 mb-4">
             <TabsTrigger value="market-trends">Trends</TabsTrigger>
@@ -351,8 +372,10 @@ const MarketSense = () => {
           <CardHeader>
             <CardTitle>Market Analysis</CardTitle>
             <CardDescription>
-              Generate a comprehensive market analysis for your project to understand market trends, 
-              competition, and opportunities.
+              {marketAnalysis?.status === "Draft" ? 
+                "Your market analysis is in draft state. Generate a comprehensive analysis to understand market trends, competition, and opportunities." :
+                "Generate a comprehensive market analysis for your project to understand market trends, competition, and opportunities."
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center py-12">
@@ -360,11 +383,16 @@ const MarketSense = () => {
               <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
                 <LineChart className="h-10 w-10 text-primary" />
               </div>
-              <h3 className="text-lg font-medium">No Market Analysis Yet</h3>
+              <h3 className="text-lg font-medium">
+                {marketAnalysis?.status === "Draft" ? "Draft Market Analysis" : "No Market Analysis Yet"}
+              </h3>
               <p className="text-muted-foreground max-w-md">
                 Use AI to generate an in-depth market analysis for your {requirement.project_name} project
                 in the {requirement.industry_type} industry.
               </p>
+              {marketAnalysis?.status === "Draft" && (
+                <Badge variant="outline" className="px-2 py-1">Draft</Badge>
+              )}
             </div>
           </CardContent>
           <CardFooter className="justify-center">

@@ -19,6 +19,7 @@ export type Database = {
           market_gap_opportunity: string | null
           market_trends: string | null
           requirement_id: string | null
+          status: Database["public"]["Enums"]["requirement_status_enum"] | null
           swot_analysis: string | null
           top_competitors: string | null
           updated_at: string | null
@@ -32,6 +33,7 @@ export type Database = {
           market_gap_opportunity?: string | null
           market_trends?: string | null
           requirement_id?: string | null
+          status?: Database["public"]["Enums"]["requirement_status_enum"] | null
           swot_analysis?: string | null
           top_competitors?: string | null
           updated_at?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           market_gap_opportunity?: string | null
           market_trends?: string | null
           requirement_id?: string | null
+          status?: Database["public"]["Enums"]["requirement_status_enum"] | null
           swot_analysis?: string | null
           top_competitors?: string | null
           updated_at?: string | null

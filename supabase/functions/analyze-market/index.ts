@@ -164,6 +164,9 @@ serve(async (req) => {
     // Add the requirement_id to the market analysis data
     marketAnalysisData.requirement_id = requirementId;
     
+    // Mark the status as Completed
+    marketAnalysisData.status = "Completed";
+    
     // Check if market analysis already exists
     const { data: existingAnalysis } = await supabase
       .from("market_analysis")
