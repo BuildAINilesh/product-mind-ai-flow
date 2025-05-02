@@ -68,10 +68,11 @@ serve(async (req) => {
       console.log(`Processing query: ${query.query}`);
       
       try {
-        // Call Firecrawl Search API
-        console.log(`Calling Firecrawl API with search query: ${query.query}`);
+        // Using the correct endpoint for the Firecrawl API
+        const apiEndpoint = "https://api.firecrawl.dev/api/search";
+        console.log(`Calling Firecrawl API with endpoint: ${apiEndpoint}`);
+        console.log(`Search query: ${query.query}`);
         
-        // Using the correct endpoint format for Firecrawl API
         const searchRequest = {
           method: 'POST',
           headers: {
@@ -85,15 +86,18 @@ serve(async (req) => {
         };
         
         console.log("Firecrawl API request:", {
-          endpoint: 'https://api.firecrawl.dev/search',
+          endpoint: apiEndpoint,
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer [MASKED]'
           },
-          body: { query: query.query, limit: 5 }
+          body: JSON.stringify({
+            query: query.query,
+            limit: 5
+          })
         });
         
-        const searchResponse = await fetch('https://api.firecrawl.dev/search', searchRequest);
+        const searchResponse = await fetch(apiEndpoint, searchRequest);
 
         console.log(`Firecrawl API response status: ${searchResponse.status}`);
         
@@ -121,8 +125,9 @@ serve(async (req) => {
 
         const searchResults = await searchResponse.json();
         console.log(`Search response success: ${searchResults.success}`);
+        console.log(`Search results data:`, JSON.stringify(searchResults).substring(0, 200) + '...');
         
-        // Process results according to expected format from example
+        // Process results according to expected format
         if (searchResults.success && searchResults.data && Array.isArray(searchResults.data)) {
           const results = searchResults.data;
           console.log(`Received ${results.length} results for query: ${query.query}`);
