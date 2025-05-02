@@ -84,10 +84,14 @@ const RequirementsList = () => {
       }
 
       // Update status to Completed
-      await supabase
+      const { error: updateError } = await supabase
         .from('requirements')
         .update({ status: 'Completed' })
         .eq('id', requirementId);
+        
+      if (updateError) {
+        throw updateError;
+      }
 
       toast({
         title: "Success",
