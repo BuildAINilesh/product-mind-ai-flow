@@ -23,7 +23,8 @@ import {
   Lock,
   CalendarClock,
   Shield,
-  AlertCircle
+  AlertCircle,
+  Info
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface RequirementAnalysis {
-  id: string;
+  id?: string;
   requirement_id: string;
   project_overview: string | null;
   problem_statement: string | null;
@@ -77,8 +78,14 @@ export const RequirementAnalysisView = ({
     project, 
     analysis, 
     loading,
-    projectStatus: project?.status 
+    projectStatus: project?.status,
+    hasAnalysisData: analysis !== null
   });
+
+  // Debug what fields are available
+  if (analysis) {
+    console.log("Available analysis fields:", Object.keys(analysis).filter(key => analysis[key] !== null));
+  }
 
   if (loading) {
     return <AnalysisViewSkeleton />;
@@ -124,6 +131,13 @@ export const RequirementAnalysisView = ({
       {description && <p className="text-sm text-muted-foreground ml-7">{description}</p>}
     </div>
   );
+
+  // Determine if we're showing only project idea content (no full analysis)
+  const showingProjectIdeaOnly = project.status === "Completed" && 
+                               analysis && 
+                               !analysis.problem_statement && 
+                               !analysis.proposed_solution &&
+                               analysis.project_overview === project.project_idea;
 
   return (
     <div className="space-y-6 mb-12">
@@ -180,6 +194,16 @@ export const RequirementAnalysisView = ({
         </CardContent>
       </Card>
 
+      {showingProjectIdeaOnly && (
+        <Alert>
+          <Info className="h-5 w-5 text-blue-500" />
+          <AlertDescription>
+            This requirement has been marked as completed but is showing limited analysis details.
+            You may need to run a full analysis to see all sections.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {noAnalysisData ? (
         <Card>
           <CardContent>
@@ -209,7 +233,7 @@ export const RequirementAnalysisView = ({
                     "A quick summary of the project idea and objective"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.project_overview)}
+                    {renderContent(analysis?.project_overview || project.project_idea)}
                   </div>
                 </section>
 
@@ -306,18 +330,16 @@ export const RequirementAnalysisView = ({
                 </section>
 
                 {/* User Stories Section */}
-                {analysis?.user_stories && (
-                  <section>
-                    {renderSectionHeader(
-                      <User className="h-5 w-5 text-primary" />,
-                      "User Stories",
-                      "High-level user journeys if applicable"
-                    )}
-                    <div className="bg-muted/30 p-4 rounded-md">
-                      {renderContent(analysis?.user_stories)}
-                    </div>
-                  </section>
-                )}
+                <section>
+                  {renderSectionHeader(
+                    <User className="h-5 w-5 text-primary" />,
+                    "User Stories",
+                    "High-level user journeys if applicable"
+                  )}
+                  <div className="bg-muted/30 p-4 rounded-md">
+                    {renderContent(analysis?.user_stories)}
+                  </div>
+                </section>
               </div>
             </CardContent>
           </Card>
@@ -342,18 +364,16 @@ export const RequirementAnalysisView = ({
                 </section>
 
                 {/* Risks & Mitigations Section */}
-                {analysis?.risks_mitigations && (
-                  <section>
-                    {renderSectionHeader(
-                      <AlertTriangle className="h-5 w-5 text-primary" />,
-                      "Risks & Mitigations",
-                      "What risks exist? How can they be mitigated?"
-                    )}
-                    <div className="bg-muted/30 p-4 rounded-md">
-                      {renderContent(analysis?.risks_mitigations)}
-                    </div>
-                  </section>
-                )}
+                <section>
+                  {renderSectionHeader(
+                    <AlertTriangle className="h-5 w-5 text-primary" />,
+                    "Risks & Mitigations",
+                    "What risks exist? How can they be mitigated?"
+                  )}
+                  <div className="bg-muted/30 p-4 rounded-md">
+                    {renderContent(analysis?.risks_mitigations)}
+                  </div>
+                </section>
 
                 {/* Acceptance Criteria Section */}
                 <section>

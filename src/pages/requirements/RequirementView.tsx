@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -78,17 +79,68 @@ const RequirementView = () => {
         // If project is completed, fetch the analysis data
         if (projectData.status === "Completed") {
           console.log("Project is completed, fetching analysis data");
-          const { data: analysisData, error: analysisError } = await supabase
+          
+          // First try fetching from requirement_analysis table
+          let { data: analysisData, error: analysisError } = await supabase
             .from('requirement_analysis')
             .select('*')
             .eq('requirement_id', id)
             .maybeSingle();
 
           if (analysisError) {
-            console.error('Error fetching analysis:', analysisError);
-          } else {
+            console.error('Error fetching analysis from requirement_analysis:', analysisError);
+            // If there's an error or no data, don't set an error yet - try the fallback
+          }
+          
+          // If no analysis data found, check if there's any in the legacy format or a different table
+          if (!analysisData) {
+            console.log("No analysis data found in requirement_analysis table, trying alternative sources");
+            
+            // Try fetching from project_analysis table if it exists (as a fallback)
+            ({ data: analysisData, error: analysisError } = await supabase
+              .from('project_analysis')
+              .select('*')
+              .eq('project_id', id)
+              .maybeSingle());
+              
+            if (analysisError) {
+              console.error('Error fetching from fallback table:', analysisError);
+            }
+          }
+
+          // If we have analysis data from either source, use it
+          if (analysisData) {
             console.log("Analysis data fetched:", analysisData);
             setAnalysis(analysisData);
+          } else {
+            console.warn("No analysis data found for completed project:", id);
+            // Create a synthesized analysis object from the project data
+            // This helps display something useful even when the backend data is incomplete
+            const synthesizedAnalysis = {
+              requirement_id: id,
+              project_overview: projectData.project_idea || null,
+              problem_statement: null,
+              proposed_solution: null,
+              business_goals: null,
+              target_audience: null,
+              key_features: null,
+              user_stories: null,
+              competitive_landscape: null,
+              constraints_assumptions: null,
+              risks_mitigations: null,
+              acceptance_criteria: null,
+              appendices: null,
+              analysis_confidence_score: null,
+              created_at: projectData.created_at,
+              updated_at: projectData.updated_at
+            };
+            setAnalysis(synthesizedAnalysis);
+            
+            toast({
+              title: "Limited Data Available",
+              description: "We're displaying the available project information. Some analysis details may be missing.",
+              variant: "default",
+            });
           }
         }
       } catch (err) {
