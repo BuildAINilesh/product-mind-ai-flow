@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search, FileText } from "lucide-react";
+import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search, FileText, Loader } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
@@ -29,11 +29,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 // Define constants for localStorage keys
 const ANALYSIS_STATUS_KEY = "marketAnalysis_status_";
 const ANALYSIS_STEPS_KEY = "marketAnalysis_steps_";
-const ANALYSIS_CURRENT_STEP_KEY = "marketAnalysis_current_step_";
+const ANALYSIS_CURRENT_STEP_KEY = "marketAnalysis_currentStep_";
+
+// Define a type for the analysis process step
+type ProcessStep = {
+  name: string;
+  status: "pending" | "processing" | "completed" | "failed";
+};
 
 const MarketSense = () => {
   const navigate = useNavigate();
@@ -47,11 +55,18 @@ const MarketSense = () => {
   const [allMarketAnalyses, setAllMarketAnalyses] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
-  const [generatingQueries, setGeneratingQueries] = useState(false);
-  const [processingQueries, setProcessingQueries] = useState(false);
-  const [scrapingSources, setScrapingSources] = useState(false);
-  const [summarizingContent, setSummarizingContent] = useState(false);
   const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
+  
+  // Analysis progress tracking states
+  const [analysisInProgress, setAnalysisInProgress] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [progressSteps, setProgressSteps] = useState<ProcessStep[]>([
+    { name: "Generating search queries", status: "pending" },
+    { name: "Searching the web", status: "pending" },
+    { name: "Scraping content", status: "pending" },
+    { name: "Summarizing research", status: "pending" },
+    { name: "Creating market analysis", status: "pending" }
+  ]);
   
   // Get requirementId from URL params
   const requirementId = searchParams.get('requirementId');
@@ -115,9 +130,9 @@ const MarketSense = () => {
         // Check if there's an ongoing analysis process for this requirement
         const isProcessing = localStorage.getItem(ANALYSIS_STATUS_KEY + requirementId) === 'true';
         if (isProcessing) {
-          console.log("Found ongoing analysis process, redirecting to requirement view");
-          navigate(`/dashboard/requirements/${requirementId}`);
-          return;
+          console.log("Found ongoing analysis process");
+          // Instead of redirecting, setup the UI to show progress
+          checkOngoingAnalysisProcess();
         }
         
         // Fetch the requirement
@@ -202,38 +217,83 @@ const MarketSense = () => {
     };
     
     fetchData();
-  }, [requirementId, navigate]);
+  }, [requirementId]);
+  
+  // Check if there's an ongoing analysis process
+  const checkOngoingAnalysisProcess = () => {
+    if (!requirementId) return;
+    
+    const inProgress = localStorage.getItem(ANALYSIS_STATUS_KEY + requirementId) === 'true';
+    
+    if (inProgress) {
+      console.log("Found ongoing analysis process for requirement:", requirementId);
+      setAnalysisInProgress(true);
+      
+      // Restore progress steps and current step
+      const savedSteps = localStorage.getItem(ANALYSIS_STEPS_KEY + requirementId);
+      const savedCurrentStep = localStorage.getItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+      
+      if (savedSteps) {
+        try {
+          setProgressSteps(JSON.parse(savedSteps));
+        } catch (e) {
+          console.error("Error parsing saved steps:", e);
+        }
+      }
+      
+      if (savedCurrentStep) {
+        setCurrentStep(parseInt(savedCurrentStep, 10));
+      }
+      
+      // If already in progress, check the current status
+      checkMarketAnalysisStatus();
+    }
+  };
   
   // Poll for market analysis completion if there's an ongoing process
   useEffect(() => {
     if (!requirementId) return;
     
+    // Only poll if analysis is in progress
+    if (!analysisInProgress) return;
+    
     const checkAnalysisCompletion = async () => {
-      // Check if we're on the market analysis page and if we have a requirementId
-      if (window.location.pathname.includes('/market-sense') && requirementId) {
-        try {
-          const { data, error } = await supabase
-            .from('market_analysis')
-            .select('*')
-            .eq('requirement_id', requirementId)
-            .maybeSingle();
-            
-          if (error) {
-            console.error("Error checking market analysis:", error);
-            return;
-          }
+      try {
+        const { data, error } = await supabase
+          .from('market_analysis')
+          .select('*')
+          .eq('requirement_id', requirementId)
+          .maybeSingle();
           
-          if (data && data.market_trends && data.status === 'Completed') {
-            console.log("Market analysis has been completed, updating UI");
-            setMarketAnalysis(data);
+        if (error) {
+          console.error("Error checking market analysis:", error);
+          return;
+        }
+        
+        if (data && data.market_trends && data.status === 'Completed') {
+          console.log("Market analysis has been completed, updating UI");
+          setMarketAnalysis(data);
+          
+          // Reset in-progress status
+          localStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
+          localStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
+          localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+          
+          // Update steps to show all completed
+          setProgressSteps(steps => steps.map(step => ({ ...step, status: "completed" })));
+          setCurrentStep(progressSteps.length);
+          
+          // Wait a bit and then reset the UI
+          setTimeout(() => {
+            setAnalysisInProgress(false);
             // Refresh the page to show the completed analysis
             if (!marketAnalysis?.market_trends) {
               window.location.reload();
             }
-          }
-        } catch (e) {
-          console.error("Error polling for market analysis completion:", e);
+          }, 3000);
         }
+      } catch (e) {
+        console.error("Error polling for market analysis completion:", e);
       }
     };
     
@@ -241,44 +301,263 @@ const MarketSense = () => {
     const interval = setInterval(checkAnalysisCompletion, 10000);
     
     return () => clearInterval(interval);
-  }, [requirementId, marketAnalysis]);
+  }, [requirementId, analysisInProgress, progressSteps.length, marketAnalysis?.market_trends]);
   
-  const generateSearchQueries = async () => {
-    if (!requirementId || !requirement) {
-      toast.error("No requirement selected for analysis");
-      return;
-    }
+  // Function to check if market analysis has been completed
+  const checkMarketAnalysisStatus = async () => {
+    if (!requirementId) return;
     
-    // Redirect to the requirement view for a better UX during the analysis process
-    navigate(`/dashboard/requirements/${requirementId}`);
+    try {
+      const { data, error } = await supabase
+        .from('market_analysis')
+        .select('status')
+        .eq('requirement_id', requirementId)
+        .maybeSingle();
+        
+      if (error) {
+        console.error("Error checking market analysis status:", error);
+        return;
+      }
+      
+      if (data && data.status === 'Completed') {
+        console.log("Market analysis has been completed, updating UI");
+        // Reset in-progress status
+        localStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
+        localStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
+        localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+        
+        // Update steps to show all completed
+        setProgressSteps(steps => steps.map(step => ({ ...step, status: "completed" })));
+        setCurrentStep(progressSteps.length);
+        
+        // Wait a bit and then reset the UI
+        setTimeout(() => {
+          setAnalysisInProgress(false);
+          window.location.reload();
+        }, 3000);
+      }
+    } catch (e) {
+      console.error("Error checking market analysis:", e);
+    }
   };
   
-  // Modified handleGenerateAnalysis to directly trigger the analysis
-  const handleGenerateAnalysis = () => {
+  // Function to update step status
+  const updateStepStatus = (stepIndex, status) => {
+    setProgressSteps(prevSteps => {
+      const updatedSteps = prevSteps.map((step, index) => 
+        index === stepIndex ? { ...step, status } : step
+      );
+      
+      // Save to localStorage for persistence
+      if (requirementId) {
+        localStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(updatedSteps));
+      }
+      
+      return updatedSteps;
+    });
+  };
+  
+  // Function to handle Generate Market Analysis button click
+  const handleGenerateAnalysis = async () => {
     if (!requirementId) {
       toast.error("No requirement selected for analysis");
       return;
     }
     
-    // Set analysis in progress flag in localStorage
-    localStorage.setItem(ANALYSIS_STATUS_KEY + requirementId, 'true');
-    
-    // Initialize the progress steps in localStorage
-    const initialSteps = [
-      { name: "Generating search queries", status: "pending" },
-      { name: "Searching the web", status: "pending" },
-      { name: "Scraping content", status: "pending" },
-      { name: "Summarizing research", status: "pending" },
-      { name: "Creating market analysis", status: "pending" }
-    ];
-    
-    localStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(initialSteps));
-    localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '0');
-    
-    // Navigate directly to the requirement view which will pick up the analysis flags
-    navigate(`/dashboard/requirements/${requirementId}`);
+    try {
+      // Reset progress state and show progress UI
+      setProgressSteps(prevSteps => prevSteps.map(step => ({ ...step, status: "pending" })));
+      setCurrentStep(0);
+      setAnalysisInProgress(true);
+      
+      // Set localStorage flags to indicate analysis is in progress
+      localStorage.setItem(ANALYSIS_STATUS_KEY + requirementId, 'true');
+      localStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(progressSteps));
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '0');
+      
+      // Step 1: Generate search queries
+      updateStepStatus(0, "processing");
+      const { data: queriesData, error: queriesError } = await supabase.functions.invoke('generate-market-queries', {
+        body: { 
+          requirementId: requirementId,
+          industryType: requirement.industry_type,
+          problemStatement: requirementAnalysis?.problem_statement || null,
+          proposedSolution: requirementAnalysis?.proposed_solution || null,
+          keyFeatures: requirementAnalysis?.key_features || null
+        }
+      });
+      
+      if (queriesError) throw queriesError;
+      if (!queriesData.success) throw new Error(queriesData.message || "Failed to generate search queries");
+      
+      updateStepStatus(0, "completed");
+      setCurrentStep(1);
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '1');
+      
+      // Step 2: Process search queries
+      updateStepStatus(1, "processing");
+      const { data: processData, error: processError } = await supabase.functions.invoke('process-market-queries', {
+        body: { requirementId: requirementId }
+      });
+      
+      if (processError) throw processError;
+      if (!processData.success) throw new Error(processData.message || "Failed to process search queries");
+      
+      updateStepStatus(1, "completed");
+      setCurrentStep(2);
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '2');
+      
+      // Step 3: Scrape research sources
+      updateStepStatus(2, "processing");
+      const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke('scrape-research-urls', {
+        body: { requirementId: requirementId }
+      });
+      
+      if (scrapeError) throw scrapeError;
+      if (!scrapeData.success) throw new Error(scrapeData.message || "Failed to scrape research sources");
+      
+      updateStepStatus(2, "completed");
+      setCurrentStep(3);
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '3');
+      
+      // Step 4: Summarize research content
+      updateStepStatus(3, "processing");
+      const { data: summaryData, error: summaryError } = await supabase.functions.invoke('summarize-research-content', {
+        body: { requirementId: requirementId }
+      });
+      
+      if (summaryError) throw summaryError;
+      if (!summaryData.success) throw new Error(summaryData.message || "Failed to summarize research content");
+      
+      // Check if there's more content to summarize
+      if (summaryData.remaining && summaryData.remaining > 0) {
+        // Continue summarizing if needed
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
+        await summarizeAdditionalContent(requirementId);
+      }
+      
+      updateStepStatus(3, "completed");
+      setCurrentStep(4);
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '4');
+      
+      // Step 5: Generate market analysis
+      updateStepStatus(4, "processing");
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-market', {
+        body: { requirementId: requirementId }
+      });
+      
+      if (analysisError) throw analysisError;
+      updateStepStatus(4, "completed");
+      
+      // Refresh the market analysis data
+      const { data: updatedMarketData } = await supabase
+        .from('market_analysis')
+        .select('*')
+        .eq('requirement_id', requirementId)
+        .maybeSingle();
+      
+      if (updatedMarketData) {
+        setMarketAnalysis(updatedMarketData);
+      }
+      
+      // Clear localStorage flags since process is complete
+      localStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
+      localStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
+      localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+      
+      // Reset analysis in progress state after a short delay
+      setTimeout(() => {
+        setAnalysisInProgress(false);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error in market analysis process:', error);
+      // Mark current step as failed
+      updateStepStatus(currentStep, "failed");
+      
+      toast.error(error.message || "Failed to complete market analysis");
+      
+      // Keep localStorage flags so user can see the failed state
+    }
   };
   
+  // Helper function to continue summarizing content if needed
+  const summarizeAdditionalContent = async (reqId) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('summarize-research-content', {
+        body: { requirementId: reqId }
+      });
+      
+      if (error) throw error;
+      if (!data.success) throw new Error(data.message || "Failed to summarize additional content");
+      
+      // Continue recursively if there's still more to summarize
+      if (data.remaining && data.remaining > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
+        await summarizeAdditionalContent(reqId);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error summarizing additional content:', error);
+      throw error;
+    }
+  };
+  
+  // Render step indicator component
+  const renderStepIndicator = (step, index) => {
+    const isActive = index === currentStep;
+    const getStatusIcon = () => {
+      switch (step.status) {
+        case "completed":
+          return <Check className="h-4 w-4 text-green-500" />;
+        case "processing":
+          return <Loader className="h-4 w-4 animate-spin" />;
+        case "failed":
+          return <div className="h-4 w-4 rounded-full bg-red-500"></div>;
+        default:
+          return <div className="h-4 w-4 rounded-full bg-gray-300"></div>;
+      }
+    };
+    
+    // Calculate progress percentage - only for active step
+    const progressPercentage = isActive && step.status === "processing" ? 50 : 
+                              step.status === "completed" ? 100 : 0;
+    
+    return (
+      <div key={index} className="mb-2">
+        <div className="flex items-center mb-1">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${
+            step.status === "completed" ? "bg-green-100" :
+            step.status === "processing" ? "bg-blue-100" :
+            step.status === "failed" ? "bg-red-100" : "bg-gray-100"
+          }`}>
+            {getStatusIcon()}
+          </div>
+          <span className={`text-sm ${
+            step.status === "completed" ? "text-green-700" :
+            step.status === "processing" ? "text-blue-700 font-medium" :
+            step.status === "failed" ? "text-red-700" : "text-gray-500"
+          }`}>
+            {step.name}
+          </span>
+        </div>
+        {(step.status === "processing" || step.status === "completed") && (
+          <Progress 
+            value={progressPercentage}
+            className="h-1 mb-2" 
+            indicatorClassName={step.status === "completed" ? "bg-green-500" : "bg-blue-500"}
+          />
+        )}
+      </div>
+    );
+  };
+  
+  // Function to navigate to MarketSense
+  const navigateToMarketSense = async () => {
+    // ... keep existing code (navigateToMarketSense function)
+  };
+
   const formatSection = (content) => {
     if (!content) return "No data available";
     
@@ -574,7 +853,7 @@ const MarketSense = () => {
               Back to Market Analyses
             </Button>
             
-            {(!marketAnalysis?.market_trends || marketAnalysis?.status === 'Draft') && (
+            {(!marketAnalysis?.market_trends || marketAnalysis?.status === 'Draft') && !analysisInProgress && (
               <Button 
                 onClick={handleGenerateAnalysis}
                 className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
@@ -586,6 +865,25 @@ const MarketSense = () => {
           </div>
         </div>
       </AIBackground>
+      
+      {/* Progress indicator for market analysis */}
+      {analysisInProgress && (
+        <Alert className="mb-4">
+          <AlertTitle className="flex items-center">
+            <Loader className="h-4 w-4 animate-spin mr-2" />
+            Market Analysis in Progress
+          </AlertTitle>
+          <AlertDescription>
+            <div className="mt-3">
+              {progressSteps.map(renderStepIndicator)}
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              The analysis will continue processing even if you navigate away from this page.
+              You can return at any time to check progress.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
       
       {marketAnalysis?.market_trends ? (
         <Tabs defaultValue="market-trends">
@@ -722,13 +1020,15 @@ const MarketSense = () => {
             </div>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <Button 
-              onClick={handleGenerateAnalysis}
-              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-            >
-              <LineChart className="mr-2 h-4 w-4" />
-              Generate Market Analysis
-            </Button>
+            {!analysisInProgress && (
+              <Button 
+                onClick={handleGenerateAnalysis}
+                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+              >
+                <LineChart className="mr-2 h-4 w-4" />
+                Generate Market Analysis
+              </Button>
+            )}
           </CardFooter>
         </Card>
       )}
