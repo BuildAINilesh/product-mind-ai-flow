@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -80,8 +79,8 @@ const RequirementView = () => {
         if (projectData.status === "Completed") {
           console.log("Project is completed, fetching analysis data");
           
-          // First try fetching from requirement_analysis table
-          let { data: analysisData, error: analysisError } = await supabase
+          // Try fetching from requirement_analysis table
+          const { data: analysisData, error: analysisError } = await supabase
             .from('requirement_analysis')
             .select('*')
             .eq('requirement_id', id)
@@ -89,26 +88,10 @@ const RequirementView = () => {
 
           if (analysisError) {
             console.error('Error fetching analysis from requirement_analysis:', analysisError);
-            // If there's an error or no data, don't set an error yet - try the fallback
+            // If there's an error, don't set an error yet
           }
           
-          // If no analysis data found, check if there's any in the legacy format or a different table
-          if (!analysisData) {
-            console.log("No analysis data found in requirement_analysis table, trying alternative sources");
-            
-            // Try fetching from project_analysis table if it exists (as a fallback)
-            ({ data: analysisData, error: analysisError } = await supabase
-              .from('project_analysis')
-              .select('*')
-              .eq('project_id', id)
-              .maybeSingle());
-              
-            if (analysisError) {
-              console.error('Error fetching from fallback table:', analysisError);
-            }
-          }
-
-          // If we have analysis data from either source, use it
+          // If we have analysis data, use it
           if (analysisData) {
             console.log("Analysis data fetched:", analysisData);
             setAnalysis(analysisData);
