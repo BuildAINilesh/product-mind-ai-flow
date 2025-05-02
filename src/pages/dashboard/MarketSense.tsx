@@ -44,6 +44,7 @@ const MarketSense = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
   const [generatingQueries, setGeneratingQueries] = useState(false);
+  const [processingQueries, setProcessingQueries] = useState(false);
   
   // Get requirementId from URL params
   const requirementId = searchParams.get('requirementId');
@@ -247,8 +248,8 @@ const MarketSense = () => {
         description: `Generated ${data.queries.length} search queries for market research`,
       });
       
-      // After generating queries, proceed with market analysis
-      handleGenerateAnalysis();
+      // After generating queries, process them with Firecrawl Search
+      await processSearchQueries(requirementId);
       
     } catch (error) {
       console.error("Error generating search queries:", error);
@@ -257,6 +258,47 @@ const MarketSense = () => {
         description: error.message || "Failed to generate search queries",
         variant: "destructive"
       });
+      setGeneratingQueries(false);
+    }
+  };
+  
+  const processSearchQueries = async (reqId) => {
+    setProcessingQueries(true);
+    toast({
+      title: "Processing",
+      description: "Searching the web for market research data...",
+    });
+    
+    try {
+      // Call the process-market-queries function
+      const { data, error } = await supabase.functions.invoke('process-market-queries', {
+        body: { requirementId: reqId }
+      });
+      
+      if (error) throw error;
+      
+      console.log("Process queries response:", data);
+      
+      if (!data.success) {
+        throw new Error(data.message || "Failed to process search queries");
+      }
+      
+      toast({
+        title: "Success",
+        description: `Processed ${data.processedQueries} queries and found ${data.savedSources} search results`,
+      });
+      
+      // After processing queries, proceed with market analysis
+      handleGenerateAnalysis();
+      
+    } catch (error) {
+      console.error("Error processing search queries:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process search queries",
+        variant: "destructive"
+      });
+      setProcessingQueries(false);
       setGeneratingQueries(false);
     }
   };
@@ -310,6 +352,7 @@ const MarketSense = () => {
     } finally {
       setAnalyzing(false);
       setGeneratingQueries(false);
+      setProcessingQueries(false);
     }
   };
   
@@ -594,13 +637,14 @@ const MarketSense = () => {
             {(!marketAnalysis?.market_trends || marketAnalysis?.status === 'Draft') && (
               <Button 
                 onClick={generateSearchQueries} 
-                disabled={analyzing || generatingQueries}
+                disabled={analyzing || generatingQueries || processingQueries}
                 className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
               >
-                {analyzing || generatingQueries ? (
+                {analyzing || generatingQueries || processingQueries ? (
                   <>
                     <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
-                    {generatingQueries ? "Generating Queries..." : "Analyzing..."}
+                    {generatingQueries ? "Generating Queries..." : 
+                     processingQueries ? "Searching Web..." : "Analyzing..."}
                   </>
                 ) : (
                   <>
@@ -751,13 +795,14 @@ const MarketSense = () => {
           <CardFooter className="justify-center">
             <Button 
               onClick={generateSearchQueries} 
-              disabled={analyzing || generatingQueries}
+              disabled={analyzing || generatingQueries || processingQueries}
               className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
             >
-              {analyzing || generatingQueries ? (
+              {analyzing || generatingQueries || processingQueries ? (
                 <>
                   <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
-                  {generatingQueries ? "Generating Queries..." : "Analyzing..."}
+                  {generatingQueries ? "Generating Queries..." : 
+                   processingQueries ? "Searching Web..." : "Analyzing..."}
                 </>
               ) : (
                 <>
