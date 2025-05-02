@@ -32,6 +32,8 @@ import {
 
 // Define constants for localStorage keys
 const ANALYSIS_STATUS_KEY = "marketAnalysis_status_";
+const ANALYSIS_STEPS_KEY = "marketAnalysis_steps_";
+const ANALYSIS_CURRENT_STEP_KEY = "marketAnalysis_current_step_";
 
 const MarketSense = () => {
   const navigate = useNavigate();
@@ -251,14 +253,29 @@ const MarketSense = () => {
     navigate(`/dashboard/requirements/${requirementId}`);
   };
   
-  // Modified handleGenerateAnalysis to redirect to requirements view
+  // Modified handleGenerateAnalysis to directly trigger the analysis
   const handleGenerateAnalysis = () => {
     if (!requirementId) {
       toast.error("No requirement selected for analysis");
       return;
     }
     
-    // Redirect to the requirement view for the analysis process
+    // Set analysis in progress flag in localStorage
+    localStorage.setItem(ANALYSIS_STATUS_KEY + requirementId, 'true');
+    
+    // Initialize the progress steps in localStorage
+    const initialSteps = [
+      { name: "Generating search queries", status: "pending" },
+      { name: "Searching the web", status: "pending" },
+      { name: "Scraping content", status: "pending" },
+      { name: "Summarizing research", status: "pending" },
+      { name: "Creating market analysis", status: "pending" }
+    ];
+    
+    localStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(initialSteps));
+    localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '0');
+    
+    // Navigate directly to the requirement view which will pick up the analysis flags
     navigate(`/dashboard/requirements/${requirementId}`);
   };
   

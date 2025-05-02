@@ -118,6 +118,14 @@ const RequirementView = () => {
       
       // Check if the market analysis has been completed
       checkMarketAnalysisStatus();
+      
+      // Auto-start the analysis process if it's marked as in-progress but not yet started
+      // This handles the redirect from MarketSense
+      const autoStartAnalysis = localStorage.getItem("autoStartAnalysis_" + id);
+      if (autoStartAnalysis !== "started") {
+        localStorage.setItem("autoStartAnalysis_" + id, "started");
+        generateMarketAnalysis();
+      }
     }
   };
   
