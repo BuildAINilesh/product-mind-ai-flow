@@ -130,6 +130,25 @@ async function summarizeContent(content: string, url: string) {
   }
 }
 
+// Function to validate Firecrawl batch response
+function validateBatchResponse(data: any): boolean {
+  // Check for essential properties
+  if (!data) return false;
+  
+  // For successful batch responses
+  if (data.status === "completed" && Array.isArray(data.data)) {
+    return true;
+  }
+  
+  // For responses with a job ID (async batch)
+  if (data.jobId && data.status) {
+    return true;
+  }
+  
+  console.error("Invalid batch response format:", data);
+  return false;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -273,20 +292,29 @@ serve(async (req) => {
         throw new Error(`Batch scrape failed with status ${scrapeResponse.status}: ${errorText}`);
       }
 
+      // Parse response and validate its format
       const batchResult = await scrapeResponse.json();
       console.log(`Batch scrape response success: ${batchResult.status === "completed"}`);
       
-      if (batchResult.status === "completed" && batchResult.data && Array.isArray(batchResult.data)) {
+      // Validate the response format
+      if (!validateBatchResponse(batchResult)) {
+        throw new Error("Invalid or incomplete response format from Firecrawl Batch API");
+      }
+      
+      if (batchResult.status === "completed" && Array.isArray(batchResult.data)) {
         console.log(`Received batch scrape data for ${batchResult.data.length} URLs`);
         
         // Create a map of URL to scraped content for easier lookup
         const scrapedContentMap = {};
         batchResult.data.forEach((item, index) => {
-          if (item.metadata && item.metadata.sourceURL) {
+          if (item && item.metadata && item.metadata.sourceURL) {
             scrapedContentMap[item.metadata.sourceURL] = item.markdown || 'No content available';
-          } else {
+          } else if (item && item.markdown) {
             // If no sourceURL in metadata, use the original URL from our list
-            scrapedContentMap[validUrls[index]] = item.markdown || 'No content available';
+            // but make sure we have a valid item with markdown content
+            scrapedContentMap[validUrls[index]] = item.markdown;
+          } else {
+            console.warn(`No valid content for URL at index ${index}`);
           }
         });
         
