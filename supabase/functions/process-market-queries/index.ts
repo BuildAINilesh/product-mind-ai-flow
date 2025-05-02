@@ -64,23 +64,20 @@ serve(async (req) => {
       console.log(`Processing query: ${query.query}`);
       
       try {
-        // Call Firecrawl Search API with the correct endpoint from documentation
-        console.log(`Calling Firecrawl API at https://api.firecrawl.dev/v2/search`);
+        // Create a FirecrawlApp-like client based on the documentation
+        console.log(`Calling Firecrawl API with search query: ${query.query}`);
         
-        const searchPayload = {
-          query: query.query,
-          limit: 5, // Get top 5 results per query
-        };
-        
-        console.log(`Search payload: ${JSON.stringify(searchPayload)}`);
-        
-        const searchResponse = await fetch('https://api.firecrawl.dev/v2/search', {
+        // According to documentation, we need to use the search endpoint
+        const searchResponse = await fetch('https://api.firecrawl.dev/search', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${firecrawlApiKey}`
           },
-          body: JSON.stringify(searchPayload)
+          body: JSON.stringify({
+            query: query.query,
+            limit: 5 // Get top 5 results per query
+          })
         });
 
         console.log(`Firecrawl API response status: ${searchResponse.status}`);
@@ -109,10 +106,11 @@ serve(async (req) => {
 
         const searchResults = await searchResponse.json();
         console.log(`Received search response: ${JSON.stringify(searchResults).substring(0, 200)}...`);
-        console.log(`Received ${searchResults.data?.length || 0} results for query: ${query.query}`);
         
-        // Save search results to market_research_sources table
-        if (searchResults.data && searchResults.data.length > 0) {
+        // According to documentation the results are in the data array
+        if (searchResults.success && searchResults.data && searchResults.data.length > 0) {
+          console.log(`Received ${searchResults.data.length} results for query: ${query.query}`);
+          
           for (const result of searchResults.data) {
             console.log(`Saving result: ${result.title || 'No Title'} | ${result.url}`);
             
@@ -143,6 +141,9 @@ serve(async (req) => {
             
             savedSources++;
           }
+        } else {
+          console.log(`No results found for query: ${query.query} or response format unexpected`);
+          console.log(`Full response: ${JSON.stringify(searchResults)}`);
         }
         
         // Update the query status to searched

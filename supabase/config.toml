@@ -7,4 +7,3 @@ verify_jwt = false
 
 [functions.process-market-queries]
 verify_jwt = false
-
