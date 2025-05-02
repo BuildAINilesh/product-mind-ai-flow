@@ -145,8 +145,58 @@ function validateBatchResponse(data: any): boolean {
     return true;
   }
   
+  // For response with just an ID and success flag (initial async response)
+  if (data.id && data.success === true) {
+    return true;
+  }
+  
   console.error("Invalid batch response format:", data);
   return false;
+}
+
+// Function to check batch scrape status
+async function checkBatchScrapeStatus(jobId: string, maxRetries = 10) {
+  if (!firecrawlApiKey) {
+    throw new Error("Firecrawl API Key is missing");
+  }
+
+  console.log(`Checking status for batch scrape job: ${jobId}`);
+  
+  for (let retry = 0; retry < maxRetries; retry++) {
+    try {
+      const response = await fetch(`https://api.firecrawl.dev/v1/batch/scrape/${jobId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${firecrawlApiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error checking batch status: ${response.status} - ${errorText}`);
+        
+        // Wait before retrying
+        await sleep(5000 * Math.pow(2, retry));
+        continue;
+      }
+      
+      const statusData = await response.json();
+      console.log(`Batch job status: ${statusData.status}, completed: ${statusData.completed}/${statusData.total}`);
+      
+      if (statusData.status === "completed") {
+        return statusData;
+      }
+      
+      // Wait before checking again
+      await sleep(5000);
+    } catch (error) {
+      console.error(`Error fetching batch status: ${error.message}`);
+      await sleep(5000 * Math.pow(2, retry));
+    }
+  }
+  
+  throw new Error(`Batch job did not complete after ${maxRetries} checks`);
 }
 
 serve(async (req) => {
@@ -293,16 +343,30 @@ serve(async (req) => {
       }
 
       // Parse response and validate its format
-      const batchResult = await scrapeResponse.json();
-      console.log(`Batch scrape response success: ${batchResult.status === "completed"}`);
+      const initialResponse = await scrapeResponse.json();
+      console.log(`Initial batch response:`, initialResponse);
       
       // Validate the response format
-      if (!validateBatchResponse(batchResult)) {
+      if (!validateBatchResponse(initialResponse)) {
         throw new Error("Invalid or incomplete response format from Firecrawl Batch API");
       }
       
+      // Handle synchronous vs asynchronous responses
+      let batchResult;
+      
+      // If this is an async job, we need to poll for completion
+      if (initialResponse.id && initialResponse.success === true) {
+        console.log(`Received async batch job ID: ${initialResponse.id}. Polling for completion...`);
+        batchResult = await checkBatchScrapeStatus(initialResponse.id);
+      } else if (initialResponse.status === "completed" && Array.isArray(initialResponse.data)) {
+        console.log(`Received completed batch result directly with ${initialResponse.data.length} items`);
+        batchResult = initialResponse;
+      } else {
+        throw new Error(`Unexpected response format from Firecrawl Batch API`);
+      }
+      
       if (batchResult.status === "completed" && Array.isArray(batchResult.data)) {
-        console.log(`Received batch scrape data for ${batchResult.data.length} URLs`);
+        console.log(`Processing batch scrape data for ${batchResult.data.length} URLs`);
         
         // Create a map of URL to scraped content for easier lookup
         const scrapedContentMap = {};
