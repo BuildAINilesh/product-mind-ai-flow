@@ -3,13 +3,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, Mail, BellRing } from "lucide-react";
+import { Settings as SettingsIcon, Mail, BellRing, Key } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const Settings = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
+  const [firecrawlApiKey, setFirecrawlApiKey] = useState("");
+  const { toast } = useToast();
+
+  // Load saved API key on component mount
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('firecrawl_api_key');
+    if (savedApiKey) {
+      setFirecrawlApiKey(savedApiKey);
+    }
+  }, []);
+
+  const handleSaveApiKey = () => {
+    localStorage.setItem('firecrawl_api_key', firecrawlApiKey);
+    toast({
+      title: "API Key Saved",
+      description: "Your Firecrawl API key has been securely saved.",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -38,6 +57,33 @@ const Settings = () => {
               <Input id="email" type="email" placeholder="john@example.com" />
             </div>
             <Button>Save Changes</Button>
+          </CardContent>
+        </Card>
+
+        {/* API Keys */}
+        <Card>
+          <CardHeader>
+            <CardTitle>API Keys</CardTitle>
+            <CardDescription>Configure API keys for external services</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Key className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="firecrawlApiKey">Firecrawl API Key</Label>
+              </div>
+              <Input
+                id="firecrawlApiKey"
+                type="password"
+                value={firecrawlApiKey}
+                onChange={(e) => setFirecrawlApiKey(e.target.value)}
+                placeholder="Enter your Firecrawl API key"
+              />
+              <p className="text-xs text-muted-foreground">
+                Your API key is stored securely in your browser's local storage.
+              </p>
+            </div>
+            <Button onClick={handleSaveApiKey}>Save API Key</Button>
           </CardContent>
         </Card>
 
