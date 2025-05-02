@@ -359,6 +359,7 @@ export type Database = {
         | "entertainment"
         | "energy"
         | "automotive"
+        | "HR"
         | "other"
       market_research_source_status: "pending_scrape" | "scraped" | "error"
       requirement_status_enum: "Draft" | "Completed" | "Re_Draft"
@@ -490,6 +491,7 @@ export const Constants = {
         "entertainment",
         "energy",
         "automotive",
+        "HR",
         "other",
       ],
       market_research_source_status: ["pending_scrape", "scraped", "error"],

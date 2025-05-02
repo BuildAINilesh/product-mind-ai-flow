@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,22 @@ import type { Database } from "@/integrations/supabase/types";
 
 // Type for the industry enum
 type IndustryType = Database["public"]["Enums"]["industry_enum"];
+
+// Get all industry types from the enum
+const INDUSTRY_TYPES: IndustryType[] = [
+  "technology",
+  "healthcare", 
+  "finance", 
+  "education", 
+  "retail", 
+  "manufacturing", 
+  "logistics", 
+  "entertainment", 
+  "energy", 
+  "automotive", 
+  "HR", 
+  "other"
+];
 
 const NewRequirement = () => {
   const navigate = useNavigate();
@@ -319,17 +336,11 @@ const NewRequirement = () => {
                     <SelectValue placeholder="Select industry type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="technology">Technology</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
-                    <SelectItem value="retail">Retail</SelectItem>
-                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                    <SelectItem value="logistics">Logistics</SelectItem>
-                    <SelectItem value="entertainment">Entertainment</SelectItem>
-                    <SelectItem value="energy">Energy</SelectItem>
-                    <SelectItem value="automotive">Automotive</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    {INDUSTRY_TYPES.map((industry) => (
+                      <SelectItem key={industry} value={industry}>
+                        {industry.charAt(0).toUpperCase() + industry.slice(1)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
