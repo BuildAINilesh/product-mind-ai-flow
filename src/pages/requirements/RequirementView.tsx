@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ type ProcessStep = {
 const ANALYSIS_STATUS_KEY = "marketAnalysis_status_";
 const ANALYSIS_STEPS_KEY = "marketAnalysis_steps_";
 const ANALYSIS_CURRENT_STEP_KEY = "marketAnalysis_currentStep_";
+const ANALYSIS_TIMESTAMP_KEY = "marketAnalysis_timestamp_";
+const MAX_WAIT_TIME_MS = 30 * 60 * 1000; // 30 minutes maximum wait time
 
 const RequirementView = () => {
   const { id } = useParams();
@@ -98,6 +101,22 @@ const RequirementView = () => {
     
     if (inProgress) {
       console.log("Found ongoing analysis process for requirement:", id);
+      
+      // Check if process has been running too long and might be stuck
+      const startTimestamp = localStorage.getItem(ANALYSIS_TIMESTAMP_KEY + id);
+      if (startTimestamp) {
+        const elapsedTime = Date.now() - parseInt(startTimestamp, 10);
+        
+        if (elapsedTime > MAX_WAIT_TIME_MS) {
+          // Process has been running too long, likely stuck
+          console.log("Analysis process appears to be stuck (running for more than 30 minutes)");
+          
+          // Check current status in database before resetting
+          checkMarketAnalysisStatus(true);
+          return;
+        }
+      }
+      
       setAnalysisInProgress(true);
       
       // Restore progress steps and current step
@@ -130,7 +149,7 @@ const RequirementView = () => {
   };
   
   // Function to check if market analysis has been completed
-  const checkMarketAnalysisStatus = async () => {
+  const checkMarketAnalysisStatus = async (isForceCheck = false) => {
     if (!id) return;
     
     try {
@@ -151,6 +170,7 @@ const RequirementView = () => {
         localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
         localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
         localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
+        localStorage.removeItem(ANALYSIS_TIMESTAMP_KEY + id);
         
         // Update steps to show all completed
         setProgressSteps(steps => steps.map(step => ({ ...step, status: "completed" })));
@@ -160,9 +180,79 @@ const RequirementView = () => {
         setTimeout(() => {
           setAnalysisInProgress(false);
         }, 3000);
+        
+        return true;
+      } else if (isForceCheck && currentStep === 3) {
+        // If we're checking a potentially stuck process and it's on the summarizing step
+        console.log("Attempting to resume stalled summarization process");
+        resetSummarizationStep();
+        return false;
       }
+      
+      return false;
     } catch (e) {
       console.error("Error checking market analysis:", e);
+      return false;
+    }
+  };
+  
+  // Function to reset and restart a stuck summarization process
+  const resetSummarizationStep = async () => {
+    if (!id) return;
+    
+    try {
+      toast({
+        title: "Resuming Analysis",
+        description: "The summarization process appeared to be stuck. Attempting to resume...",
+      });
+      
+      // Reset the current step's status
+      updateStepStatus(3, "processing");
+      
+      // Call summarize API to continue processing
+      const { data, error } = await supabase.functions.invoke('summarize-research-content', {
+        body: { requirementId: id }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Continue with next steps if summarization is complete or has fewer remaining items
+      const hasProgressMade = data?.totalSummarized > 0;
+      
+      if (hasProgressMade) {
+        console.log(`Summarization has processed ${data.totalSummarized} items`);
+        
+        // If there's more content to summarize, continue
+        if (data.remaining && data.remaining > 0) {
+          await summarizeAdditionalContent(id);
+        }
+        
+        // Continue to the next step
+        updateStepStatus(3, "completed");
+        setCurrentStep(4);
+        localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '4');
+        
+        // Generate market analysis
+        await analyzeMarketData();
+      } else {
+        // If no progress was made, the process might be truly stuck
+        updateStepStatus(3, "failed");
+        toast({
+          title: "Process Stuck",
+          description: "Unable to resume analysis. Please try again or contact support.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error resetting summarization step:', error);
+      updateStepStatus(3, "failed");
+      toast({
+        title: "Error",
+        description: "Failed to resume the analysis process.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -261,6 +351,43 @@ const RequirementView = () => {
     }
   };
 
+  // Function to analyze market data directly (used in reset process)
+  const analyzeMarketData = async () => {
+    try {
+      updateStepStatus(4, "processing");
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-market', {
+        body: { requirementId: id }
+      });
+      
+      if (analysisError) throw analysisError;
+      updateStepStatus(4, "completed");
+      
+      // Clear localStorage flags since process is complete
+      localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
+      localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
+      localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
+      localStorage.removeItem(ANALYSIS_TIMESTAMP_KEY + id);
+      
+      // Navigate to the market analysis results after a short delay
+      setTimeout(() => {
+        navigate(`/dashboard/market-sense?requirementId=${id}`);
+      }, 1000);
+      
+      return true;
+    } catch (error) {
+      console.error('Error in market analysis process:', error);
+      updateStepStatus(4, "failed");
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to complete market analysis",
+        variant: "destructive",
+      });
+      
+      return false;
+    }
+  };
+
   // Function to trigger AI market analysis with visual progress indicators
   const generateMarketAnalysis = async () => {
     if (!id) return;
@@ -275,6 +402,7 @@ const RequirementView = () => {
       localStorage.setItem(ANALYSIS_STATUS_KEY + id, 'true');
       localStorage.setItem(ANALYSIS_STEPS_KEY + id, JSON.stringify(progressSteps));
       localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '0');
+      localStorage.setItem(ANALYSIS_TIMESTAMP_KEY + id, Date.now().toString());
       
       // Step 1: Generate search queries
       updateStepStatus(0, "processing");
@@ -354,6 +482,7 @@ const RequirementView = () => {
       localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
       localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
       localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
+      localStorage.removeItem(ANALYSIS_TIMESTAMP_KEY + id);
       
       // Navigate to the market analysis results after a short delay
       setTimeout(() => {
@@ -396,6 +525,24 @@ const RequirementView = () => {
       console.error('Error summarizing additional content:', error);
       throw error;
     }
+  };
+
+  // Add function to cancel ongoing analysis
+  const cancelAnalysis = () => {
+    if (!id) return;
+    
+    // Clear all analysis state and localStorage
+    localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
+    localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
+    localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
+    localStorage.removeItem(ANALYSIS_TIMESTAMP_KEY + id);
+    localStorage.removeItem("autoStartAnalysis_" + id);
+    
+    setAnalysisInProgress(false);
+    toast({
+      title: "Analysis Cancelled",
+      description: "Market analysis process has been cancelled.",
+    });
   };
   
   // Render step indicator component
@@ -562,10 +709,21 @@ const RequirementView = () => {
             <div className="mt-3">
               {progressSteps.map(renderStepIndicator)}
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              The analysis will continue processing even if you navigate away from this page.
-              You can return at any time to check progress.
-            </p>
+            <div className="mt-4 flex justify-between items-center">
+              <p className="text-sm text-muted-foreground">
+                The analysis will continue processing even if you navigate away from this page.
+                You can return at any time to check progress.
+              </p>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={cancelAnalysis}
+                className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+              >
+                Cancel
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}
