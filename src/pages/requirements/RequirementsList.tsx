@@ -112,22 +112,41 @@ const RequirementsList = () => {
 
   const navigateToMarketSense = async (requirementId: string) => {
     try {
-      // Create a draft entry in the market_analysis table
-      const { error } = await supabase
+      // First, check if a market analysis entry already exists
+      const { data: existingAnalysis, error: checkError } = await supabase
         .from('market_analysis')
-        .upsert({
-          requirement_id: requirementId,
-          status: 'Draft'
-        });
+        .select('id')
+        .eq('requirement_id', requirementId)
+        .maybeSingle();
         
-      if (error) {
-        console.error('Error creating market analysis entry:', error);
+      if (checkError) {
+        console.error('Error checking for existing market analysis:', checkError);
         toast({
           title: "Error",
-          description: "Failed to create market analysis entry.",
+          description: "Failed to check for existing market analysis.",
           variant: "destructive",
         });
         return;
+      }
+      
+      // If no entry exists, create one
+      if (!existingAnalysis) {
+        const { error } = await supabase
+          .from('market_analysis')
+          .insert({
+            requirement_id: requirementId,
+            status: 'Draft'
+          });
+          
+        if (error) {
+          console.error('Error creating market analysis entry:', error);
+          toast({
+            title: "Error",
+            description: "Failed to create market analysis entry.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
       
       // Navigate to the main MarketSense dashboard with the requirement ID as a URL parameter
