@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { 
   Card, 
   CardContent, 
@@ -26,6 +25,7 @@ const MarketSense = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   
   const [requirement, setRequirement] = useState(null);
   const [requirementAnalysis, setRequirementAnalysis] = useState(null);
@@ -33,8 +33,8 @@ const MarketSense = () => {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   
-  // Get requirementId from location state or from URL params
-  const requirementId = location.state?.requirementId || null;
+  // Get requirementId from URL params first, then from location state (for backward compatibility)
+  const requirementId = searchParams.get('requirementId') || (location.state?.requirementId || null);
   
   useEffect(() => {
     const fetchData = async () => {

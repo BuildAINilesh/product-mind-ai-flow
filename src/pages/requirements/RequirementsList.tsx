@@ -130,8 +130,8 @@ const RequirementsList = () => {
         return;
       }
       
-      // Navigate to the main MarketSense dashboard
-      navigate("/dashboard/market-sense");
+      // Navigate to the main MarketSense dashboard with the requirement ID as a URL parameter
+      navigate(`/dashboard/market-sense?requirementId=${requirementId}`);
       
     } catch (err) {
       console.error('Error:', err);
