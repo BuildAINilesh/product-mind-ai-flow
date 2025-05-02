@@ -68,17 +68,18 @@ serve(async (req) => {
       console.log(`Processing query: ${query.query}`);
       
       try {
-        // Call Firecrawl Search API as per documentation
+        // Call Firecrawl Search API
         console.log(`Calling Firecrawl API with search query: ${query.query}`);
         
-        // The correct endpoint URL according to Firecrawl docs
-        const searchEndpoint = 'https://api.firecrawl.dev/api/search';
+        // Correct endpoint according to latest Firecrawl API docs
+        const searchEndpoint = 'https://api.firecrawl.dev/search';
         
         console.log(`Using search endpoint: ${searchEndpoint}`);
-        console.log(`Request payload: ${JSON.stringify({
+        const requestPayload = {
           query: query.query,
-          limit: 5
-        })}`);
+          limit: 5 // Get top 5 results per query
+        };
+        console.log(`Request payload: ${JSON.stringify(requestPayload)}`);
         
         const searchResponse = await fetch(searchEndpoint, {
           method: 'POST',
@@ -86,10 +87,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${firecrawlApiKey}`
           },
-          body: JSON.stringify({
-            query: query.query,
-            limit: 5 // Get top 5 results per query
-          })
+          body: JSON.stringify(requestPayload)
         });
 
         console.log(`Firecrawl API response status: ${searchResponse.status}`);
@@ -118,27 +116,40 @@ serve(async (req) => {
 
         const searchResults = await searchResponse.json();
         console.log(`Search response structure: ${Object.keys(searchResults).join(', ')}`);
-        console.log(`Search results success status: ${searchResults.success}`);
         
-        if (searchResults.data) {
-          console.log(`Search results data type: ${typeof searchResults.data}`);
-          console.log(`Is data an array: ${Array.isArray(searchResults.data)}`);
-          console.log(`Data length: ${Array.isArray(searchResults.data) ? searchResults.data.length : 'Not an array'}`);
-          
-          if (Array.isArray(searchResults.data) && searchResults.data.length > 0) {
-            console.log(`First result sample: ${JSON.stringify(searchResults.data[0]).substring(0, 200)}...`);
-          }
+        // Handle different response formats from Firecrawl API
+        let results = [];
+        
+        if (searchResults.results && Array.isArray(searchResults.results)) {
+          // New API format
+          console.log(`Using 'results' array from response with ${searchResults.results.length} items`);
+          results = searchResults.results;
+        } else if (searchResults.data && Array.isArray(searchResults.data)) {
+          // Old API format
+          console.log(`Using 'data' array from response with ${searchResults.data.length} items`);
+          results = searchResults.data;
         } else {
-          console.log(`No data property in search results or it's empty`);
+          console.log(`No valid results array found in response`);
+          console.log(`Full response structure: ${JSON.stringify(searchResults, null, 2).substring(0, 500)}...`);
+          results = [];
         }
         
-        // Parse results according to Firecrawl documentation
-        if (searchResults.success && searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
-          console.log(`Received ${searchResults.data.length} results for query: ${query.query}`);
+        if (results.length > 0) {
+          console.log(`Received ${results.length} results for query: ${query.query}`);
+          console.log(`First result sample: ${JSON.stringify(results[0]).substring(0, 200)}...`);
           
-          for (const result of searchResults.data) {
-            console.log(`Saving result: ${result.title || 'No Title'} | ${result.url}`);
-            console.log(`Result structure: ${Object.keys(result).join(', ')}`);
+          for (const result of results) {
+            console.log(`Saving result: ${result.title || 'No Title'} | ${result.url || result.link || 'No URL'}`);
+            
+            // Handle both old and new API response formats
+            const resultUrl = result.url || result.link;
+            const resultTitle = result.title || 'No Title';
+            const resultSnippet = result.description || result.snippet || result.text || null;
+            
+            if (!resultUrl) {
+              console.error(`Missing URL in result: ${JSON.stringify(result)}`);
+              continue;
+            }
             
             // Store each result in market_research_sources
             const sourceResponse = await fetch(`${supabaseUrl}/rest/v1/market_research_sources`, {
@@ -152,9 +163,9 @@ serve(async (req) => {
               body: JSON.stringify({
                 requirement_id: requirementId,
                 query_id: query.id,
-                title: result.title || 'No Title',
-                url: result.url,
-                snippet: result.description || null,
+                title: resultTitle,
+                url: resultUrl,
+                snippet: resultSnippet,
                 status: 'found'
               })
             });
@@ -168,8 +179,7 @@ serve(async (req) => {
             savedSources++;
           }
         } else {
-          console.log(`No results found for query: ${query.query} or response format unexpected`);
-          console.log(`Full response: ${JSON.stringify(searchResults)}`);
+          console.log(`No results found for query: ${query.query}`);
         }
         
         // Update the query status to searched
