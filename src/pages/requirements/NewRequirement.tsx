@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -236,6 +237,7 @@ const NewRequirement = () => {
         formData.audioUploadUrl
       ].filter(url => url !== null) as string[];
 
+      // FIX: Removed the incorrect requirement_id field, using only valid columns from the requirements table
       const { data: newRequirement, error } = await supabase
         .from('requirements')
         .insert({
