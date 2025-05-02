@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      firecrawl_queries: {
+        Row: {
+          created_at: string
+          id: string
+          query: string
+          requirement_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query: string
+          requirement_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query?: string
+          requirement_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firecrawl_queries_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_analysis: {
         Row: {
           confidence_score: number | null
@@ -57,6 +89,54 @@ export type Database = {
             foreignKeyName: "market_analysis_requirement_id_fkey"
             columns: ["requirement_id"]
             isOneToOne: true
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_research_sources: {
+        Row: {
+          created_at: string
+          id: string
+          query_id: string
+          requirement_id: string
+          snippet: string | null
+          status: string
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query_id: string
+          requirement_id: string
+          snippet?: string | null
+          status: string
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query_id?: string
+          requirement_id?: string
+          snippet?: string | null
+          status?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_research_sources_query_id_fkey"
+            columns: ["query_id"]
+            isOneToOne: false
+            referencedRelation: "firecrawl_queries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_research_sources_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
             referencedRelation: "requirements"
             referencedColumns: ["id"]
           },
@@ -204,6 +284,54 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      scraped_research_data: {
+        Row: {
+          created_at: string
+          id: string
+          raw_content: string
+          requirement_id: string
+          source_id: string
+          status: string
+          summary: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          raw_content: string
+          requirement_id: string
+          source_id: string
+          status: string
+          summary?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          raw_content?: string
+          requirement_id?: string
+          source_id?: string
+          status?: string
+          summary?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scraped_research_data_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scraped_research_data_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "market_research_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
