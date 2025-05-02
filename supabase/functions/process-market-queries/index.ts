@@ -74,6 +74,12 @@ serve(async (req) => {
         // The correct endpoint URL according to Firecrawl docs
         const searchEndpoint = 'https://api.firecrawl.dev/api/search';
         
+        console.log(`Using search endpoint: ${searchEndpoint}`);
+        console.log(`Request payload: ${JSON.stringify({
+          query: query.query,
+          limit: 5
+        })}`);
+        
         const searchResponse = await fetch(searchEndpoint, {
           method: 'POST',
           headers: {
@@ -111,7 +117,20 @@ serve(async (req) => {
         }
 
         const searchResults = await searchResponse.json();
-        console.log(`Received search response: ${JSON.stringify(searchResults).substring(0, 200)}...`);
+        console.log(`Search response structure: ${Object.keys(searchResults).join(', ')}`);
+        console.log(`Search results success status: ${searchResults.success}`);
+        
+        if (searchResults.data) {
+          console.log(`Search results data type: ${typeof searchResults.data}`);
+          console.log(`Is data an array: ${Array.isArray(searchResults.data)}`);
+          console.log(`Data length: ${Array.isArray(searchResults.data) ? searchResults.data.length : 'Not an array'}`);
+          
+          if (Array.isArray(searchResults.data) && searchResults.data.length > 0) {
+            console.log(`First result sample: ${JSON.stringify(searchResults.data[0]).substring(0, 200)}...`);
+          }
+        } else {
+          console.log(`No data property in search results or it's empty`);
+        }
         
         // Parse results according to Firecrawl documentation
         if (searchResults.success && searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
@@ -119,6 +138,7 @@ serve(async (req) => {
           
           for (const result of searchResults.data) {
             console.log(`Saving result: ${result.title || 'No Title'} | ${result.url}`);
+            console.log(`Result structure: ${Object.keys(result).join(', ')}`);
             
             // Store each result in market_research_sources
             const sourceResponse = await fetch(`${supabaseUrl}/rest/v1/market_research_sources`, {
