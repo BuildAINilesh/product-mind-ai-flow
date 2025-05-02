@@ -43,6 +43,7 @@ const MarketSense = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [allMarketAnalyses, setAllMarketAnalyses] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState(null);
   
   // Get requirementId from URL params
   const requirementId = searchParams.get('requirementId');
@@ -55,6 +56,7 @@ const MarketSense = () => {
       if (requirementId) return; // Skip if we have a specific requirementId
       
       setLoading(true);
+      setError(null);
       try {
         // Fetch market analyses with their corresponding requirement details
         const { data, error } = await supabase
@@ -78,6 +80,7 @@ const MarketSense = () => {
         
       } catch (error) {
         console.error("Error fetching market analyses:", error);
+        setError("Failed to load market analyses. Please try again.");
         toast({
           title: "Error",
           description: "Failed to load market analyses",
@@ -101,6 +104,7 @@ const MarketSense = () => {
       
       console.log("Fetching data for requirementId:", requirementId);
       setLoading(true);
+      setError(null);
       try {
         // Fetch the requirement
         const { data: reqData, error: reqError } = await supabase
@@ -177,6 +181,7 @@ const MarketSense = () => {
         
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError("Failed to load project data. The requirement might not exist.");
         toast({
           title: "Error",
           description: "Failed to load project data",
@@ -294,11 +299,57 @@ const MarketSense = () => {
     analysis?.requirements?.industry_type?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // If we're loading, show a loading indicator
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
         <p className="ml-2">Loading data...</p>
+      </div>
+    );
+  }
+  
+  // If there's an error and we have a requirementId, show the error
+  if (error && requirementId) {
+    return (
+      <div className="space-y-6">
+        <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <h2 className="text-2xl font-bold">MarketSense <AIGradientText>AI</AIGradientText></h2>
+              <p className="text-muted-foreground mt-1">AI-powered market analysis</p>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/market-sense')}
+              className="flex items-center gap-1"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Market Analyses
+            </Button>
+          </div>
+        </AIBackground>
+        
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error Loading Data</CardTitle>
+            <CardDescription>
+              We encountered a problem while loading the market analysis.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>{error}</p>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/requirements')}
+            >
+              Go to Requirements
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
@@ -407,14 +458,60 @@ const MarketSense = () => {
     );
   }
 
-  // Single requirement view (when requirementId is provided)
+  // Single requirement view (when requirementId is provided and requirement exists)
+  // Make sure requirement exists before trying to access its properties
+  if (!requirement) {
+    return (
+      <div className="space-y-6">
+        <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <h2 className="text-2xl font-bold">MarketSense <AIGradientText>AI</AIGradientText></h2>
+              <p className="text-muted-foreground mt-1">AI-powered market analysis</p>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/market-sense')}
+              className="flex items-center gap-1"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Market Analyses
+            </Button>
+          </div>
+        </AIBackground>
+        
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-destructive">Requirement Not Found</CardTitle>
+            <CardDescription>
+              We couldn't find the requirement you're looking for.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>The requirement with ID {requirementId} could not be found or you don't have permission to access it.</p>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/market-sense')}
+            >
+              Back to Market Analyses
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Single requirement view (when requirementId is provided and requirement exists)
   return (
     <div className="space-y-6">
       <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
         <div className="flex justify-between items-center relative z-10">
           <div>
             <h2 className="text-2xl font-bold">MarketSense <AIGradientText>AI</AIGradientText></h2>
-            <p className="text-muted-foreground mt-1">AI-powered market analysis for {requirement?.project_name}</p>
+            <p className="text-muted-foreground mt-1">AI-powered market analysis for {requirement.project_name}</p>
           </div>
           
           <div className="flex gap-2">
