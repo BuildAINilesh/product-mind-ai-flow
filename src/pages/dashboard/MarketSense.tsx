@@ -24,7 +24,6 @@ import {
 const MarketSense = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
   
   const [requirement, setRequirement] = useState(null);
@@ -33,13 +32,19 @@ const MarketSense = () => {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   
-  // Get requirementId from URL params first, then from location state (for backward compatibility)
-  const requirementId = searchParams.get('requirementId') || (location.state?.requirementId || null);
+  // Get requirementId from URL params
+  const requirementId = searchParams.get('requirementId');
+  
+  console.log("Current requirementId:", requirementId);
   
   useEffect(() => {
     const fetchData = async () => {
-      if (!requirementId) return;
+      if (!requirementId) {
+        console.log("No requirementId provided");
+        return;
+      }
       
+      console.log("Fetching data for requirementId:", requirementId);
       setLoading(true);
       try {
         // Fetch the requirement
@@ -49,7 +54,12 @@ const MarketSense = () => {
           .eq('id', requirementId)
           .single();
           
-        if (reqError) throw reqError;
+        if (reqError) {
+          console.error("Error fetching requirement:", reqError);
+          throw reqError;
+        }
+        
+        console.log("Requirement data:", reqData);
         setRequirement(reqData);
         
         // Fetch the requirement analysis
@@ -59,7 +69,12 @@ const MarketSense = () => {
           .eq('requirement_id', requirementId)
           .maybeSingle();
           
-        if (analysisError && analysisError.code !== 'PGRST116') throw analysisError;
+        if (analysisError && analysisError.code !== 'PGRST116') {
+          console.error("Error fetching requirement analysis:", analysisError);
+          throw analysisError;
+        }
+        
+        console.log("Requirement analysis data:", analysisData);
         setRequirementAnalysis(analysisData || null);
         
         // Fetch market analysis if it exists
@@ -69,10 +84,19 @@ const MarketSense = () => {
           .eq('requirement_id', requirementId)
           .maybeSingle();
           
-        if (marketError && marketError.code !== 'PGRST116') throw marketError;
+        if (marketError && marketError.code !== 'PGRST116') {
+          console.error("Error fetching market analysis:", marketError);
+          throw marketError;
+        }
         
-        // If market analysis doesn't exist, create a draft entry
-        if (!marketData) {
+        console.log("Market analysis data:", marketData);
+        
+        // If market analysis exists, set it
+        if (marketData) {
+          setMarketAnalysis(marketData);
+        } else {
+          // If market analysis doesn't exist, create a draft entry
+          console.log("Creating new market analysis draft");
           const { data: newMarketData, error: createError } = await supabase
             .from('market_analysis')
             .insert({
@@ -82,15 +106,18 @@ const MarketSense = () => {
             .select()
             .single();
             
-          if (createError) throw createError;
+          if (createError) {
+            console.error("Error creating market analysis:", createError);
+            throw createError;
+          }
+          
+          console.log("Created new market analysis:", newMarketData);
           setMarketAnalysis(newMarketData);
           
           toast({
             title: "Draft Created",
             description: "New market analysis draft has been created",
           });
-        } else {
-          setMarketAnalysis(marketData);
         }
         
       } catch (error) {

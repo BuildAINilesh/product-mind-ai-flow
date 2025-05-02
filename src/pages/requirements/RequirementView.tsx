@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -186,6 +185,7 @@ const RequirementView = () => {
       }
       
       // Navigate to the main MarketSense dashboard with the requirement ID as a URL parameter
+      console.log("Navigating to MarketSense with requirementId:", id);
       navigate(`/dashboard/market-sense?requirementId=${id}`);
       
     } catch (err) {
