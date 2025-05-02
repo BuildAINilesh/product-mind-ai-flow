@@ -24,6 +24,7 @@ serve(async (req) => {
     }
 
     console.log(`Processing market queries for requirement: ${requirementId}`);
+    console.log(`Using Firecrawl API Key: ${firecrawlApiKey ? "Available (masked)" : "Missing"}`);
     
     // Get all pending queries for the requirement
     const queriesResponse = await fetch(`${supabaseUrl}/rest/v1/firecrawl_queries?requirement_id=eq.${requirementId}&status=eq.pending`, {
@@ -63,19 +64,27 @@ serve(async (req) => {
       console.log(`Processing query: ${query.query}`);
       
       try {
-        // Call Firecrawl Search API with the correct endpoint
+        // Call Firecrawl Search API with the correct endpoint from documentation
+        console.log(`Calling Firecrawl API at https://api.firecrawl.dev/v2/search`);
+        
+        const searchPayload = {
+          query: query.query,
+          limit: 5, // Get top 5 results per query
+        };
+        
+        console.log(`Search payload: ${JSON.stringify(searchPayload)}`);
+        
         const searchResponse = await fetch('https://api.firecrawl.dev/v2/search', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${firecrawlApiKey}`
           },
-          body: JSON.stringify({
-            query: query.query,
-            limit: 5, // Get top 5 results per query
-          })
+          body: JSON.stringify(searchPayload)
         });
 
+        console.log(`Firecrawl API response status: ${searchResponse.status}`);
+        
         if (!searchResponse.ok) {
           const errorText = await searchResponse.text();
           console.error(`Firecrawl search error for query '${query.query}': ${errorText}`);
@@ -99,11 +108,14 @@ serve(async (req) => {
         }
 
         const searchResults = await searchResponse.json();
-        console.log(`Received ${searchResults.results?.length || 0} results for query: ${query.query}`);
+        console.log(`Received search response: ${JSON.stringify(searchResults).substring(0, 200)}...`);
+        console.log(`Received ${searchResults.data?.length || 0} results for query: ${query.query}`);
         
         // Save search results to market_research_sources table
-        if (searchResults.results && searchResults.results.length > 0) {
-          for (const result of searchResults.results) {
+        if (searchResults.data && searchResults.data.length > 0) {
+          for (const result of searchResults.data) {
+            console.log(`Saving result: ${result.title || 'No Title'} | ${result.url}`);
+            
             // Store each result in market_research_sources
             const sourceResponse = await fetch(`${supabaseUrl}/rest/v1/market_research_sources`, {
               method: 'POST',
@@ -118,7 +130,7 @@ serve(async (req) => {
                 query_id: query.id,
                 title: result.title || 'No Title',
                 url: result.url,
-                snippet: result.snippet || result.description || null,
+                snippet: result.description || null,
                 status: 'found'
               })
             });
@@ -151,6 +163,7 @@ serve(async (req) => {
         
       } catch (queryError) {
         console.error(`Error processing query '${query.query}': ${queryError.message}`);
+        console.error(queryError.stack);
         
         // Update the query status to error
         await fetch(`${supabaseUrl}/rest/v1/firecrawl_queries?id=eq.${query.id}`, {
