@@ -10,6 +10,8 @@ const Logout = () => {
     const performLogout = async () => {
       try {
         await signOut();
+        // Note: we don't need to redirect here, as the AuthProvider will
+        // handle the redirection on SIGNED_OUT event
       } catch (error) {
         console.error("Error during logout:", error);
       }
@@ -18,8 +20,9 @@ const Logout = () => {
     performLogout();
   }, [signOut]);
 
-  // Immediately redirect to home page
-  return <Navigate to="/" replace />;
+  // Return null instead of immediately redirecting
+  // Let the auth state change handle the navigation
+  return null;
 };
 
 export default Logout;

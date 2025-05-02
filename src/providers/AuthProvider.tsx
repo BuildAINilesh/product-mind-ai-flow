@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,23 +35,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log(`Auth state change event: ${event}`);
+        
+        // Update session and user state
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
 
-        if (event === 'SIGNED_IN') {
-          navigate('/dashboard');
-          toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in.",
-          });
-        }
-        if (event === 'SIGNED_OUT') {
-          navigate('/');
-          toast({
-            title: "Signed out",
-            description: "You have been signed out successfully.",
-          });
+        // Only navigate on explicit sign in/out events, not on initial load or token refresh
+        if (initialAuthCheckDone) {
+          if (event === 'SIGNED_IN') {
+            navigate('/dashboard');
+            toast({
+              title: "Welcome back!",
+              description: "You have successfully signed in.",
+            });
+          }
+          if (event === 'SIGNED_OUT') {
+            navigate('/');
+            toast({
+              title: "Signed out",
+              description: "You have been signed out successfully.",
+            });
+          }
         }
       }
     );
@@ -60,12 +67,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
+      setInitialAuthCheckDone(true);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, [navigate, toast, initialAuthCheckDone]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
