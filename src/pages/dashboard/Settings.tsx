@@ -3,48 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, Mail, BellRing, Key } from "lucide-react";
+import { Settings as SettingsIcon, Mail, BellRing } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const Settings = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
-  const [firecrawlApiKey, setFirecrawlApiKey] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-
-  // Load API key from localStorage on component mount
-  useEffect(() => {
-    const storedApiKey = localStorage.getItem("firecrawlApiKey");
-    if (storedApiKey) {
-      // Mask the stored API key for display
-      setFirecrawlApiKey(storedApiKey);
-    }
-  }, []);
-
-  const saveApiKey = () => {
-    setIsSaving(true);
-    try {
-      // Store the API key in localStorage
-      localStorage.setItem("firecrawlApiKey", firecrawlApiKey);
-      
-      toast({
-        title: "API Key Saved",
-        description: "Your Firecrawl API key has been saved successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error Saving API Key",
-        description: "There was a problem saving your API key.",
-        variant: "destructive",
-      });
-      console.error("Error saving API key:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -73,38 +40,6 @@ const Settings = () => {
               <Input id="email" type="email" placeholder="john@example.com" />
             </div>
             <Button>Save Changes</Button>
-          </CardContent>
-        </Card>
-
-        {/* API Configuration Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>API Configuration</CardTitle>
-            <CardDescription>Configure your API keys for external services</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="firecrawlApiKey">Firecrawl API Key</Label>
-              <div className="flex gap-2">
-                <Input 
-                  id="firecrawlApiKey" 
-                  type="password" 
-                  placeholder="Enter your Firecrawl API key" 
-                  value={firecrawlApiKey}
-                  onChange={(e) => setFirecrawlApiKey(e.target.value)}
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={saveApiKey} 
-                  disabled={isSaving || !firecrawlApiKey}
-                >
-                  {isSaving ? 'Saving...' : 'Save Key'}
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                This key will be used for market research features.
-              </p>
-            </div>
           </CardContent>
         </Card>
 
