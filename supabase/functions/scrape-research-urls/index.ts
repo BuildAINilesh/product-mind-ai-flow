@@ -155,7 +155,7 @@ function validateBatchResponse(data: any): boolean {
 }
 
 // Function to check batch scrape status
-async function checkBatchScrapeStatus(jobId: string, maxRetries = 10) {
+async function checkBatchScrapeStatus(jobId: string, maxRetries = 25) {
   if (!firecrawlApiKey) {
     throw new Error("Firecrawl API Key is missing");
   }
