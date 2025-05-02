@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
 import { 
@@ -32,7 +32,6 @@ import {
 
 const MarketSense = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   
   const [requirement, setRequirement] = useState(null);
@@ -82,18 +81,14 @@ const MarketSense = () => {
       } catch (error) {
         console.error("Error fetching market analyses:", error);
         setError("Failed to load market analyses. Please try again.");
-        toast({
-          title: "Error",
-          description: "Failed to load market analyses",
-          variant: "destructive"
-        });
+        toast("Error: Failed to load market analyses");
       } finally {
         setLoading(false);
       }
     };
     
     fetchAllMarketAnalyses();
-  }, [requirementId, toast]);
+  }, [requirementId]);
   
   // Fetch specific requirement data when requirementId is provided
   useEffect(() => {
@@ -174,19 +169,16 @@ const MarketSense = () => {
           console.log("Created new market analysis:", newMarketData);
           setMarketAnalysis(newMarketData);
           
-          toast({
-            title: "Draft Created",
-            description: "New market analysis draft has been created",
+          toast.success("Draft Created", {
+            description: "New market analysis draft has been created"
           });
         }
         
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to load project data. The requirement might not exist.");
-        toast({
-          title: "Error",
-          description: "Failed to load project data",
-          variant: "destructive"
+        toast.error("Error", {
+          description: "Failed to load project data"
         });
       } finally {
         setLoading(false);
@@ -194,22 +186,20 @@ const MarketSense = () => {
     };
     
     fetchData();
-  }, [requirementId, toast]);
+  }, [requirementId]);
   
   const generateSearchQueries = async () => {
     if (!requirementId || !requirement) {
-      toast({
-        title: "Error",
-        description: "No requirement selected for analysis",
-        variant: "destructive"
+      toast.error("Error", {
+        description: "No requirement selected for analysis"
       });
       return;
     }
     
     setGeneratingQueries(true);
-    toast({
-      title: "Processing",
+    toast.loading("Processing", {
       description: "Generating search queries for market research...",
+      id: "generate-queries"
     });
     
     try {
@@ -243,9 +233,9 @@ const MarketSense = () => {
         throw new Error(data.message || "Failed to generate search queries");
       }
       
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: `Generated ${data.queries.length} search queries for market research`,
+        id: "generate-queries"
       });
       
       // After generating queries, process them with Firecrawl Search
@@ -253,10 +243,9 @@ const MarketSense = () => {
       
     } catch (error) {
       console.error("Error generating search queries:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to generate search queries",
-        variant: "destructive"
+        id: "generate-queries"
       });
       setGeneratingQueries(false);
     }
@@ -264,9 +253,9 @@ const MarketSense = () => {
   
   const processSearchQueries = async (reqId) => {
     setProcessingQueries(true);
-    toast({
-      title: "Processing",
+    toast.loading("Processing", {
       description: "Searching the web for market research data...",
+      id: "process-queries"
     });
     
     try {
@@ -283,9 +272,9 @@ const MarketSense = () => {
         throw new Error(data.message || "Failed to process search queries");
       }
       
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: `Processed ${data.processedQueries} queries and found ${data.savedSources} search results`,
+        id: "process-queries"
       });
       
       // After processing queries, proceed with market analysis
@@ -293,10 +282,9 @@ const MarketSense = () => {
       
     } catch (error) {
       console.error("Error processing search queries:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Failed to process search queries",
-        variant: "destructive"
+        id: "process-queries"
       });
       setProcessingQueries(false);
       setGeneratingQueries(false);
@@ -305,18 +293,16 @@ const MarketSense = () => {
   
   const handleGenerateAnalysis = async () => {
     if (!requirementId) {
-      toast({
-        title: "Error",
-        description: "No requirement selected for analysis",
-        variant: "destructive"
+      toast.error("Error", {
+        description: "No requirement selected for analysis"
       });
       return;
     }
     
     setAnalyzing(true);
-    toast({
-      title: "Processing",
+    toast.loading("Processing", {
       description: "Generating market analysis...",
+      id: "generate-analysis"
     });
     
     try {
@@ -337,17 +323,16 @@ const MarketSense = () => {
       if (marketError) throw marketError;
       
       setMarketAnalysis(marketData);
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Market analysis generated successfully",
+        id: "generate-analysis"
       });
       
     } catch (error) {
       console.error("Error generating market analysis:", error);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to generate market analysis",
-        variant: "destructive"
+        id: "generate-analysis"
       });
     } finally {
       setAnalyzing(false);

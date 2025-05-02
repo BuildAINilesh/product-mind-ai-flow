@@ -26,7 +26,7 @@ ${testCase.steps.map((step: string, index: number) => `${index + 1}. ${step}`).j
 Expected Result: ${testCase.expectedResult}`;
 
     navigator.clipboard.writeText(textToCopy);
-    toast("Test case copied to clipboard.");
+    toast.success("Test case copied to clipboard");
   };
 
   return (
