@@ -203,10 +203,10 @@ async function checkBatchScrapeStatus(jobId: string, maxRetries = 25) {
   throw new Error(`Batch job did not complete after ${maxRetries} checks`);
 }
 
-// Process a batch of URLs with Firecrawl
-async function processBatch(batchUrls: string[], batchSources: any[], processedSourceIds: Set<string>) {
+// Process all URLs in a single batch with Firecrawl
+async function processAllUrls(batchUrls: string[], batchSources: any[]) {
   try {
-    console.log(`Processing batch with ${batchUrls.length} URLs`);
+    console.log(`Processing all ${batchUrls.length} URLs in a single batch`);
     
     // Call Firecrawl Batch Scraper API
     const apiEndpoint = "https://api.firecrawl.dev/v1/batch/scrape";
@@ -232,21 +232,18 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
       
       // Mark all URLs in this batch as error
       for (const source of batchSources) {
-        if (!processedSourceIds.has(source.id)) {
-          processedSourceIds.add(source.id);
-          await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-              status: 'error'
-            })
-          });
-        }
+        await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': `${supabaseServiceKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            status: 'error'
+          })
+        });
       }
       
       throw new Error(`Batch scrape fetch error: ${fetchError}`);
@@ -258,7 +255,6 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
       const errorText = await scrapeResponse.text();
       console.error(`Firecrawl batch scrape error: ${errorText}`);
       
-      // Try to parse the error for detailed info
       try {
         const errorData = JSON.parse(errorText);
         
@@ -276,21 +272,18 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
             for (const idx of unsupportedUrlIndexes) {
               if (idx < batchSources.length) {
                 const source = batchSources[idx];
-                if (!processedSourceIds.has(source.id)) {
-                  processedSourceIds.add(source.id);
-                  await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-                    method: 'PATCH',
-                    headers: {
-                      'Authorization': `Bearer ${supabaseServiceKey}`,
-                      'apikey': `${supabaseServiceKey}`,
-                      'Content-Type': 'application/json',
-                      'Prefer': 'return=representation'
-                    },
-                    body: JSON.stringify({
-                      status: 'error'
-                    })
-                  });
-                }
+                await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                    'apikey': `${supabaseServiceKey}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                  },
+                  body: JSON.stringify({
+                    status: 'error'
+                  })
+                });
               }
             }
             
@@ -303,7 +296,8 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
               const supportedSources = supportedUrlsIndexes.map(idx => batchSources[idx]);
               
               console.log(`Retrying with ${supportedUrls.length} supported URLs`);
-              return processBatch(supportedUrls, supportedSources, processedSourceIds);
+              // Recursive call with supported URLs only
+              return processAllUrls(supportedUrls, supportedSources);
             }
           }
         }
@@ -311,23 +305,20 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
         console.error(`Failed to parse error details: ${parseError.message}`);
       }
       
-      // Mark all URLs in this batch as error if we couldn't handle specific errors
+      // Mark all URLs as error if we couldn't handle specific errors
       for (const source of batchSources) {
-        if (!processedSourceIds.has(source.id)) {
-          processedSourceIds.add(source.id);
-          await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-              status: 'error'
-            })
-          });
-        }
+        await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': `${supabaseServiceKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            status: 'error'
+          })
+        });
       }
       
       throw new Error(`Batch scrape failed with status ${scrapeResponse.status}: ${errorText}`);
@@ -343,21 +334,18 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
       
       // Mark all URLs in this batch as error
       for (const source of batchSources) {
-        if (!processedSourceIds.has(source.id)) {
-          processedSourceIds.add(source.id);
-          await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-              status: 'error'
-            })
-          });
-        }
+        await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': `${supabaseServiceKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            status: 'error'
+          })
+        });
       }
       
       throw new Error(`Invalid or incomplete response from Firecrawl Batch API`);
@@ -395,13 +383,12 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
       });
       
       // Now process each source and store the scraped data
+      let successCount = 0;
+      let errorCount = 0;
+      let summarizedCount = 0;
+      
       for (const source of batchSources) {
         try {
-          if (processedSourceIds.has(source.id)) {
-            console.log(`Skipping already processed source: ${source.id}`);
-            continue;
-          }
-          
           const url = source.url;
           console.log(`Processing result for URL: ${url}`);
           
@@ -410,6 +397,22 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
           
           if (!markdownContent || markdownContent === 'No content available') {
             console.warn(`No content found for URL: ${url}`);
+            errorCount++;
+            
+            await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'apikey': `${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify({
+                status: 'error'
+              })
+            });
+            
+            continue;
           }
           
           // Generate summary using OpenAI
@@ -419,6 +422,7 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
             summary = await summarizeContent(markdownContent, url);
             if (summary) {
               console.log(`Summary generated successfully for ${url}`);
+              summarizedCount++;
             } else {
               console.warn(`Failed to generate summary for ${url}`);
             }
@@ -446,6 +450,7 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
           if (!scrapedDataResponse.ok) {
             const errorData = await scrapedDataResponse.json();
             console.error(`Error storing scraped data for ${url}: ${JSON.stringify(errorData)}`);
+            errorCount++;
             continue;
           }
           
@@ -463,43 +468,47 @@ async function processBatch(batchUrls: string[], batchSources: any[], processedS
             })
           });
           
-          processedSourceIds.add(source.id);
+          successCount++;
         } catch (urlError) {
           console.error(`Error processing URL '${source.url}': ${urlError.message}`);
+          errorCount++;
           
           // Update source status to error
-          if (!processedSourceIds.has(source.id)) {
-            processedSourceIds.add(source.id);
-            await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-              method: 'PATCH',
-              headers: {
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-                'apikey': `${supabaseServiceKey}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
-              },
-              body: JSON.stringify({
-                status: 'error'
-              })
-            });
-          }
+          await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'apikey': `${supabaseServiceKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+              status: 'error'
+            })
+          });
         }
       }
       
       return {
         processed: batchSources.length,
-        success: true
+        success: true,
+        successCount,
+        errorCount,
+        summarizedCount
       };
     }
     
     throw new Error(`Batch result did not complete or has no data`);
     
   } catch (error) {
-    console.error(`Error processing batch: ${error.message}`);
+    console.error(`Error processing all URLs: ${error.message}`);
     return {
       processed: 0,
       success: false,
-      error: error.message
+      error: error.message,
+      errorCount: batchSources.length,
+      successCount: 0,
+      summarizedCount: 0
     };
   }
 }
@@ -560,7 +569,7 @@ serve(async (req) => {
 
     // Extract valid URLs
     const validSources = sources.filter(source => source.url && source.url.match(/^(http|https):\/\//));
-    let validUrls = validSources.map(source => source.url);
+    const validUrls = validSources.map(source => source.url);
     
     // Mark invalid URLs as error
     const invalidSources = sources.filter(source => !source.url || !source.url.match(/^(http|https):\/\//));
@@ -593,40 +602,10 @@ serve(async (req) => {
       });
     }
     
-    console.log(`Processing ${validUrls.length} valid URLs with batch scraping`);
+    console.log(`Processing ${validUrls.length} valid URLs in a single batch`);
     
-    // Keep track of processed URLs to avoid duplicates
-    const processedSourceIds = new Set<string>();
-    let totalProcessedUrls = 0;
-    let totalErrorCount = 0;
-    let totalSummarizedCount = 0;
-    
-    // Process URLs in smaller batches to better handle errors
-    const batchSize = 5; // Smaller batch size for better error isolation
-    const results = [];
-    
-    for (let i = 0; i < validUrls.length; i += batchSize) {
-      const batchUrls = validUrls.slice(i, i + batchSize);
-      const batchSources = validSources.slice(i, i + batchSize);
-      
-      console.log(`Processing batch ${Math.floor(i/batchSize) + 1} with ${batchUrls.length} URLs`);
-      
-      // Add a small delay between batches to avoid rate limits
-      if (i > 0) {
-        await sleep(2000);
-      }
-      
-      const batchResult = await processBatch(batchUrls, batchSources, processedSourceIds);
-      results.push(batchResult);
-      
-      if (batchResult.processed) {
-        totalProcessedUrls += batchResult.processed;
-      }
-      
-      if (!batchResult.success) {
-        totalErrorCount++;
-      }
-    }
+    // Process all URLs in a single batch
+    const result = await processAllUrls(validUrls, validSources);
     
     // Query the successful summarizations count
     const summaryQuery = await fetch(
@@ -641,6 +620,7 @@ serve(async (req) => {
       }
     );
     
+    let totalSummarizedCount = 0;
     if (summaryQuery.ok) {
       const summaryData = await summaryQuery.json();
       totalSummarizedCount = summaryData.length;
@@ -648,13 +628,13 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({ 
       success: true, 
-      message: `Processed ${totalProcessedUrls} URLs${totalErrorCount > 0 ? ` with ${totalErrorCount} errors` : ''}${totalSummarizedCount > 0 ? `, summarized ${totalSummarizedCount} sources` : ''}`,
+      message: `Processed ${result.processed} URLs${result.errorCount > 0 ? ` with ${result.errorCount} errors` : ''}${totalSummarizedCount > 0 ? `, summarized ${totalSummarizedCount} sources` : ''}`,
       totalUrls: sources.length,
       invalidUrls: invalidSources.length,
-      processedUrls: totalProcessedUrls,
+      processedUrls: result.processed,
+      successCount: result.successCount || 0,
       summarizedCount: totalSummarizedCount,
-      errorCount: totalErrorCount,
-      batchResults: results.length
+      errorCount: result.errorCount || 0
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
