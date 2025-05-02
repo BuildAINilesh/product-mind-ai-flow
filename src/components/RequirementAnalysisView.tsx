@@ -22,11 +22,13 @@ import {
   Paperclip,
   Lock,
   CalendarClock,
-  Shield
+  Shield,
+  AlertCircle
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface RequirementAnalysis {
   id: string;
@@ -57,6 +59,7 @@ interface Project {
   username: string | null;
   status: "Draft" | "Completed" | "Re_Draft";
   created_at: string;
+  requirement_id?: string | null;
 }
 
 interface RequirementAnalysisViewProps {
@@ -70,6 +73,13 @@ export const RequirementAnalysisView = ({
   analysis, 
   loading = false 
 }: RequirementAnalysisViewProps) => {
+  console.log("RequirementAnalysisView rendered with:", { 
+    project, 
+    analysis, 
+    loading,
+    projectStatus: project?.status 
+  });
+
   if (loading) {
     return <AnalysisViewSkeleton />;
   }
@@ -83,6 +93,14 @@ export const RequirementAnalysisView = ({
             The requested project could not be loaded.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <Alert>
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <AlertDescription>
+              Please check the URL or go back to the requirements list.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
       </Card>
     );
   }
@@ -139,6 +157,16 @@ export const RequirementAnalysisView = ({
               <p>{new Date(project.created_at).toLocaleDateString()}</p>
             </div>
           </div>
+
+          {/* Project ID if available */}
+          {project.requirement_id && (
+            <div className="mb-6 p-3 bg-muted/30 rounded-md">
+              <span className="font-medium mr-1">Requirement ID:</span>
+              <Badge variant="outline" className="font-mono">
+                {project.requirement_id}
+              </Badge>
+            </div>
+          )}
 
           {analysis?.analysis_confidence_score !== null && (
             <div className="flex items-center mb-6 p-3 bg-muted/30 rounded-md">
@@ -385,7 +413,7 @@ export const RequirementAnalysisView = ({
                   Last updated: {analysis?.updated_at && new Date(analysis.updated_at).toLocaleString()}
                 </div>
                 <div>
-                  Document ID: <span className="font-mono">{analysis?.requirement_id}</span>
+                  Document ID: <span className="font-mono">{analysis?.requirement_id || "Not assigned"}</span>
                 </div>
               </div>
             </CardContent>
