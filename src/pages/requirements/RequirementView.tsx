@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,6 @@ const RequirementView = () => {
   const [project, setProject] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   
   // Progress tracking states
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
@@ -44,42 +44,23 @@ const RequirementView = () => {
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
-        if (!id) {
-          throw new Error("Requirement ID is missing");
-        }
-        
         setLoading(true);
-        setError(null);
-        
-        console.log("Fetching requirement data for ID:", id);
         
         // Fetch the basic project info
         const { data: projectData, error: projectError } = await supabase
           .from('requirements')
           .select('*')
           .eq('id', id)
-          .maybeSingle();
+          .single();
 
         if (projectError) {
-          console.error("Error fetching project data:", projectError);
           throw projectError;
         }
 
-        if (!projectData) {
-          console.warn("No project data found for ID:", id);
-          setProject(null);
-          setLoading(false);
-          return;
-        }
-
-        console.log("Project data fetched successfully:", projectData);
         setProject(projectData);
 
         // If project is completed, fetch the analysis data
         if (projectData.status === "Completed") {
-          console.log("Project is completed, fetching analysis data");
-          
-          // Try fetching from requirement_analysis table
           const { data: analysisData, error: analysisError } = await supabase
             .from('requirement_analysis')
             .select('*')
@@ -87,49 +68,16 @@ const RequirementView = () => {
             .maybeSingle();
 
           if (analysisError) {
-            console.error('Error fetching analysis from requirement_analysis:', analysisError);
-          }
-          
-          // If we have analysis data, use it
-          if (analysisData) {
-            console.log("Analysis data fetched:", analysisData);
-            setAnalysis(analysisData);
+            console.error('Error fetching analysis:', analysisError);
           } else {
-            console.warn("No analysis data found in requirement_analysis table for ID:", id);
-            // Create a synthesized analysis object with null fields
-            const synthesizedAnalysis = {
-              requirement_id: id,
-              project_overview: null,
-              problem_statement: null,
-              proposed_solution: null,
-              business_goals: null,
-              target_audience: null,
-              key_features: null,
-              user_stories: null,
-              competitive_landscape: null,
-              constraints_assumptions: null,
-              risks_mitigations: null,
-              acceptance_criteria: null,
-              appendices: null,
-              analysis_confidence_score: null,
-              created_at: projectData.created_at,
-              updated_at: projectData.updated_at
-            };
-            setAnalysis(synthesizedAnalysis);
-            
-            toast({
-              title: "Limited Data Available",
-              description: "We're displaying the available project information. Some analysis details may be missing.",
-              variant: "default",
-            });
+            setAnalysis(analysisData);
           }
         }
-      } catch (err) {
-        console.error('Error fetching requirement:', err);
-        setError(err.message);
+      } catch (error) {
+        console.error('Error fetching requirement:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load requirement details: ' + err.message,
+          description: 'Failed to load requirement details.',
           variant: 'destructive',
         });
       } finally {
@@ -702,29 +650,6 @@ const RequirementView = () => {
     }
   };
 
-  // Show error state if there's an error
-  if (error) {
-    return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertTitle>Error Loading Requirement</AlertTitle>
-        <AlertDescription>
-          {error}
-          <div className="mt-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => navigate('/dashboard/requirements')}
-              className="flex items-center gap-1"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Requirements
-            </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -742,7 +667,7 @@ const RequirementView = () => {
           <Button 
             variant="outline"
             onClick={handleEdit} 
-            disabled={loading || !project}
+            disabled={loading}
             className="flex items-center gap-2"
           >
             <Edit className="h-4 w-4" />
@@ -803,32 +728,23 @@ const RequirementView = () => {
         </Alert>
       )}
 
-      {/* Show a loading state if data is loading */}
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full" />
+      <RequirementAnalysisView project={project} analysis={analysis} loading={loading} />
+      
+      {/* Market Analysis Generation Card (only show if not already in progress) */}
+      {project && project.status === "Completed" && !analysisInProgress && (
+        <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
+          <h3 className="text-lg font-medium mb-2">Generate Market Analysis</h3>
+          <p className="text-muted-foreground mb-4">
+            Use AI to analyze market trends, competition, and opportunities for your project.
+          </p>
+          <Button
+            onClick={generateMarketAnalysis}
+            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Generate Market Analysis
+          </Button>
         </div>
-      ) : (
-        <>
-          <RequirementAnalysisView project={project} analysis={analysis} loading={loading} />
-          
-          {/* Market Analysis Generation Card (only show if not already in progress) */}
-          {project && project.status === "Completed" && !analysisInProgress && (
-            <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-              <h3 className="text-lg font-medium mb-2">Generate Market Analysis</h3>
-              <p className="text-muted-foreground mb-4">
-                Use AI to analyze market trends, competition, and opportunities for your project.
-              </p>
-              <Button
-                onClick={generateMarketAnalysis}
-                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Generate Market Analysis
-              </Button>
-            </div>
-          )}
-        </>
       )}
     </div>
   );

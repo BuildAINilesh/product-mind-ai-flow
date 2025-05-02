@@ -22,17 +22,14 @@ import {
   Paperclip,
   Lock,
   CalendarClock,
-  Shield,
-  AlertCircle,
-  Info
+  Shield
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface RequirementAnalysis {
-  id?: string;
+  id: string;
   requirement_id: string;
   project_overview: string | null;
   problem_statement: string | null;
@@ -60,7 +57,6 @@ interface Project {
   username: string | null;
   status: "Draft" | "Completed" | "Re_Draft";
   created_at: string;
-  requirement_id?: string | null;
 }
 
 interface RequirementAnalysisViewProps {
@@ -74,19 +70,6 @@ export const RequirementAnalysisView = ({
   analysis, 
   loading = false 
 }: RequirementAnalysisViewProps) => {
-  console.log("RequirementAnalysisView rendered with:", { 
-    project, 
-    analysis, 
-    loading,
-    projectStatus: project?.status,
-    hasAnalysisData: analysis !== null
-  });
-
-  // Debug what fields are available
-  if (analysis) {
-    console.log("Available analysis fields:", Object.keys(analysis).filter(key => analysis[key] !== null));
-  }
-
   if (loading) {
     return <AnalysisViewSkeleton />;
   }
@@ -100,14 +83,6 @@ export const RequirementAnalysisView = ({
             The requested project could not be loaded.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <AlertDescription>
-              Please check the URL or go back to the requirements list.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
       </Card>
     );
   }
@@ -131,14 +106,6 @@ export const RequirementAnalysisView = ({
       {description && <p className="text-sm text-muted-foreground ml-7">{description}</p>}
     </div>
   );
-
-  // Determine if we're showing project with limited analysis data
-  const hasLimitedAnalysisData = project.status === "Completed" && 
-                             analysis && 
-                             !analysis.problem_statement && 
-                             !analysis.proposed_solution &&
-                             !analysis.business_goals &&
-                             !analysis.target_audience;
 
   return (
     <div className="space-y-6 mb-12">
@@ -173,16 +140,6 @@ export const RequirementAnalysisView = ({
             </div>
           </div>
 
-          {/* Project ID if available */}
-          {project.requirement_id && (
-            <div className="mb-6 p-3 bg-muted/30 rounded-md">
-              <span className="font-medium mr-1">Requirement ID:</span>
-              <Badge variant="outline" className="font-mono">
-                {project.requirement_id}
-              </Badge>
-            </div>
-          )}
-
           {analysis?.analysis_confidence_score !== null && (
             <div className="flex items-center mb-6 p-3 bg-muted/30 rounded-md">
               <Shield className="h-5 w-5 mr-2 text-primary" />
@@ -194,16 +151,6 @@ export const RequirementAnalysisView = ({
           )}
         </CardContent>
       </Card>
-
-      {hasLimitedAnalysisData && (
-        <Alert>
-          <Info className="h-5 w-5 text-blue-500" />
-          <AlertDescription>
-            This requirement has been marked as completed but is showing limited analysis details.
-            You may need to run a full analysis to see all sections.
-          </AlertDescription>
-        </Alert>
-      )}
 
       {noAnalysisData ? (
         <Card>
@@ -331,16 +278,18 @@ export const RequirementAnalysisView = ({
                 </section>
 
                 {/* User Stories Section */}
-                <section>
-                  {renderSectionHeader(
-                    <User className="h-5 w-5 text-primary" />,
-                    "User Stories",
-                    "High-level user journeys if applicable"
-                  )}
-                  <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.user_stories)}
-                  </div>
-                </section>
+                {analysis?.user_stories && (
+                  <section>
+                    {renderSectionHeader(
+                      <User className="h-5 w-5 text-primary" />,
+                      "User Stories",
+                      "High-level user journeys if applicable"
+                    )}
+                    <div className="bg-muted/30 p-4 rounded-md">
+                      {renderContent(analysis?.user_stories)}
+                    </div>
+                  </section>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -365,16 +314,18 @@ export const RequirementAnalysisView = ({
                 </section>
 
                 {/* Risks & Mitigations Section */}
-                <section>
-                  {renderSectionHeader(
-                    <AlertTriangle className="h-5 w-5 text-primary" />,
-                    "Risks & Mitigations",
-                    "What risks exist? How can they be mitigated?"
-                  )}
-                  <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.risks_mitigations)}
-                  </div>
-                </section>
+                {analysis?.risks_mitigations && (
+                  <section>
+                    {renderSectionHeader(
+                      <AlertTriangle className="h-5 w-5 text-primary" />,
+                      "Risks & Mitigations",
+                      "What risks exist? How can they be mitigated?"
+                    )}
+                    <div className="bg-muted/30 p-4 rounded-md">
+                      {renderContent(analysis?.risks_mitigations)}
+                    </div>
+                  </section>
+                )}
 
                 {/* Acceptance Criteria Section */}
                 <section>
@@ -434,7 +385,7 @@ export const RequirementAnalysisView = ({
                   Last updated: {analysis?.updated_at && new Date(analysis.updated_at).toLocaleString()}
                 </div>
                 <div>
-                  Document ID: <span className="font-mono">{analysis?.requirement_id || "Not assigned"}</span>
+                  Document ID: <span className="font-mono">{analysis?.requirement_id}</span>
                 </div>
               </div>
             </CardContent>
