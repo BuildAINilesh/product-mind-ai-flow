@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { 
@@ -292,7 +293,7 @@ const MarketSense = () => {
   
   const scrapeResearchSources = async (reqId) => {
     setScrapingSources(true);
-    const scrapeToastId = toast.loading("Scraping research sources...", { duration: 30000 });
+    const scrapeToastId = toast.loading("Scraping research sources and generating summaries...", { duration: 60000 });
     
     try {
       // Call the scrape-research-urls function
@@ -308,18 +309,18 @@ const MarketSense = () => {
         throw new Error(data.message || "Failed to scrape research sources");
       }
       
-      // Handle rate limit messages if present
-      const rateMessage = data.rateLimitHits > 0 
-        ? ` (hit rate limits ${data.rateLimitHits} times)`
-        : '';
-        
       // Handle error messages if present
       const errorMessage = data.errorCount > 0
         ? ` with ${data.errorCount} errors`
         : '';
       
+      // Include summarization information
+      const summaryMessage = data.summarizedCount > 0
+        ? `, summarized ${data.summarizedCount} sources`
+        : '';
+      
       toast.dismiss(scrapeToastId);
-      toast.success(`Scraped ${data.processedUrls} sources${errorMessage}${rateMessage}`);
+      toast.success(`Scraped ${data.processedUrls} sources${errorMessage}${summaryMessage}`);
       
       // After scraping, proceed with market analysis
       await handleGenerateAnalysis();

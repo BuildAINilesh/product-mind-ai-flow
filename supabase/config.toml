@@ -10,3 +10,6 @@ verify_jwt = false
 
 [functions.scrape-research-urls]
 verify_jwt = false
+
+[functions.analyze-market]
+verify_jwt = false
