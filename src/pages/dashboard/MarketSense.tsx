@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { 
@@ -279,6 +280,13 @@ const MarketSense = () => {
     }
   };
   
+  // Handle "View Analysis" button click
+  const handleViewAnalysis = (analysisRequirementId) => {
+    console.log("Navigating to analysis for requirement:", analysisRequirementId);
+    // Navigate to the specific market analysis view
+    navigate(`/dashboard/market-sense?requirementId=${analysisRequirementId}`);
+  };
+  
   // Filter market analyses based on search query
   const filteredAnalyses = allMarketAnalyses.filter(analysis => 
     analysis?.requirements?.project_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -365,7 +373,7 @@ const MarketSense = () => {
                         <TableCell className="text-right">
                           <Button
                             size="sm"
-                            onClick={() => navigate(`/dashboard/market-sense?requirementId=${analysis.requirement_id}`)}
+                            onClick={() => handleViewAnalysis(analysis.requirement_id)}
                             className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
                           >
                             View Analysis
