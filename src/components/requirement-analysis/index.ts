@@ -11,3 +11,4 @@ export * from './DocumentMetadataCard';
 export * from './PendingAnalysisCard';
 export * from './AnalysisViewSkeleton';
 export * from './NotFoundCard';
+export * from './LimitedDataAlert';

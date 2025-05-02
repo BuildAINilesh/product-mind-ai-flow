@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Alert, AlertCircle, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AnalysisHeader,
   AnalysisViewSkeleton,
@@ -13,6 +13,7 @@ import {
   DocumentMetadataCard,
   PendingAnalysisCard
 } from './requirement-analysis';
+import { AlertCircle } from "lucide-react"; // Import AlertCircle from lucide-react instead
 
 interface RequirementAnalysis {
   id?: string;
