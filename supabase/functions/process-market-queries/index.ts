@@ -68,8 +68,8 @@ serve(async (req) => {
       console.log(`Processing query: ${query.query}`);
       
       try {
-        // Using the correct endpoint for the Firecrawl API
-        const apiEndpoint = "https://api.firecrawl.dev/api/search";
+        // Using the correct endpoint for the Firecrawl API based on curl example
+        const apiEndpoint = "https://api.firecrawl.dev/v1/search";
         console.log(`Calling Firecrawl API with endpoint: ${apiEndpoint}`);
         console.log(`Search query: ${query.query}`);
         
