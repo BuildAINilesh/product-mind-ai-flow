@@ -88,7 +88,6 @@ const RequirementView = () => {
 
           if (analysisError) {
             console.error('Error fetching analysis from requirement_analysis:', analysisError);
-            // If there's an error, don't set an error yet
           }
           
           // If we have analysis data, use it
@@ -96,12 +95,11 @@ const RequirementView = () => {
             console.log("Analysis data fetched:", analysisData);
             setAnalysis(analysisData);
           } else {
-            console.warn("No analysis data found for completed project:", id);
-            // Create a synthesized analysis object from the project data
-            // This helps display something useful even when the backend data is incomplete
+            console.warn("No analysis data found in requirement_analysis table for ID:", id);
+            // Create a synthesized analysis object with null fields
             const synthesizedAnalysis = {
               requirement_id: id,
-              project_overview: projectData.project_idea || null,
+              project_overview: null,
               problem_statement: null,
               proposed_solution: null,
               business_goals: null,

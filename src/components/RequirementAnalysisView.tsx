@@ -132,12 +132,13 @@ export const RequirementAnalysisView = ({
     </div>
   );
 
-  // Determine if we're showing only project idea content (no full analysis)
-  const showingProjectIdeaOnly = project.status === "Completed" && 
-                               analysis && 
-                               !analysis.problem_statement && 
-                               !analysis.proposed_solution &&
-                               analysis.project_overview === project.project_idea;
+  // Determine if we're showing project with limited analysis data
+  const hasLimitedAnalysisData = project.status === "Completed" && 
+                             analysis && 
+                             !analysis.problem_statement && 
+                             !analysis.proposed_solution &&
+                             !analysis.business_goals &&
+                             !analysis.target_audience;
 
   return (
     <div className="space-y-6 mb-12">
@@ -194,7 +195,7 @@ export const RequirementAnalysisView = ({
         </CardContent>
       </Card>
 
-      {showingProjectIdeaOnly && (
+      {hasLimitedAnalysisData && (
         <Alert>
           <Info className="h-5 w-5 text-blue-500" />
           <AlertDescription>
@@ -233,7 +234,7 @@ export const RequirementAnalysisView = ({
                     "A quick summary of the project idea and objective"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.project_overview || project.project_idea)}
+                    {renderContent(analysis?.project_overview)}
                   </div>
                 </section>
 
