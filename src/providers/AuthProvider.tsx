@@ -27,65 +27,82 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false);
-  const [explicitAuthEvent, setExplicitAuthEvent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Track user-initiated auth actions
+  const [userInitiatedAction, setUserInitiatedAction] = useState<boolean>(false);
 
   useEffect(() => {
+    console.log("Setting up auth state listener");
+    let isInitialAuthCheck = true;
+
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log(`Auth state change event: ${event}`);
+        console.log(`Auth state change event: ${event}, initial check: ${isInitialAuthCheck}, user initiated: ${userInitiatedAction}`);
         
-        // Update session and user state
+        // Always update session and user state
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
 
-        // Only navigate on explicit sign in/out events, not on token refresh or window focus
-        if (initialAuthCheckDone) {
-          // Only redirect on actual sign in/sign out events, not token refreshes
+        // Only navigate if this is a user-initiated action (not a token refresh or focus event)
+        if (!isInitialAuthCheck && userInitiatedAction) {
           if (event === 'SIGNED_IN') {
-            setExplicitAuthEvent(true);
+            console.log("Navigating to dashboard after user-initiated sign in");
             navigate('/dashboard');
             toast({
               title: "Welcome back!",
               description: "You have successfully signed in.",
             });
+            // Reset the flag after handling the event
+            setUserInitiatedAction(false);
           }
           if (event === 'SIGNED_OUT') {
-            setExplicitAuthEvent(true);
+            console.log("Navigating to home after user-initiated sign out");
             navigate('/');
             toast({
               title: "Signed out",
               description: "You have been signed out successfully.",
             });
+            // Reset the flag after handling the event
+            setUserInitiatedAction(false);
           }
+        }
+
+        // After processing the first auth state change event, mark initial check as complete
+        if (isInitialAuthCheck) {
+          isInitialAuthCheck = false;
         }
       }
     );
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check completed");
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
-      setInitialAuthCheckDone(true);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast, initialAuthCheckDone]);
+  }, [navigate, toast, userInitiatedAction]);
 
   const signIn = async (email: string, password: string) => {
+    // Set flag to indicate this is a user-initiated action
+    setUserInitiatedAction(true);
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      // Reset flag if there's an error
+      setUserInitiatedAction(false);
       toast({
         title: "Error signing in",
         description: error.message,
@@ -96,6 +113,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    // Set flag to indicate this is a user-initiated action
+    setUserInitiatedAction(true);
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -107,6 +127,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     if (error) {
+      // Reset flag if there's an error
+      setUserInitiatedAction(false);
       toast({
         title: "Error signing up",
         description: error.message,
@@ -122,8 +144,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Set flag to indicate this is a user-initiated action
+    setUserInitiatedAction(true);
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
+      // Reset flag if there's an error
+      setUserInitiatedAction(false);
       toast({
         title: "Error signing out",
         description: error.message,
