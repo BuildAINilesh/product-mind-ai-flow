@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useSearchParams, useNavigate, Link } from "react-router-dom";
 import { 
@@ -12,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search, FileText, Loader } from "lucide-react";
+import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search, FileText, Loader, BarChart, Activity, Network } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
@@ -873,7 +872,7 @@ const MarketSense = () => {
         </Alert>
       )}
       
-      {marketAnalysis?.market_trends ? (
+      {marketAnalysis?.market_trends || marketAnalysis?.demand_insights ? (
         <div className="space-y-6">
           {/* Market Overview Card */}
           <Card>
@@ -928,13 +927,13 @@ const MarketSense = () => {
           <Card>
             <CardHeader className="border-l-4 border-green-500">
               <CardTitle className="flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-green-500" />
+                <BarChart className="h-5 w-5 mr-2 text-green-500" />
                 Market Demand
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none">
-                {formatSection(marketAnalysis.market_demand)}
+                {formatSection(marketAnalysis.demand_insights)}
               </div>
             </CardContent>
           </Card>
@@ -943,43 +942,58 @@ const MarketSense = () => {
           <Card>
             <CardHeader className="border-l-4 border-amber-500">
               <CardTitle className="flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-amber-500" />
-                Competitive Analysis
+                <Activity className="h-5 w-5 mr-2 text-amber-500" />
+                Top Competitors
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none">
-                {formatSection(marketAnalysis.competitive_analysis)}
+                {formatSection(marketAnalysis.top_competitors)}
               </div>
             </CardContent>
           </Card>
 
-          {/* Strategic Recommendations Section */}
+          {/* Market Gap Opportunity Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-indigo-500">
+              <CardTitle className="flex items-center">
+                <Network className="h-5 w-5 mr-2 text-indigo-500" />
+                Market Gap & Opportunity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.market_gap_opportunity)}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* SWOT Analysis Section */}
           <Card>
             <CardHeader className="border-l-4 border-purple-500">
               <CardTitle className="flex items-center">
                 <Lightbulb className="h-5 w-5 mr-2 text-purple-500" />
-                Strategic Recommendations
+                SWOT Analysis
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none">
-                {formatSection(marketAnalysis.recommendations)}
+                {formatSection(marketAnalysis.swot_analysis)}
               </div>
             </CardContent>
           </Card>
 
-          {/* Risks & Opportunities Section */}
+          {/* Industry Benchmarks Section */}
           <Card>
             <CardHeader className="border-l-4 border-red-500">
               <CardTitle className="flex items-center">
-                <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
-                Risks & Opportunities
+                <BarChart3 className="h-5 w-5 mr-2 text-red-500" />
+                Industry Benchmarks
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none">
-                {formatSection(marketAnalysis.risks_opportunities)}
+                {formatSection(marketAnalysis.industry_benchmarks)}
               </div>
             </CardContent>
           </Card>
@@ -1019,4 +1033,3 @@ const MarketSense = () => {
 };
 
 export default MarketSense;
-
