@@ -26,8 +26,8 @@ serve(async (req) => {
 
     console.log(`Generating market queries for requirement: ${requirementId}`);
     
-    // Create the OpenAI prompt
-    const systemPrompt = "You are an expert market researcher.";
+    // Create the OpenAI prompt with explicit instruction to generate exactly 5 queries
+    const systemPrompt = "You are an expert market researcher. You must generate exactly 5 search queries, no more and no less.";
     
     const userPrompt = `Inputs:
 - Industry: ${industryType || 'Not specified'}
@@ -36,7 +36,7 @@ serve(async (req) => {
 - Key Features: ${keyFeatures || 'Not specified'}
 
 Instructions:
-Generate a JSON array of 5–7 search queries, each optimized for discovering:
+Generate a JSON array of EXACTLY 5 search queries (no more, no fewer), each optimized for discovering:
 - market trends
 - demand validation
 - competitors
@@ -44,7 +44,7 @@ Generate a JSON array of 5–7 search queries, each optimized for discovering:
 - industry benchmarks
 
 Output format:
-["query 1", "query 2", ...]`;
+["query 1", "query 2", "query 3", "query 4", "query 5"]`;
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -87,19 +87,44 @@ Output format:
       if (!Array.isArray(queries)) {
         throw new Error("Generated content is not an array");
       }
+      
+      // Strictly enforce exactly 5 queries
+      if (queries.length > 5) {
+        console.log("OpenAI returned more than 5 queries, truncating to 5");
+        queries = queries.slice(0, 5);
+      } else if (queries.length < 5) {
+        console.log(`OpenAI returned only ${queries.length} queries, which is less than the required 5`);
+        // If we have fewer than 5 queries, we can add generic ones to reach 5
+        const genericQueries = [
+          `${industryType || 'industry'} market size and growth trends`,
+          `${industryType || 'industry'} leading competitors and market share`,
+          `${industryType || 'product'} customer pain points and needs`,
+          `${industryType || 'product'} feature comparison and gaps`,
+          `${industryType || 'industry'} future trends and innovations`
+        ];
+        
+        while (queries.length < 5) {
+          const genericIndex = queries.length;
+          if (genericIndex < genericQueries.length) {
+            queries.push(genericQueries[genericIndex]);
+          } else {
+            // Fallback to ensure we always have 5 queries
+            queries.push(`${industryType || 'market'} research query ${queries.length + 1}`);
+          }
+        }
+      }
     } catch (error) {
       console.error("Failed to parse OpenAI response as JSON:", error);
       console.log("Raw response:", generatedContent);
       
-      // Fallback: Split by newlines and clean up
-      queries = generatedContent.split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0 && !line.startsWith('[') && !line.startsWith(']') && !line.startsWith('{') && !line.startsWith('}'))
-        .map(line => {
-          // Remove quotes, numbers, and other formatting
-          return line.replace(/^["'\d\.\s-]*|["'\s]*$/g, '');
-        })
-        .filter(line => line.length > 5); // Only keep lines that are reasonably long
+      // Fallback: Create exactly 5 queries based on industry type
+      queries = [
+        `${industryType || 'industry'} market size and growth trends`,
+        `${industryType || 'industry'} leading competitors and market share`,
+        `${industryType || 'product'} customer pain points and needs`,
+        `${industryType || 'product'} feature comparison and gaps`,
+        `${industryType || 'industry'} future trends and innovations`
+      ];
     }
 
     console.log(`Generated ${queries.length} search queries`);
