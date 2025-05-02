@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -78,7 +77,7 @@ serve(async (req) => {
   }
 
   try {
-    const { requirementId, limit } = await req.json();
+    const { requirementId } = await req.json();
     
     if (!requirementId) {
       throw new Error("Required field 'requirementId' is missing");
@@ -91,10 +90,9 @@ serve(async (req) => {
       throw new Error("Firecrawl API Key is missing. Please set it in the Supabase Edge Function Secrets.");
     }
     
-    // Fetch sources with pending_scrape status
-    const queryLimit = limit || 10; // Default to 10 sources per execution
+    // Fetch all sources with pending_scrape status for this requirement
     const sourcesResponse = await fetch(
-      `${supabaseUrl}/rest/v1/market_research_sources?requirement_id=eq.${requirementId}&status=eq.pending_scrape&limit=${queryLimit}`, 
+      `${supabaseUrl}/rest/v1/market_research_sources?requirement_id=eq.${requirementId}&status=eq.pending_scrape`, 
       {
         method: 'GET',
         headers: {
@@ -125,21 +123,70 @@ serve(async (req) => {
       });
     }
 
-    // Process each URL with Firecrawl Scraper API
-    let processedUrls = 0;
-    let errorCount = 0;
-    let rateLimitHits = 0;
+    // Extract valid URLs
+    const validSources = sources.filter(source => source.url && source.url.match(/^(http|https):\/\//));
+    const validUrls = validSources.map(source => source.url);
     
-    // Process URLs with spacing to avoid rate limits
-    for (const source of sources) {
-      console.log(`Processing URL: ${source.url}`);
+    // Mark invalid URLs as error
+    const invalidSources = sources.filter(source => !source.url || !source.url.match(/^(http|https):\/\//));
+    for (const source of invalidSources) {
+      console.warn(`Skipping invalid URL: ${source.url}`);
       
-      try {
-        // Skip URLs that don't have a proper scheme
-        if (!source.url || !source.url.match(/^(http|https):\/\//)) {
-          console.warn(`Skipping invalid URL: ${source.url}`);
-          
-          // Update source status to error
+      await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': `${supabaseServiceKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          status: 'error'
+        })
+      });
+    }
+    
+    if (validUrls.length === 0) {
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "No valid URLs found to scrape",
+        processedUrls: 0,
+        invalidUrls: invalidSources.length
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    console.log(`Processing ${validUrls.length} valid URLs with batch scraping`);
+    
+    try {
+      // Call Firecrawl Batch Scraper API
+      const apiEndpoint = "https://api.firecrawl.dev/v1/batch/scrape";
+      console.log(`Calling Firecrawl Batch API with endpoint: ${apiEndpoint}`);
+      
+      const batchScrapeRequest = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${firecrawlApiKey}`
+        },
+        body: JSON.stringify({
+          urls: validUrls,
+          formats: ['markdown', 'html']
+        })
+      };
+      
+      console.log(`Batch scraping ${validUrls.length} URLs`);
+      
+      // Use the retry function for API calls
+      const { response: scrapeResponse, error: fetchError } = await fetchWithRetry(apiEndpoint, batchScrapeRequest, 3, 2000);
+
+      if (fetchError) {
+        console.error(`Batch scrape fetch error: ${fetchError}`);
+        
+        // Update all source statuses to error
+        for (const source of validSources) {
           await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
             method: 'PATCH',
             headers: {
@@ -152,174 +199,133 @@ serve(async (req) => {
               status: 'error'
             })
           });
-          
-          errorCount++;
-          continue;
         }
         
-        // Call Firecrawl Scraper API
-        const apiEndpoint = "https://api.firecrawl.dev/v1/scrape";
-        console.log(`Calling Firecrawl API with endpoint: ${apiEndpoint}`);
-        console.log(`Scraping URL: ${source.url}`);
+        throw new Error(`Batch scrape failed: ${fetchError}`);
+      }
+
+      console.log(`Firecrawl Batch API response status: ${scrapeResponse.status}`);
+      
+      if (!scrapeResponse.ok) {
+        const errorText = await scrapeResponse.text();
+        console.error(`Firecrawl batch scrape error: ${errorText}`);
+        throw new Error(`Batch scrape failed with status ${scrapeResponse.status}: ${errorText}`);
+      }
+
+      const batchResult = await scrapeResponse.json();
+      console.log(`Batch scrape response success: ${batchResult.status === "completed"}`);
+      
+      if (batchResult.status === "completed" && batchResult.data && Array.isArray(batchResult.data)) {
+        console.log(`Received batch scrape data for ${batchResult.data.length} URLs`);
         
-        const scrapeRequest = {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${firecrawlApiKey}`
-          },
-          body: JSON.stringify({
-            url: source.url,
-            formats: ['markdown', 'html']
-          })
-        };
-        
-        console.log("Firecrawl API request:", {
-          endpoint: apiEndpoint,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer [MASKED]'
-          },
-          body: JSON.stringify({
-            url: source.url,
-            formats: ['markdown', 'html']
-          })
+        // Create a map of URL to scraped content for easier lookup
+        const scrapedContentMap = {};
+        batchResult.data.forEach((item, index) => {
+          if (item.metadata && item.metadata.sourceURL) {
+            scrapedContentMap[item.metadata.sourceURL] = item.markdown || 'No content available';
+          } else {
+            // If no sourceURL in metadata, use the original URL from our list
+            scrapedContentMap[validUrls[index]] = item.markdown || 'No content available';
+          }
         });
         
-        // Use the retry function for API calls
-        const { response: scrapeResponse, error: fetchError } = await fetchWithRetry(apiEndpoint, scrapeRequest, 3, 2000);
+        // Now process each source and store the scraped data
+        let processedUrls = 0;
+        let errorCount = 0;
+        
+        for (const source of validSources) {
+          try {
+            const url = source.url;
+            console.log(`Processing result for URL: ${url}`);
+            
+            // Get the content from our map
+            const markdownContent = scrapedContentMap[url] || 'No content available';
+            
+            if (!markdownContent || markdownContent === 'No content available') {
+              console.warn(`No content found for URL: ${url}`);
+            }
+            
+            // Store scraped data
+            const scrapedDataResponse = await fetch(`${supabaseUrl}/rest/v1/scraped_research_data`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'apikey': `${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify({
+                source_id: source.id,
+                requirement_id: requirementId,
+                url: url,
+                raw_content: markdownContent,
+                status: 'pending_summary'
+              })
+            });
 
-        if (fetchError) {
-          console.error(`Fetch error for URL '${source.url}': ${fetchError}`);
-          
-          if (fetchError.includes("Rate limit")) {
-            rateLimitHits++;
+            if (!scrapedDataResponse.ok) {
+              const errorData = await scrapedDataResponse.json();
+              console.error(`Error storing scraped data for ${url}: ${JSON.stringify(errorData)}`);
+              errorCount++;
+              continue;
+            }
+            
+            // Update source status to scraped
+            await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'apikey': `${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify({
+                status: 'scraped'
+              })
+            });
+            
+            processedUrls++;
+          } catch (urlError) {
+            console.error(`Error processing URL '${source.url}': ${urlError.message}`);
+            errorCount++;
+            
+            // Update source status to error
+            await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'apikey': `${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify({
+                status: 'error'
+              })
+            });
           }
-          
-          // Update source status to error
-          await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-              status: 'error'
-            })
-          });
-          
-          errorCount++;
-          continue;
-        }
-
-        console.log(`Firecrawl API response status: ${scrapeResponse.status}`);
-        
-        if (!scrapeResponse.ok) {
-          const errorText = await scrapeResponse.text();
-          console.error(`Firecrawl scrape error for URL '${source.url}': ${errorText}`);
-          console.error(`Status: ${scrapeResponse.status}, Headers: ${JSON.stringify([...scrapeResponse.headers])}`);
-          
-          // Update source status to error
-          await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-              status: 'error'
-            })
-          });
-          
-          errorCount++;
-          continue;
-        }
-
-        const scrapeResult = await scrapeResponse.json();
-        console.log(`Scrape response success: ${scrapeResult.success}`);
-        
-        // Process results according to expected format
-        if (scrapeResult.success && scrapeResult.data) {
-          console.log(`Received scrape data for URL: ${source.url}`);
-          
-          // Extract markdown content
-          const markdownContent = scrapeResult.data.markdown || 'No content available';
-          
-          // Store scraped data
-          const scrapedDataResponse = await fetch(`${supabaseUrl}/rest/v1/scraped_research_data`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-              source_id: source.id,
-              requirement_id: requirementId,
-              url: source.url,
-              raw_content: markdownContent,
-              status: 'pending_summary'
-            })
-          });
-
-          if (!scrapedDataResponse.ok) {
-            const errorData = await scrapedDataResponse.json();
-            console.error(`Error storing scraped data: ${JSON.stringify(errorData)}`);
-            continue;
-          }
-          
-          // Update source status to scraped
-          await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-              status: 'scraped'
-            })
-          });
-          
-          processedUrls++;
-        } else {
-          console.error(`Invalid response format from Firecrawl API: ${JSON.stringify(scrapeResult)}`);
-          
-          // Update source status to error
-          await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({
-              status: 'error'
-            })
-          });
-          
-          errorCount++;
         }
         
-        // Add a delay between requests to avoid hitting rate limits
-        if (sources.length > 1) {
-          const delayMs = 2000; // 2 second delay between requests
-          console.log(`Adding delay of ${delayMs}ms between requests to avoid rate limits`);
-          await sleep(delayMs);
-        }
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: `Processed ${processedUrls} URLs${errorCount > 0 ? ` with ${errorCount} errors` : ''}`,
+          totalUrls: sources.length,
+          invalidUrls: invalidSources.length,
+          processedUrls,
+          errorCount
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
         
-      } catch (urlError) {
-        console.error(`Error processing URL '${source.url}': ${urlError.message}`);
-        console.error(urlError.stack);
-        
-        // Update source status to error
+      } else {
+        console.error(`Invalid or incomplete response format from Firecrawl Batch API`);
+        throw new Error("Invalid or incomplete response from batch scrape API");
+      }
+    } catch (batchError) {
+      console.error(`Error during batch scraping: ${batchError.message}`);
+      
+      // Update all source statuses to error
+      for (const source of validSources) {
         await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
           method: 'PATCH',
           headers: {
@@ -332,22 +338,10 @@ serve(async (req) => {
             status: 'error'
           })
         });
-        
-        errorCount++;
       }
+      
+      throw batchError;
     }
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: `Processed ${processedUrls} URLs${errorCount > 0 ? ` with ${errorCount} errors` : ''}${rateLimitHits > 0 ? ` (hit rate limits ${rateLimitHits} times)` : ''}`,
-      processedUrls,
-      errorCount,
-      rateLimitHits
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-    
   } catch (error) {
     console.error("Error in scrape-research-urls function:", error);
     
