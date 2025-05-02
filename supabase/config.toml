@@ -13,3 +13,6 @@ verify_jwt = false
 
 [functions.analyze-market]
 verify_jwt = false
+
+[functions.summarize-research-content]
+verify_jwt = false

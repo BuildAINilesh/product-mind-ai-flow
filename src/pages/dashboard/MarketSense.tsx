@@ -46,6 +46,7 @@ const MarketSense = () => {
   const [generatingQueries, setGeneratingQueries] = useState(false);
   const [processingQueries, setProcessingQueries] = useState(false);
   const [scrapingSources, setScrapingSources] = useState(false);
+  const [summarizingContent, setSummarizingContent] = useState(false);
   
   // Get requirementId from URL params
   const requirementId = searchParams.get('requirementId');
@@ -293,7 +294,7 @@ const MarketSense = () => {
   
   const scrapeResearchSources = async (reqId) => {
     setScrapingSources(true);
-    const scrapeToastId = toast.loading("Scraping research sources and generating summaries...", { duration: 60000 });
+    const scrapeToastId = toast.loading("Scraping research sources...", { duration: 60000 });
     
     try {
       // Call the scrape-research-urls function
@@ -314,25 +315,64 @@ const MarketSense = () => {
         ? ` with ${data.errorCount} errors`
         : '';
       
-      // Include summarization information
-      const summaryMessage = data.summarizedCount > 0
-        ? `, summarized ${data.summarizedCount} sources`
-        : '';
-      
       toast.dismiss(scrapeToastId);
-      toast.success(`Scraped ${data.processedUrls} sources${errorMessage}${summaryMessage}`);
+      toast.success(`Scraped ${data.processedUrls} sources${errorMessage}, ${data.pendingSummaries || 0} ready for summarization`);
       
-      // After scraping, proceed with market analysis
-      await handleGenerateAnalysis();
+      // After scraping, proceed with summarization
+      await summarizeResearchContent(reqId);
       
     } catch (error) {
       console.error("Error scraping research sources:", error);
       toast.dismiss(scrapeToastId);
       toast.error(error.message || "Failed to scrape research sources. Please try again later.");
-    } finally {
       setScrapingSources(false);
       setGeneratingQueries(false);
       setProcessingQueries(false);
+    }
+  };
+  
+  const summarizeResearchContent = async (reqId) => {
+    setSummarizingContent(true);
+    const summaryToastId = toast.loading("Summarizing research content...", { duration: 60000 });
+    
+    try {
+      // Call the summarize-research-content function
+      const { data, error } = await supabase.functions.invoke('summarize-research-content', {
+        body: { requirementId: reqId }
+      });
+      
+      if (error) throw error;
+      
+      console.log("Summarize content response:", data);
+      
+      if (!data.success) {
+        throw new Error(data.message || "Failed to summarize research content");
+      }
+      
+      // Handle error messages if present
+      const errorMessage = data.errors > 0
+        ? ` with ${data.errors} errors`
+        : '';
+      
+      toast.dismiss(summaryToastId);
+      toast.success(`Summarized ${data.summarized} sources${errorMessage}, total of ${data.totalSummarized} summarized sources`);
+      
+      // Check if there's more content to summarize
+      if (data.remaining && data.remaining > 0) {
+        toast.info(`${data.remaining} sources still pending summarization. Processing...`);
+        await summarizeResearchContent(reqId);
+      } else {
+        // After summarization completes, proceed with market analysis
+        await handleGenerateAnalysis();
+      }
+      
+    } catch (error) {
+      console.error("Error summarizing research content:", error);
+      toast.dismiss(summaryToastId);
+      toast.error(error.message || "Failed to summarize research content. Please try again later.");
+      await handleGenerateAnalysis();
+    } finally {
+      setSummarizingContent(false);
     }
   };
   
@@ -377,6 +417,7 @@ const MarketSense = () => {
       setGeneratingQueries(false);
       setProcessingQueries(false);
       setScrapingSources(false);
+      setSummarizingContent(false);
     }
   };
   
@@ -661,15 +702,16 @@ const MarketSense = () => {
             {(!marketAnalysis?.market_trends || marketAnalysis?.status === 'Draft') && (
               <Button 
                 onClick={generateSearchQueries} 
-                disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
+                disabled={analyzing || generatingQueries || processingQueries || scrapingSources || summarizingContent}
                 className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
               >
-                {analyzing || generatingQueries || processingQueries || scrapingSources ? (
+                {analyzing || generatingQueries || processingQueries || scrapingSources || summarizingContent ? (
                   <>
                     <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
                     {generatingQueries ? "Generating Queries..." : 
                      processingQueries ? "Searching Web..." : 
-                     scrapingSources ? "Scraping Content..." : "Analyzing..."}
+                     scrapingSources ? "Scraping Content..." :
+                     summarizingContent ? "Summarizing Content..." : "Analyzing..."}
                   </>
                 ) : (
                   <>
@@ -820,15 +862,16 @@ const MarketSense = () => {
           <CardFooter className="flex justify-center">
             <Button 
               onClick={generateSearchQueries} 
-              disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
+              disabled={analyzing || generatingQueries || processingQueries || scrapingSources || summarizingContent}
               className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
             >
-              {analyzing || generatingQueries || processingQueries || scrapingSources ? (
+              {analyzing || generatingQueries || processingQueries || scrapingSources || summarizingContent ? (
                 <>
                   <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
                   {generatingQueries ? "Generating Queries..." : 
                    processingQueries ? "Searching Web..." : 
-                   scrapingSources ? "Scraping Content..." : "Analyzing..."}
+                   scrapingSources ? "Scraping Content..." :
+                   summarizingContent ? "Summarizing Content..." : "Analyzing..."}
                 </>
               ) : (
                 <>

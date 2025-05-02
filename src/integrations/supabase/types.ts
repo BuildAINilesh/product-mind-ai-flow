@@ -298,7 +298,7 @@ export type Database = {
           raw_content: string
           requirement_id: string
           source_id: string
-          status: string
+          status: Database["public"]["Enums"]["scraped_data_status"] | null
           summary: string | null
           url: string
         }
@@ -308,7 +308,7 @@ export type Database = {
           raw_content: string
           requirement_id: string
           source_id: string
-          status: string
+          status?: Database["public"]["Enums"]["scraped_data_status"] | null
           summary?: string | null
           url: string
         }
@@ -318,7 +318,7 @@ export type Database = {
           raw_content?: string
           requirement_id?: string
           source_id?: string
-          status?: string
+          status?: Database["public"]["Enums"]["scraped_data_status"] | null
           summary?: string | null
           url?: string
         }

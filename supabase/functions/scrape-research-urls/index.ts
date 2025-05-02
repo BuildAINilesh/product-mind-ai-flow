@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -8,7 +9,6 @@ const corsHeaders = {
 const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const openAiApiKey = Deno.env.get('OPENAI_API_KEY');
 
 // Sleep function to pause execution
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -68,64 +68,6 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3,
       retries++;
       backoffMs *= 2; // Exponential backoff
     }
-  }
-}
-
-// Function to summarize content using OpenAI
-async function summarizeContent(content: string, url: string) {
-  if (!openAiApiKey) {
-    console.error("OpenAI API Key is missing");
-    return null;
-  }
-  
-  try {
-    const prompt = `
-    You are an expert summarizer. Your task is to create a detailed and comprehensive summary of the following content from ${url}. 
-    
-    Guidelines:
-    1. Maintain all important factual information, data points, statistics, and key insights.
-    2. Preserve company names, product mentions, and specific industry terminology.
-    3. Include relevant market trends, competitive analysis, and business insights.
-    4. Keep any numerical data and percentages that provide context or support claims.
-    5. Organize the information logically with clear structure.
-    6. Focus only on information relevant to market analysis and business intelligence.
-    7. Ignore generic website elements, navigation instructions, or irrelevant content.
-    8. The summary should be around 30-40% of the original length but contain 90-95% of the important information.
-
-    Content to summarize:
-    ${content}
-    
-    Summary:`;
-
-    console.log(`Sending ${Math.round(content.length / 1000)}KB of content to OpenAI for summarization`);
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 2000,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error(`OpenAI API error: ${response.status} - ${errorData}`);
-      return null;
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content.trim();
-  } catch (error) {
-    console.error(`Error summarizing content: ${error.message}`);
-    return null;
   }
 }
 
@@ -385,7 +327,6 @@ async function processAllUrls(batchUrls: string[], batchSources: any[]) {
       // Now process each source and store the scraped data
       let successCount = 0;
       let errorCount = 0;
-      let summarizedCount = 0;
       
       for (const source of batchSources) {
         try {
@@ -415,19 +356,6 @@ async function processAllUrls(batchUrls: string[], batchSources: any[]) {
             continue;
           }
           
-          // Generate summary using OpenAI
-          let summary = null;
-          if (markdownContent && markdownContent !== 'No content available' && openAiApiKey) {
-            console.log(`Generating summary for ${url}`);
-            summary = await summarizeContent(markdownContent, url);
-            if (summary) {
-              console.log(`Summary generated successfully for ${url}`);
-              summarizedCount++;
-            } else {
-              console.warn(`Failed to generate summary for ${url}`);
-            }
-          }
-          
           // Store scraped data
           const scrapedDataResponse = await fetch(`${supabaseUrl}/rest/v1/scraped_research_data`, {
             method: 'POST',
@@ -442,8 +370,7 @@ async function processAllUrls(batchUrls: string[], batchSources: any[]) {
               requirement_id: source.requirement_id,
               url: url,
               raw_content: markdownContent,
-              summary: summary,
-              status: summary ? 'summarized' : 'pending_summary'
+              status: 'pending_summary'
             })
           });
 
@@ -493,8 +420,7 @@ async function processAllUrls(batchUrls: string[], batchSources: any[]) {
         processed: batchSources.length,
         success: true,
         successCount,
-        errorCount,
-        summarizedCount
+        errorCount
       };
     }
     
@@ -507,8 +433,7 @@ async function processAllUrls(batchUrls: string[], batchSources: any[]) {
       success: false,
       error: error.message,
       errorCount: batchSources.length,
-      successCount: 0,
-      summarizedCount: 0
+      successCount: 0
     };
   }
 }
@@ -528,7 +453,6 @@ serve(async (req) => {
 
     console.log(`Processing pending scrape URLs for requirement: ${requirementId}`);
     console.log(`Using Firecrawl API Key: ${firecrawlApiKey ? "Available (masked)" : "Missing"}`);
-    console.log(`Using OpenAI API Key: ${openAiApiKey ? "Available (masked)" : "Missing"}`);
     
     if (!firecrawlApiKey) {
       throw new Error("Firecrawl API Key is missing. Please set it in the Supabase Edge Function Secrets.");
@@ -607,9 +531,9 @@ serve(async (req) => {
     // Process all URLs in a single batch
     const result = await processAllUrls(validUrls, validSources);
     
-    // Query the successful summarizations count
-    const summaryQuery = await fetch(
-      `${supabaseUrl}/rest/v1/scraped_research_data?requirement_id=eq.${requirementId}&status=eq.summarized&select=id`, 
+    // Get pending summary count
+    const pendingSummaryQuery = await fetch(
+      `${supabaseUrl}/rest/v1/scraped_research_data?requirement_id=eq.${requirementId}&status=eq.pending_summary&select=id`, 
       {
         method: 'GET',
         headers: {
@@ -620,20 +544,20 @@ serve(async (req) => {
       }
     );
     
-    let totalSummarizedCount = 0;
-    if (summaryQuery.ok) {
-      const summaryData = await summaryQuery.json();
-      totalSummarizedCount = summaryData.length;
+    let pendingSummaryCount = 0;
+    if (pendingSummaryQuery.ok) {
+      const pendingData = await pendingSummaryQuery.json();
+      pendingSummaryCount = pendingData.length;
     }
     
     return new Response(JSON.stringify({ 
       success: true, 
-      message: `Processed ${result.processed} URLs${result.errorCount > 0 ? ` with ${result.errorCount} errors` : ''}${totalSummarizedCount > 0 ? `, summarized ${totalSummarizedCount} sources` : ''}`,
+      message: `Processed ${result.processed} URLs${result.errorCount > 0 ? ` with ${result.errorCount} errors` : ''}`,
       totalUrls: sources.length,
       invalidUrls: invalidSources.length,
       processedUrls: result.processed,
       successCount: result.successCount || 0,
-      summarizedCount: totalSummarizedCount,
+      pendingSummaries: pendingSummaryCount,
       errorCount: result.errorCount || 0
     }), {
       status: 200,
