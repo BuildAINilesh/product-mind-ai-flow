@@ -11,8 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search, FileText } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
 import { 
@@ -44,6 +44,7 @@ const MarketSense = () => {
   const [error, setError] = useState(null);
   const [generatingQueries, setGeneratingQueries] = useState(false);
   const [processingQueries, setProcessingQueries] = useState(false);
+  const [scrapingSources, setScrapingSources] = useState(false);
   
   // Get requirementId from URL params
   const requirementId = searchParams.get('requirementId');
@@ -353,6 +354,57 @@ const MarketSense = () => {
     }
   };
   
+  const scrapeResearchSources = async () => {
+    if (!requirementId) {
+      toast("Error: No requirement selected for scraping");
+      return;
+    }
+    
+    setScrapingSources(true);
+    toast.loading("Scraping research sources...", { duration: 30000 });
+    
+    try {
+      // Call the scrape-research-urls function
+      const { data, error } = await supabase.functions.invoke('scrape-research-urls', {
+        body: { requirementId }
+      });
+      
+      if (error) throw error;
+      
+      console.log("Scrape URLs response:", data);
+      
+      if (!data.success) {
+        throw new Error(data.message || "Failed to scrape research sources");
+      }
+      
+      // Handle rate limit messages if present
+      const rateMessage = data.rateLimitHits > 0 
+        ? ` (hit rate limits ${data.rateLimitHits} times)`
+        : '';
+        
+      // Handle error messages if present
+      const errorMessage = data.errorCount > 0
+        ? ` with ${data.errorCount} errors`
+        : '';
+      
+      toast.dismiss();
+      toast.success(`Scraped ${data.processedUrls} sources${errorMessage}${rateMessage}`);
+      
+      // After scraping, proceed with market analysis
+      if (data.processedUrls > 0) {
+        handleGenerateAnalysis();
+      }
+      
+    } catch (error) {
+      console.error("Error scraping research sources:", error);
+      toast.dismiss();
+      toast.error(error.message || "Failed to scrape research sources. Please try again later.");
+      
+    } finally {
+      setScrapingSources(false);
+    }
+  };
+  
   const formatSection = (content) => {
     if (!content) return "No data available";
     
@@ -632,24 +684,39 @@ const MarketSense = () => {
             </Button>
             
             {(!marketAnalysis?.market_trends || marketAnalysis?.status === 'Draft') && (
-              <Button 
-                onClick={generateSearchQueries} 
-                disabled={analyzing || generatingQueries || processingQueries}
-                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-              >
-                {analyzing || generatingQueries || processingQueries ? (
-                  <>
-                    <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
-                    {generatingQueries ? "Generating Queries..." : 
-                     processingQueries ? "Searching Web..." : "Analyzing..."}
-                  </>
-                ) : (
-                  <>
-                    <LineChart className="mr-2 h-4 w-4" />
-                    Generate Market Analysis
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                {/* Generate Market Analysis Button */}
+                <Button 
+                  onClick={generateSearchQueries} 
+                  disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
+                  className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                >
+                  {analyzing || generatingQueries || processingQueries || scrapingSources ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
+                      {generatingQueries ? "Generating Queries..." : 
+                       processingQueries ? "Searching Web..." : 
+                       scrapingSources ? "Scraping Content..." : "Analyzing..."}
+                    </>
+                  ) : (
+                    <>
+                      <LineChart className="mr-2 h-4 w-4" />
+                      Generate Market Analysis
+                    </>
+                  )}
+                </Button>
+                
+                {/* Scrape Content Button */}
+                <Button 
+                  onClick={scrapeResearchSources}
+                  disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
+                  variant="outline"
+                  className="flex items-center gap-1"
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  Scrape Content
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -789,17 +856,18 @@ const MarketSense = () => {
               )}
             </div>
           </CardContent>
-          <CardFooter className="justify-center">
+          <CardFooter className="flex flex-col sm:flex-row justify-center gap-2">
             <Button 
               onClick={generateSearchQueries} 
-              disabled={analyzing || generatingQueries || processingQueries}
+              disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
               className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
             >
-              {analyzing || generatingQueries || processingQueries ? (
+              {analyzing || generatingQueries || processingQueries || scrapingSources ? (
                 <>
                   <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full mr-2" />
                   {generatingQueries ? "Generating Queries..." : 
-                   processingQueries ? "Searching Web..." : "Analyzing..."}
+                   processingQueries ? "Searching Web..." : 
+                   scrapingSources ? "Scraping Content..." : "Analyzing..."}
                 </>
               ) : (
                 <>
@@ -807,6 +875,16 @@ const MarketSense = () => {
                   Generate Market Analysis
                 </>
               )}
+            </Button>
+            
+            <Button 
+              onClick={scrapeResearchSources}
+              disabled={analyzing || generatingQueries || processingQueries || scrapingSources}
+              variant="outline"
+              className="flex items-center gap-1"
+            >
+              <FileText className="h-4 w-4 mr-1" />
+              Scrape Content
             </Button>
           </CardFooter>
         </Card>
