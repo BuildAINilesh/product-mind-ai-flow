@@ -72,7 +72,7 @@ async function summarizeContent(content: string, url: string) {
 }
 
 // Exponential backoff retry function for API calls
-async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3, initialBackoffMs = 1000) {
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 5, initialBackoffMs = 1000) {
   let retries = 0;
   let backoffMs = initialBackoffMs;
   
@@ -130,7 +130,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3,
 }
 
 // Process a batch of pending summaries
-async function processPendingSummaries(requirementId: string, batchSize = 5) {
+async function processPendingSummaries(requirementId: string, batchSize = 3) {
   try {
     console.log(`Processing summaries for requirement: ${requirementId}`);
     
@@ -167,7 +167,7 @@ async function processPendingSummaries(requirementId: string, batchSize = 5) {
     let summarizedCount = 0;
     let errorCount = 0;
     
-    // Process each pending summary item
+    // Process each pending summary item with delay between items to avoid rate limiting
     for (const item of pendingItems) {
       try {
         console.log(`Generating summary for content from URL: ${item.url}`);
@@ -222,8 +222,10 @@ async function processPendingSummaries(requirementId: string, batchSize = 5) {
           errorCount++;
         }
         
-        // Add a small delay between summarization requests to avoid rate limiting
-        await sleep(1000);
+        // Add a larger delay between summarization requests to avoid OpenAI rate limiting
+        // This is key to ensuring all summaries get processed
+        console.log("Waiting 3 seconds before processing next item to avoid rate limits...");
+        await sleep(3000);
       } catch (itemError) {
         console.error(`Error processing item ${item.id}: ${itemError.message}`);
         errorCount++;
@@ -301,7 +303,8 @@ serve(async (req) => {
     console.log(`Processing summaries for requirement: ${requirementId}`);
     console.log(`Using OpenAI API Key: ${openAiApiKey ? "Available (masked)" : "Missing"}`);
     
-    const result = await processPendingSummaries(requirementId);
+    // Reduce batch size to 3 to avoid rate limits
+    const result = await processPendingSummaries(requirementId, 3);
     
     // Query the total summarized count
     const { response: summaryCountResponse } = await fetchWithRetry(
