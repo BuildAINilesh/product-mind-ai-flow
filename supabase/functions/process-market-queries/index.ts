@@ -24,7 +24,14 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3,
       
       // If rate limited, wait and retry
       if (response.status === 429) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { error: errorText };
+        }
+        
         const retryAfterMs = errorData.error && errorData.error.includes("retry after") 
           ? parseInt(errorData.error.match(/retry after (\d+)s/)?.[1] || "60") * 1000 
           : backoffMs;
@@ -33,7 +40,10 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3,
         
         if (retries >= maxRetries) {
           console.error(`Maximum retries (${maxRetries}) reached. Giving up.`);
-          return response;
+          return {
+            response,
+            error: `Rate limit reached after ${maxRetries} retries. Please try again later.`
+          };
         }
         
         // Wait for the specified time
@@ -43,11 +53,14 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3,
         continue;
       }
       
-      return response;
+      return { response, error: null };
     } catch (error) {
       if (retries >= maxRetries) {
         console.error(`Maximum retries (${maxRetries}) reached. Giving up.`);
-        throw error;
+        return { 
+          response: null, 
+          error: `Network error after ${maxRetries} retries: ${error.message}`
+        };
       }
       
       console.error(`Fetch error: ${error.message}. Retrying in ${backoffMs/1000}s...`);
@@ -111,6 +124,8 @@ serve(async (req) => {
     // Process each query with Firecrawl Search API
     let processedQueries = 0;
     let savedSources = 0;
+    let errorCount = 0;
+    let rateLimitHits = 0;
     
     // Process queries with spacing to avoid rate limits
     for (const query of queries) {
@@ -147,7 +162,32 @@ serve(async (req) => {
         });
         
         // Use the retry function for API calls
-        const searchResponse = await fetchWithRetry(apiEndpoint, searchRequest, 3, 2000);
+        const { response: searchResponse, error: fetchError } = await fetchWithRetry(apiEndpoint, searchRequest, 3, 2000);
+
+        if (fetchError) {
+          console.error(`Fetch error for query '${query.query}': ${fetchError}`);
+          
+          if (fetchError.includes("Rate limit")) {
+            rateLimitHits++;
+          }
+          
+          // Update the query status to error
+          await fetch(`${supabaseUrl}/rest/v1/firecrawl_queries?id=eq.${query.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'apikey': `${supabaseServiceKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+              status: 'error'
+            })
+          });
+          
+          errorCount++;
+          continue;
+        }
 
         console.log(`Firecrawl API response status: ${searchResponse.status}`);
         
@@ -170,6 +210,7 @@ serve(async (req) => {
             })
           });
           
+          errorCount++;
           continue;
         }
 
@@ -203,7 +244,7 @@ serve(async (req) => {
                   title: result.title || 'No Title',
                   url: result.url || '',
                   snippet: result.description || null,
-                  status: 'found'
+                  status: 'found'  // Using 'found' which is now allowed by the constraint
                 })
               });
 
@@ -262,14 +303,18 @@ serve(async (req) => {
             status: 'error'
           })
         });
+        
+        errorCount++;
       }
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: `Processed ${processedQueries} queries and saved ${savedSources} search results`,
+      message: `Processed ${processedQueries} queries and saved ${savedSources} search results${errorCount > 0 ? ` with ${errorCount} errors` : ''}${rateLimitHits > 0 ? ` (hit rate limits ${rateLimitHits} times)` : ''}`,
       processedQueries,
-      savedSources
+      savedSources,
+      errorCount,
+      rateLimitHits
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -81,7 +81,11 @@ const MarketSense = () => {
       } catch (error) {
         console.error("Error fetching market analyses:", error);
         setError("Failed to load market analyses. Please try again.");
-        toast("Error: Failed to load market analyses");
+        toast({
+          title: "Error",
+          description: "Failed to load market analyses",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -169,16 +173,20 @@ const MarketSense = () => {
           console.log("Created new market analysis:", newMarketData);
           setMarketAnalysis(newMarketData);
           
-          toast.success("Draft Created", {
-            description: "New market analysis draft has been created"
+          toast({
+            title: "Draft Created",
+            description: "New market analysis draft has been created",
+            variant: "default",
           });
         }
         
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to load project data. The requirement might not exist.");
-        toast.error("Error", {
-          description: "Failed to load project data"
+        toast({
+          title: "Error",
+          description: "Failed to load project data. The requirement might not exist.",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -190,16 +198,20 @@ const MarketSense = () => {
   
   const generateSearchQueries = async () => {
     if (!requirementId || !requirement) {
-      toast.error("Error", {
-        description: "No requirement selected for analysis"
+      toast({
+        title: "Error",
+        description: "No requirement selected for analysis",
+        variant: "destructive",
       });
       return;
     }
     
     setGeneratingQueries(true);
-    toast.loading("Processing", {
+    toast({
+      id: "generate-queries",
+      title: "Processing",
       description: "Generating search queries for market research...",
-      id: "generate-queries"
+      duration: 30000,
     });
     
     try {
@@ -233,9 +245,11 @@ const MarketSense = () => {
         throw new Error(data.message || "Failed to generate search queries");
       }
       
-      toast.success("Success", {
+      toast({
+        id: "generate-queries",
+        title: "Success",
         description: `Generated ${data.queries.length} search queries for market research`,
-        id: "generate-queries"
+        variant: "default",
       });
       
       // After generating queries, process them with Firecrawl Search
@@ -243,9 +257,11 @@ const MarketSense = () => {
       
     } catch (error) {
       console.error("Error generating search queries:", error);
-      toast.error("Error", {
+      toast({
+        id: "generate-queries",
+        title: "Error",
         description: error.message || "Failed to generate search queries",
-        id: "generate-queries"
+        variant: "destructive",
       });
       setGeneratingQueries(false);
     }
@@ -253,9 +269,11 @@ const MarketSense = () => {
   
   const processSearchQueries = async (reqId) => {
     setProcessingQueries(true);
-    toast.loading("Processing", {
+    toast({
+      id: "process-queries",
+      title: "Processing",
       description: "Searching the web for market research data...",
-      id: "process-queries"
+      duration: 60000,
     });
     
     try {
@@ -272,9 +290,21 @@ const MarketSense = () => {
         throw new Error(data.message || "Failed to process search queries");
       }
       
-      toast.success("Success", {
-        description: `Processed ${data.processedQueries} queries and found ${data.savedSources} search results`,
-        id: "process-queries"
+      // Handle rate limit messages if present
+      const rateMessage = data.rateLimitHits > 0 
+        ? ` (hit rate limits ${data.rateLimitHits} times)`
+        : '';
+        
+      // Handle error messages if present
+      const errorMessage = data.errorCount > 0
+        ? ` with ${data.errorCount} errors`
+        : '';
+      
+      toast({
+        id: "process-queries",
+        title: "Search Complete",
+        description: `Processed ${data.processedQueries} queries and found ${data.savedSources} search results${errorMessage}${rateMessage}`,
+        variant: data.errorCount > 0 || data.rateLimitHits > 0 ? "default" : "default",
       });
       
       // After processing queries, proceed with market analysis
@@ -282,9 +312,11 @@ const MarketSense = () => {
       
     } catch (error) {
       console.error("Error processing search queries:", error);
-      toast.error("Error", {
-        description: error.message || "Failed to process search queries",
-        id: "process-queries"
+      toast({
+        id: "process-queries",
+        title: "Error",
+        description: error.message || "Failed to process search queries. Please try again later.",
+        variant: "destructive",
       });
       setProcessingQueries(false);
       setGeneratingQueries(false);
@@ -293,16 +325,20 @@ const MarketSense = () => {
   
   const handleGenerateAnalysis = async () => {
     if (!requirementId) {
-      toast.error("Error", {
-        description: "No requirement selected for analysis"
+      toast({
+        title: "Error",
+        description: "No requirement selected for analysis",
+        variant: "destructive",
       });
       return;
     }
     
     setAnalyzing(true);
-    toast.loading("Processing", {
-      description: "Generating market analysis...",
-      id: "generate-analysis"
+    toast({
+      id: "generate-analysis",
+      title: "Processing",
+      description: "Generating market analysis from collected data...",
+      duration: 60000,
     });
     
     try {
@@ -323,16 +359,20 @@ const MarketSense = () => {
       if (marketError) throw marketError;
       
       setMarketAnalysis(marketData);
-      toast.success("Success", {
+      toast({
+        id: "generate-analysis",
+        title: "Analysis Complete",
         description: "Market analysis generated successfully",
-        id: "generate-analysis"
+        variant: "default",
       });
       
     } catch (error) {
       console.error("Error generating market analysis:", error);
-      toast.error("Error", {
-        description: "Failed to generate market analysis",
-        id: "generate-analysis"
+      toast({
+        id: "generate-analysis",
+        title: "Error",
+        description: "Failed to generate market analysis. Please try again later.",
+        variant: "destructive",
       });
     } finally {
       setAnalyzing(false);
