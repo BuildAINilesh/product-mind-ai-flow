@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,17 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import RequirementAnalysisView from "@/components/RequirementAnalysisView";
+
+// Define a type for the analysis process step
+type ProcessStep = {
+  name: string;
+  status: "pending" | "processing" | "completed" | "failed";
+};
+
+// Define status key for localStorage
+const ANALYSIS_STATUS_KEY = "marketAnalysis_status_";
+const ANALYSIS_STEPS_KEY = "marketAnalysis_steps_";
+const ANALYSIS_CURRENT_STEP_KEY = "marketAnalysis_currentStep_";
 
 const RequirementView = () => {
   const { id } = useParams();
@@ -20,7 +30,7 @@ const RequirementView = () => {
   // Progress tracking states
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [progressSteps, setProgressSteps] = useState([
+  const [progressSteps, setProgressSteps] = useState<ProcessStep[]>([
     { name: "Generating search queries", status: "pending" },
     { name: "Searching the web", status: "pending" },
     { name: "Scraping content", status: "pending" },
@@ -74,21 +84,99 @@ const RequirementView = () => {
 
     if (id) {
       fetchProjectData();
+      
+      // Check if there's an ongoing analysis process for this requirement
+      checkOngoingAnalysisProcess();
     }
   }, [id, toast]);
 
-  // Function to handle editing the requirement
-  const handleEdit = () => {
-    navigate(`/dashboard/requirements/edit/${id}`);
+  // Function to check if there's an ongoing analysis process
+  const checkOngoingAnalysisProcess = () => {
+    if (!id) return;
+    
+    const inProgress = localStorage.getItem(ANALYSIS_STATUS_KEY + id) === 'true';
+    
+    if (inProgress) {
+      console.log("Found ongoing analysis process for requirement:", id);
+      setAnalysisInProgress(true);
+      
+      // Restore progress steps and current step
+      const savedSteps = localStorage.getItem(ANALYSIS_STEPS_KEY + id);
+      const savedCurrentStep = localStorage.getItem(ANALYSIS_CURRENT_STEP_KEY + id);
+      
+      if (savedSteps) {
+        try {
+          setProgressSteps(JSON.parse(savedSteps));
+        } catch (e) {
+          console.error("Error parsing saved steps:", e);
+        }
+      }
+      
+      if (savedCurrentStep) {
+        setCurrentStep(parseInt(savedCurrentStep, 10));
+      }
+      
+      // Check if the market analysis has been completed
+      checkMarketAnalysisStatus();
+    }
+  };
+  
+  // Function to check if market analysis has been completed
+  const checkMarketAnalysisStatus = async () => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('market_analysis')
+        .select('status')
+        .eq('requirement_id', id)
+        .maybeSingle();
+        
+      if (error) {
+        console.error("Error checking market analysis status:", error);
+        return;
+      }
+      
+      if (data && data.status === 'Completed') {
+        console.log("Market analysis has been completed, updating UI");
+        // Reset in-progress status
+        localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
+        localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
+        localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
+        
+        // Update steps to show all completed
+        setProgressSteps(steps => steps.map(step => ({ ...step, status: "completed" })));
+        setCurrentStep(progressSteps.length);
+        
+        // Wait a bit and then reset the UI
+        setTimeout(() => {
+          setAnalysisInProgress(false);
+        }, 3000);
+      }
+    } catch (e) {
+      console.error("Error checking market analysis:", e);
+    }
   };
 
   // Function to update step status
   const updateStepStatus = (stepIndex, status) => {
-    setProgressSteps(prevSteps => 
-      prevSteps.map((step, index) => 
+    setProgressSteps(prevSteps => {
+      const updatedSteps = prevSteps.map((step, index) => 
         index === stepIndex ? { ...step, status } : step
-      )
-    );
+      );
+      
+      // Save to localStorage for persistence
+      if (id) {
+        localStorage.setItem(ANALYSIS_STEPS_KEY + id, JSON.stringify(updatedSteps));
+      }
+      
+      return updatedSteps;
+    });
+  };
+
+  // Function to handle editing the requirement
+  const handleEdit = () => {
+    navigate(`/dashboard/requirements/edit/${id}`);
   };
 
   // Function to trigger AI analysis
@@ -165,62 +253,6 @@ const RequirementView = () => {
     }
   };
 
-  // Function to navigate to MarketSense
-  const navigateToMarketSense = async () => {
-    if (!id) return;
-    
-    try {
-      // First, check if a market analysis entry already exists
-      const { data: existingAnalysis, error: checkError } = await supabase
-        .from('market_analysis')
-        .select('id, status')
-        .eq('requirement_id', id)
-        .maybeSingle();
-        
-      if (checkError) {
-        console.error('Error checking for existing market analysis:', checkError);
-        toast({
-          title: "Error",
-          description: "Failed to check for existing market analysis.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // If no entry exists, create one
-      if (!existingAnalysis) {
-        const { error } = await supabase
-          .from('market_analysis')
-          .insert({
-            requirement_id: id,
-            status: 'Draft'
-          });
-          
-        if (error) {
-          console.error('Error creating market analysis entry:', error);
-          toast({
-            title: "Error",
-            description: "Failed to create market analysis entry.",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-      
-      // Navigate to the main MarketSense dashboard with the requirement ID as a URL parameter
-      console.log("Navigating to MarketSense with requirementId:", id);
-      navigate(`/dashboard/market-sense?requirementId=${id}`);
-      
-    } catch (err) {
-      console.error('Error:', err);
-      toast({
-        title: "Error",
-        description: "Something went wrong.",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Function to trigger AI market analysis with visual progress indicators
   const generateMarketAnalysis = async () => {
     if (!id) return;
@@ -230,6 +262,11 @@ const RequirementView = () => {
       setProgressSteps(prevSteps => prevSteps.map(step => ({ ...step, status: "pending" })));
       setCurrentStep(0);
       setAnalysisInProgress(true);
+      
+      // Set localStorage flags to indicate analysis is in progress
+      localStorage.setItem(ANALYSIS_STATUS_KEY + id, 'true');
+      localStorage.setItem(ANALYSIS_STEPS_KEY + id, JSON.stringify(progressSteps));
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '0');
       
       // Step 1: Generate search queries
       updateStepStatus(0, "processing");
@@ -248,6 +285,7 @@ const RequirementView = () => {
       
       updateStepStatus(0, "completed");
       setCurrentStep(1);
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '1');
       
       // Step 2: Process search queries
       updateStepStatus(1, "processing");
@@ -260,6 +298,7 @@ const RequirementView = () => {
       
       updateStepStatus(1, "completed");
       setCurrentStep(2);
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '2');
       
       // Step 3: Scrape research sources
       updateStepStatus(2, "processing");
@@ -272,6 +311,7 @@ const RequirementView = () => {
       
       updateStepStatus(2, "completed");
       setCurrentStep(3);
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '3');
       
       // Step 4: Summarize research content
       updateStepStatus(3, "processing");
@@ -291,6 +331,7 @@ const RequirementView = () => {
       
       updateStepStatus(3, "completed");
       setCurrentStep(4);
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '4');
       
       // Step 5: Generate market analysis
       updateStepStatus(4, "processing");
@@ -301,7 +342,12 @@ const RequirementView = () => {
       if (analysisError) throw analysisError;
       updateStepStatus(4, "completed");
       
-      // Navigate to the market analysis results
+      // Clear localStorage flags since process is complete
+      localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
+      localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
+      localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
+      
+      // Navigate to the market analysis results after a short delay
       setTimeout(() => {
         navigate(`/dashboard/market-sense?requirementId=${id}`);
       }, 1000);
@@ -316,6 +362,8 @@ const RequirementView = () => {
         description: error.message || "Failed to complete market analysis",
         variant: "destructive",
       });
+      
+      // Keep localStorage flags so user can see the failed state
     }
   };
   
@@ -390,6 +438,62 @@ const RequirementView = () => {
       </div>
     );
   };
+  
+  // Function to navigate to MarketSense
+  const navigateToMarketSense = async () => {
+    if (!id) return;
+    
+    try {
+      // First, check if a market analysis entry already exists
+      const { data: existingAnalysis, error: checkError } = await supabase
+        .from('market_analysis')
+        .select('id, status')
+        .eq('requirement_id', id)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error('Error checking for existing market analysis:', checkError);
+        toast({
+          title: "Error",
+          description: "Failed to check for existing market analysis.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // If no entry exists, create one
+      if (!existingAnalysis) {
+        const { error } = await supabase
+          .from('market_analysis')
+          .insert({
+            requirement_id: id,
+            status: 'Draft'
+          });
+          
+        if (error) {
+          console.error('Error creating market analysis entry:', error);
+          toast({
+            title: "Error",
+            description: "Failed to create market analysis entry.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
+      // Navigate to the main MarketSense dashboard with the requirement ID as a URL parameter
+      console.log("Navigating to MarketSense with requirementId:", id);
+      navigate(`/dashboard/market-sense?requirementId=${id}`);
+      
+    } catch (err) {
+      console.error('Error:', err);
+      toast({
+        title: "Error",
+        description: "Something went wrong.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -450,6 +554,10 @@ const RequirementView = () => {
             <div className="mt-3">
               {progressSteps.map(renderStepIndicator)}
             </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              The analysis will continue processing even if you navigate away from this page.
+              You can return at any time to check progress.
+            </p>
           </AlertDescription>
         </Alert>
       )}
