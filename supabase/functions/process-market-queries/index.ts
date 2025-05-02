@@ -26,6 +26,10 @@ serve(async (req) => {
     console.log(`Processing market queries for requirement: ${requirementId}`);
     console.log(`Using Firecrawl API Key: ${firecrawlApiKey ? "Available (masked)" : "Missing"}`);
     
+    if (!firecrawlApiKey) {
+      throw new Error("Firecrawl API Key is missing. Please set it in the Supabase Edge Function Secrets.");
+    }
+    
     // Get all pending queries for the requirement
     const queriesResponse = await fetch(`${supabaseUrl}/rest/v1/firecrawl_queries?requirement_id=eq.${requirementId}&status=eq.pending`, {
       method: 'GET',
@@ -64,10 +68,9 @@ serve(async (req) => {
       console.log(`Processing query: ${query.query}`);
       
       try {
-        // Create a FirecrawlApp-like client based on the documentation
+        // Call Firecrawl search API as per documentation
         console.log(`Calling Firecrawl API with search query: ${query.query}`);
         
-        // According to documentation, we need to use the search endpoint
         const searchResponse = await fetch('https://api.firecrawl.dev/search', {
           method: 'POST',
           headers: {
@@ -107,8 +110,7 @@ serve(async (req) => {
         const searchResults = await searchResponse.json();
         console.log(`Received search response: ${JSON.stringify(searchResults).substring(0, 200)}...`);
         
-        // According to documentation the results are in the data array
-        if (searchResults.success && searchResults.data && searchResults.data.length > 0) {
+        if (searchResults.success && searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
           console.log(`Received ${searchResults.data.length} results for query: ${query.query}`);
           
           for (const result of searchResults.data) {
@@ -180,27 +182,6 @@ serve(async (req) => {
           })
         });
       }
-    }
-
-    // Add a fallback for development/testing - if Firecrawl API is not working,
-    // update all queries to "searched" anyway so we can continue with the flow
-    if (processedQueries === 0 && queries.length > 0) {
-      console.log("No queries were successfully processed. Marking them as 'searched' to continue the flow.");
-      for (const query of queries) {
-        await fetch(`${supabaseUrl}/rest/v1/firecrawl_queries?id=eq.${query.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'apikey': `${supabaseServiceKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify({
-            status: 'searched'
-          })
-        });
-      }
-      processedQueries = queries.length;
     }
 
     return new Response(JSON.stringify({ 
