@@ -15,12 +15,8 @@ import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Searc
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -29,8 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 // Define constants for localStorage keys
 const ANALYSIS_STATUS_KEY = "marketAnalysis_status_";
@@ -73,7 +67,6 @@ const MarketSense = () => {
   
   console.log("Current requirementId:", requirementId);
   
-  // Fetch all market analyses when no specific requirementId is provided
   useEffect(() => {
     const fetchAllMarketAnalyses = async () => {
       if (requirementId) return; // Skip if we have a specific requirementId
@@ -115,7 +108,6 @@ const MarketSense = () => {
     fetchAllMarketAnalyses();
   }, [requirementId]);
   
-  // Fetch specific requirement data when requirementId is provided
   useEffect(() => {
     const fetchData = async () => {
       if (!requirementId) {
@@ -219,7 +211,6 @@ const MarketSense = () => {
     fetchData();
   }, [requirementId]);
   
-  // Check if there's an ongoing analysis process
   const checkOngoingAnalysisProcess = () => {
     if (!requirementId) return;
     
@@ -250,7 +241,6 @@ const MarketSense = () => {
     }
   };
   
-  // Poll for market analysis completion if there's an ongoing process
   useEffect(() => {
     if (!requirementId) return;
     
@@ -303,7 +293,6 @@ const MarketSense = () => {
     return () => clearInterval(interval);
   }, [requirementId, analysisInProgress, progressSteps.length, marketAnalysis?.market_trends]);
   
-  // Function to check if market analysis has been completed
   const checkMarketAnalysisStatus = async () => {
     if (!requirementId) return;
     
@@ -341,7 +330,6 @@ const MarketSense = () => {
     }
   };
   
-  // Function to update step status
   const updateStepStatus = (stepIndex, status) => {
     setProgressSteps(prevSteps => {
       const updatedSteps = prevSteps.map((step, index) => 
@@ -357,7 +345,6 @@ const MarketSense = () => {
     });
   };
   
-  // Function to handle Generate Market Analysis button click
   const handleGenerateAnalysis = async () => {
     if (!requirementId) {
       toast.error("No requirement selected for analysis");
@@ -481,7 +468,6 @@ const MarketSense = () => {
     }
   };
   
-  // Helper function to continue summarizing content if needed
   const summarizeAdditionalContent = async (reqId) => {
     try {
       const { data, error } = await supabase.functions.invoke('summarize-research-content', {
@@ -504,7 +490,6 @@ const MarketSense = () => {
     }
   };
   
-  // Render step indicator component
   const renderStepIndicator = (step, index) => {
     const isActive = index === currentStep;
     const getStatusIcon = () => {
@@ -553,11 +538,11 @@ const MarketSense = () => {
     );
   };
   
-  // Function to navigate to MarketSense
   const navigateToMarketSense = async () => {
-    // ... keep existing code (navigateToMarketSense function)
+    // Your existing code here
   };
 
+  // Format section function to transform content with bullets
   const formatSection = (content) => {
     if (!content) return "No data available";
     
@@ -582,6 +567,7 @@ const MarketSense = () => {
     ));
   };
 
+  // Get status badge
   const getStatusBadge = (status) => {
     if (!status) return <AIBadge variant="neural">Draft</AIBadge>;
     
@@ -834,6 +820,7 @@ const MarketSense = () => {
   }
 
   // Single requirement view (when requirementId is provided and requirement exists)
+  // Modified to show all sections on one page rather than tabs
   return (
     <div className="space-y-6">
       <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
@@ -886,154 +873,9 @@ const MarketSense = () => {
       )}
       
       {marketAnalysis?.market_trends ? (
-        <Tabs defaultValue="market-trends">
-          <TabsList className="grid grid-cols-3 lg:grid-cols-6 mb-4">
-            <TabsTrigger value="market-trends">Trends</TabsTrigger>
-            <TabsTrigger value="demand-insights">Demand</TabsTrigger>
-            <TabsTrigger value="competitors">Competitors</TabsTrigger>
-            <TabsTrigger value="opportunity">Opportunity</TabsTrigger>
-            <TabsTrigger value="swot">SWOT</TabsTrigger>
-            <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="market-trends">
-            <AICard>
-              <CardHeader className="flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle>Market Trends</CardTitle>
-                  <CardDescription>Current trends in the {requirement.industry_type} market</CardDescription>
-                </div>
-                <BarChart3 className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                {formatSection(marketAnalysis.market_trends)}
-              </CardContent>
-            </AICard>
-          </TabsContent>
-          
-          <TabsContent value="demand-insights">
-            <AICard>
-              <CardHeader className="flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle>Demand Insights</CardTitle>
-                  <CardDescription>Analysis of potential demand and customer needs</CardDescription>
-                </div>
-                <LineChart className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                {formatSection(marketAnalysis.demand_insights)}
-              </CardContent>
-            </AICard>
-          </TabsContent>
-          
-          <TabsContent value="competitors">
-            <AICard>
-              <CardHeader className="flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle>Top Competitors</CardTitle>
-                  <CardDescription>Key players and their strengths in this market</CardDescription>
-                </div>
-                <Lightbulb className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                {formatSection(marketAnalysis.top_competitors)}
-              </CardContent>
-            </AICard>
-          </TabsContent>
-          
-          <TabsContent value="opportunity">
-            <AICard>
-              <CardHeader className="flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle>Market Gap & Opportunity</CardTitle>
-                  <CardDescription>The specific gap this project addresses</CardDescription>
-                </div>
-                <Check className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                {formatSection(marketAnalysis.market_gap_opportunity)}
-              </CardContent>
-            </AICard>
-          </TabsContent>
-          
-          <TabsContent value="swot">
-            <AICard>
-              <CardHeader className="flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle>SWOT Analysis</CardTitle>
-                  <CardDescription>Strengths, Weaknesses, Opportunities, and Threats</CardDescription>
-                </div>
-                <AlertTriangle className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                {formatSection(marketAnalysis.swot_analysis)}
-              </CardContent>
-            </AICard>
-          </TabsContent>
-          
-          <TabsContent value="benchmarks">
-            <AICard>
-              <CardHeader className="flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle>Industry Benchmarks</CardTitle>
-                  <CardDescription>Key performance indicators for this industry</CardDescription>
-                </div>
-                <BarChart3 className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                {formatSection(marketAnalysis.industry_benchmarks)}
-              </CardContent>
-              <CardFooter>
-                <div className="text-sm text-muted-foreground">
-                  Analysis confidence score: {marketAnalysis.confidence_score}%
-                </div>
-              </CardFooter>
-            </AICard>
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Market Analysis</CardTitle>
-            <CardDescription>
-              {marketAnalysis?.status === "Draft" ? 
-                "Your market analysis is in draft state. Generate a comprehensive analysis to understand market trends, competition, and opportunities." :
-                "Generate a comprehensive market analysis for your project to understand market trends, competition, and opportunities."
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center py-12">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-                <LineChart className="h-10 w-10 text-primary" />
-              </div>
-              <h3 className="text-lg font-medium">
-                {marketAnalysis?.status === "Draft" ? "Draft Market Analysis" : "No Market Analysis Yet"}
-              </h3>
-              <p className="text-muted-foreground max-w-md">
-                Use AI to generate an in-depth market analysis for your {requirement.project_name} project
-                in the {requirement.industry_type} industry.
-              </p>
-              {marketAnalysis?.status === "Draft" && (
-                <Badge variant="outline" className="px-2 py-1">Draft</Badge>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            {!analysisInProgress && (
-              <Button 
-                onClick={handleGenerateAnalysis}
-                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-              >
-                <LineChart className="mr-2 h-4 w-4" />
-                Generate Market Analysis
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-export default MarketSense;
+        <div className="space-y-6">
+          {/* Market Overview Card (Optional) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Market Analysis Overview</CardTitle>
+              <CardDescription>
