@@ -19,13 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  Mail, 
   FileText, 
-  MessageSquare, 
   Mic, 
-  Headphones, 
-  Upload,
-  Loader
+  Headphones,
+  Loader,
+  AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,8 +62,6 @@ const NewRequirement = () => {
     industryType: "" as IndustryType,
     projectIdea: "",
     voiceUploadUrl: null as string | null,
-    emailUploadUrl: null as string | null,
-    chatUploadUrl: null as string | null,
     documentUploadUrl: null as string | null,
     audioUploadUrl: null as string | null,
     documentSummary: null as string | null
@@ -73,8 +69,6 @@ const NewRequirement = () => {
 
   const [uploadedFiles, setUploadedFiles] = useState({
     voice: null as string | null,
-    email: null as string | null,
-    chat: null as string | null,
     document: null as string | null,
     audio: null as string | null
   });
@@ -234,15 +228,11 @@ const NewRequirement = () => {
 
       const inputMethodsUsed: string[] = [];
       if (formData.voiceUploadUrl) inputMethodsUsed.push('Voice Input');
-      if (formData.emailUploadUrl) inputMethodsUsed.push('Email Upload');
-      if (formData.chatUploadUrl) inputMethodsUsed.push('Chat Upload');
       if (formData.documentUploadUrl) inputMethodsUsed.push('Document Upload');
       if (formData.audioUploadUrl) inputMethodsUsed.push('Audio Upload');
       
       const fileUrls: string[] = [
         formData.voiceUploadUrl,
-        formData.emailUploadUrl,
-        formData.chatUploadUrl,
         formData.documentUploadUrl,
         formData.audioUploadUrl
       ].filter(url => url !== null) as string[];
@@ -396,35 +386,66 @@ const NewRequirement = () => {
             )}
 
             <div className="flex flex-wrap gap-3">
-              {[
-                { type: 'voice', icon: Mic, label: 'Voice Input' },
-                { type: 'email', icon: Mail, label: 'Email Upload' },
-                { type: 'chat', icon: MessageSquare, label: 'Chat Upload' },
-                { type: 'document', icon: FileText, label: 'Document Upload' },
-                { type: 'audio', icon: Headphones, label: 'Audio Upload' }
-              ].map(({ type, icon: Icon, label }) => (
+              {/* Document Upload - Now first */}
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2"
+                onClick={() => handleFileSelect('document')}
+                disabled={processingFile === 'document'}
+              >
+                {processingFile === 'document' ? (
+                  <Loader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                <span>Document Upload</span>
+                {uploadedFiles.document && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {uploadedFiles.document}
+                  </span>
+                )}
+              </Button>
+
+              {/* Voice Input - Greyed out with coming soon message */}
+              <div className="relative">
                 <Button 
-                  key={type} 
                   type="button" 
                   variant="outline" 
                   size="sm" 
-                  className="flex items-center gap-2"
-                  onClick={() => handleFileSelect(type)}
-                  disabled={processingFile === type}
+                  className="flex items-center gap-2 opacity-50 cursor-not-allowed"
+                  disabled={true}
                 >
-                  {processingFile === type ? (
-                    <Loader className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Icon className="h-4 w-4" />
-                  )}
-                  <span>{label}</span>
-                  {uploadedFiles[type as keyof typeof uploadedFiles] && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {uploadedFiles[type as keyof typeof uploadedFiles]}
-                    </span>
-                  )}
+                  <Mic className="h-4 w-4" />
+                  <span>Voice Input</span>
                 </Button>
-              ))}
+                <div className="absolute -top-8 left-0 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 pointer-events-none">
+                  Coming Soon
+                </div>
+                <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] py-0.5 px-1.5 rounded-full flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-0.5" />
+                  Coming Soon
+                </span>
+              </div>
+
+              {/* Audio Upload - Greyed out with coming soon message */}
+              <div className="relative">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-2 opacity-50 cursor-not-allowed"
+                  disabled={true}
+                >
+                  <Headphones className="h-4 w-4" />
+                  <span>Audio Upload</span>
+                </Button>
+                <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] py-0.5 px-1.5 rounded-full flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-0.5" />
+                  Coming Soon
+                </span>
+              </div>
             </div>
 
             <Button
