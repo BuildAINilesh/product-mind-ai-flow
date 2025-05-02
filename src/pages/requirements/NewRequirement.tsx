@@ -237,7 +237,18 @@ const NewRequirement = () => {
         formData.audioUploadUrl
       ].filter(url => url !== null) as string[];
 
-      // FIX: Removed the incorrect requirement_id field, using only valid columns from the requirements table
+      console.log("Inserting requirement with data:", {
+        user_id: user.id,
+        project_name: formData.projectName,
+        company_name: formData.companyName,
+        industry_type: formData.industryType,
+        project_idea: formData.projectIdea,
+        input_methods_used: inputMethodsUsed,
+        file_urls: fileUrls,
+        document_summary: formData.documentSummary,
+        status: 'Draft'
+      });
+
       const { data: newRequirement, error } = await supabase
         .from('requirements')
         .insert({
@@ -254,7 +265,10 @@ const NewRequirement = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        throw error;
+      }
 
       toast({
         title: "Requirement created",
