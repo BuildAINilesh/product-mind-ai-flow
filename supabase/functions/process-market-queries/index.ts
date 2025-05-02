@@ -68,10 +68,13 @@ serve(async (req) => {
       console.log(`Processing query: ${query.query}`);
       
       try {
-        // Call Firecrawl search API as per documentation
+        // Call Firecrawl Search API as per documentation
         console.log(`Calling Firecrawl API with search query: ${query.query}`);
         
-        const searchResponse = await fetch('https://api.firecrawl.dev/search', {
+        // The correct endpoint URL according to Firecrawl docs
+        const searchEndpoint = 'https://api.firecrawl.dev/api/search';
+        
+        const searchResponse = await fetch(searchEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -110,6 +113,7 @@ serve(async (req) => {
         const searchResults = await searchResponse.json();
         console.log(`Received search response: ${JSON.stringify(searchResults).substring(0, 200)}...`);
         
+        // Parse results according to Firecrawl documentation
         if (searchResults.success && searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
           console.log(`Received ${searchResults.data.length} results for query: ${query.query}`);
           

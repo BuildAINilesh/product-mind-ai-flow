@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false);
+  const [explicitAuthEvent, setExplicitAuthEvent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,9 +43,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         setLoading(false);
 
-        // Only navigate on explicit sign in/out events, not on initial load or token refresh
+        // Only navigate on explicit sign in/out events, not on token refresh or window focus
         if (initialAuthCheckDone) {
+          // Only redirect on actual sign in/sign out events, not token refreshes
           if (event === 'SIGNED_IN') {
+            setExplicitAuthEvent(true);
             navigate('/dashboard');
             toast({
               title: "Welcome back!",
@@ -52,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
           }
           if (event === 'SIGNED_OUT') {
+            setExplicitAuthEvent(true);
             navigate('/');
             toast({
               title: "Signed out",
