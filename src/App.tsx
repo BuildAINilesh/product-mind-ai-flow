@@ -35,12 +35,17 @@ import TestGen from "./pages/dashboard/TestGen";
 import BugShield from "./pages/dashboard/BugShield";
 import SmartSignoff from "./pages/dashboard/SmartSignoff";
 import Profile from "./pages/dashboard/Profile";
-
-// Add imports for Settings and Support
 import Settings from "./pages/dashboard/Settings";
 import Support from "./pages/dashboard/Support";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false
+    }
+  }
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
