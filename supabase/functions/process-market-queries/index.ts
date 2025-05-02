@@ -10,6 +10,54 @@ const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+// Sleep function to pause execution
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Exponential backoff retry function
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3, initialBackoffMs = 1000) {
+  let retries = 0;
+  let backoffMs = initialBackoffMs;
+  
+  while (true) {
+    try {
+      const response = await fetch(url, options);
+      
+      // If rate limited, wait and retry
+      if (response.status === 429) {
+        const errorData = await response.json();
+        const retryAfterMs = errorData.error && errorData.error.includes("retry after") 
+          ? parseInt(errorData.error.match(/retry after (\d+)s/)?.[1] || "60") * 1000 
+          : backoffMs;
+        
+        console.log(`Rate limited. Waiting for ${retryAfterMs/1000}s before retry.`);
+        
+        if (retries >= maxRetries) {
+          console.error(`Maximum retries (${maxRetries}) reached. Giving up.`);
+          return response;
+        }
+        
+        // Wait for the specified time
+        await sleep(retryAfterMs);
+        retries++;
+        backoffMs *= 2; // Exponential backoff
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      if (retries >= maxRetries) {
+        console.error(`Maximum retries (${maxRetries}) reached. Giving up.`);
+        throw error;
+      }
+      
+      console.error(`Fetch error: ${error.message}. Retrying in ${backoffMs/1000}s...`);
+      await sleep(backoffMs);
+      retries++;
+      backoffMs *= 2; // Exponential backoff
+    }
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -64,6 +112,7 @@ serve(async (req) => {
     let processedQueries = 0;
     let savedSources = 0;
     
+    // Process queries with spacing to avoid rate limits
     for (const query of queries) {
       console.log(`Processing query: ${query.query}`);
       
@@ -97,7 +146,8 @@ serve(async (req) => {
           })
         });
         
-        const searchResponse = await fetch(apiEndpoint, searchRequest);
+        // Use the retry function for API calls
+        const searchResponse = await fetchWithRetry(apiEndpoint, searchRequest, 3, 2000);
 
         console.log(`Firecrawl API response status: ${searchResponse.status}`);
         
@@ -187,6 +237,13 @@ serve(async (req) => {
         });
         
         processedQueries++;
+        
+        // Add a delay between requests to avoid hitting rate limits
+        if (queries.length > 1) {
+          const delayMs = 2000; // 2 second delay between requests
+          console.log(`Adding delay of ${delayMs}ms between requests to avoid rate limits`);
+          await sleep(delayMs);
+        }
         
       } catch (queryError) {
         console.error(`Error processing query '${query.query}': ${queryError.message}`);
