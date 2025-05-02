@@ -144,8 +144,37 @@ const RequirementView = () => {
   };
 
   // Function to navigate to MarketSense
-  const navigateToMarketSense = () => {
-    navigate("/dashboard/market-sense", { state: { requirementId: id } });
+  const navigateToMarketSense = async () => {
+    try {
+      // Create a draft entry in the market_analysis table
+      const { error } = await supabase
+        .from('market_analysis')
+        .upsert({
+          requirement_id: id,
+          status: 'Draft'
+        });
+        
+      if (error) {
+        console.error('Error creating market analysis entry:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create market analysis entry.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Navigate to the main MarketSense dashboard
+      navigate("/dashboard/market-sense");
+      
+    } catch (err) {
+      console.error('Error:', err);
+      toast({
+        title: "Error",
+        description: "Something went wrong.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
