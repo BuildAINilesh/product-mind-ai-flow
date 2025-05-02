@@ -47,6 +47,7 @@ const MarketSense = () => {
   const [processingQueries, setProcessingQueries] = useState(false);
   const [scrapingSources, setScrapingSources] = useState(false);
   const [summarizingContent, setSummarizingContent] = useState(false);
+  const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
   
   // Get requirementId from URL params
   const requirementId = searchParams.get('requirementId');
@@ -80,13 +81,13 @@ const MarketSense = () => {
         
         console.log("Fetched market analyses:", data);
         setAllMarketAnalyses(data.filter(item => item.requirements)); // Filter out any items without requirement data
+        setDataFetchAttempted(true);
         
       } catch (error) {
         console.error("Error fetching market analyses:", error);
         setError("Failed to load market analyses. Please try again.");
-        toast("Error", {
-          description: "Failed to load market analyses"
-        });
+        toast.error("Failed to load market analyses");
+        setDataFetchAttempted(true);
       } finally {
         setLoading(false);
       }
@@ -150,6 +151,7 @@ const MarketSense = () => {
         }
         
         console.log("Market analysis data:", marketData);
+        setDataFetchAttempted(true);
         
         // If market analysis exists, set it
         if (marketData) {
@@ -174,17 +176,14 @@ const MarketSense = () => {
           console.log("Created new market analysis:", newMarketData);
           setMarketAnalysis(newMarketData);
           
-          toast("Draft Created", {
-            description: "New market analysis draft has been created"
-          });
+          toast.success("New market analysis draft has been created");
         }
         
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to load project data. The requirement might not exist.");
-        toast("Error", {
-          description: "Failed to load project data. The requirement might not exist."
-        });
+        toast.error("Failed to load project data. The requirement might not exist.");
+        setDataFetchAttempted(true);
       } finally {
         setLoading(false);
       }
@@ -195,14 +194,12 @@ const MarketSense = () => {
   
   const generateSearchQueries = async () => {
     if (!requirementId || !requirement) {
-      toast("Error", {
-        description: "No requirement selected for analysis"
-      });
+      toast.error("No requirement selected for analysis");
       return;
     }
     
     setGeneratingQueries(true);
-    const generateToastId = toast.loading("Generating search queries for market research...", { duration: 30000 });
+    const generateToastId = toast.loading("Generating search queries for market research...");
     
     try {
       // Get the requirement analysis data to include in the prompt
@@ -251,7 +248,7 @@ const MarketSense = () => {
   
   const processSearchQueries = async (reqId) => {
     setProcessingQueries(true);
-    const processToastId = toast.loading("Searching the web for market research data...", { duration: 60000 });
+    const processToastId = toast.loading("Searching the web for market research data...");
     
     try {
       // Call the process-market-queries function
@@ -259,7 +256,10 @@ const MarketSense = () => {
         body: { requirementId: reqId }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Process market queries error:", error);
+        throw error;
+      }
       
       console.log("Process queries response:", data);
       
@@ -294,7 +294,7 @@ const MarketSense = () => {
   
   const scrapeResearchSources = async (reqId) => {
     setScrapingSources(true);
-    const scrapeToastId = toast.loading("Scraping research sources...", { duration: 60000 });
+    const scrapeToastId = toast.loading("Scraping research sources...");
     
     try {
       // Call the scrape-research-urls function
@@ -302,7 +302,10 @@ const MarketSense = () => {
         body: { requirementId: reqId }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Scrape research URLs error:", error);
+        throw error;
+      }
       
       console.log("Scrape URLs response:", data);
       
@@ -333,7 +336,7 @@ const MarketSense = () => {
   
   const summarizeResearchContent = async (reqId) => {
     setSummarizingContent(true);
-    const summaryToastId = toast.loading("Summarizing research content...", { duration: 60000 });
+    const summaryToastId = toast.loading("Summarizing research content...");
     
     try {
       // Call the summarize-research-content function
@@ -341,7 +344,10 @@ const MarketSense = () => {
         body: { requirementId: reqId }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Summarize research content error:", error);
+        throw error;
+      }
       
       console.log("Summarize content response:", data);
       
@@ -378,14 +384,12 @@ const MarketSense = () => {
   
   const handleGenerateAnalysis = async () => {
     if (!requirementId) {
-      toast("Error", {
-        description: "No requirement selected for analysis"
-      });
+      toast.error("No requirement selected for analysis");
       return;
     }
     
     setAnalyzing(true);
-    const analysisToastId = toast.loading("Generating market analysis from collected data...", { duration: 60000 });
+    const analysisToastId = toast.loading("Generating market analysis from collected data...");
     
     try {
       // Call the analyze-market edge function
@@ -393,7 +397,10 @@ const MarketSense = () => {
         body: { requirementId }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Analyze market error:", error);
+        throw error;
+      }
       
       // Fetch the newly generated market analysis
       const { data: marketData, error: marketError } = await supabase
@@ -474,8 +481,8 @@ const MarketSense = () => {
     analysis?.requirements?.industry_type?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // If we're loading, show a loading indicator
-  if (loading) {
+  // If we're loading and no data fetch has been attempted yet, show a loading indicator
+  if (loading && !dataFetchAttempted) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
@@ -553,89 +560,96 @@ const MarketSense = () => {
           </div>
         </AIBackground>
         
-        <AICard>
-          <CardHeader>
-            <CardTitle>Market Analyses</CardTitle>
-            <CardDescription>
-              View and manage your AI-powered market analyses for all projects
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search market analyses..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
+            <p className="ml-2">Loading data...</p>
+          </div>
+        ) : (
+          <AICard>
+            <CardHeader>
+              <CardTitle>Market Analyses</CardTitle>
+              <CardDescription>
+                View and manage your AI-powered market analyses for all projects
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search market analyses..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div className="border rounded-md overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead className="w-[300px]">Project</TableHead>
-                    <TableHead>Industry</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAnalyses.length > 0 ? (
-                    filteredAnalyses.map((analysis) => (
-                      <TableRow key={analysis.id}>
-                        <TableCell className="font-medium">{analysis.requirements?.requirement_id || 'N/A'}</TableCell>
-                        <TableCell>{analysis.requirements?.project_name || 'Unknown Project'}</TableCell>
-                        <TableCell>{analysis.requirements?.industry_type || 'N/A'}</TableCell>
-                        <TableCell>{new Date(analysis.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          {getStatusBadge(analysis.status)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            onClick={() => handleViewAnalysis(analysis.requirement_id)}
-                            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                          >
-                            View Analysis
-                          </Button>
+              
+              <div className="border rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead className="w-[300px]">Project</TableHead>
+                      <TableHead>Industry</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAnalyses.length > 0 ? (
+                      filteredAnalyses.map((analysis) => (
+                        <TableRow key={analysis.id}>
+                          <TableCell className="font-medium">{analysis.requirements?.requirement_id || 'N/A'}</TableCell>
+                          <TableCell>{analysis.requirements?.project_name || 'Unknown Project'}</TableCell>
+                          <TableCell>{analysis.requirements?.industry_type || 'N/A'}</TableCell>
+                          <TableCell>{new Date(analysis.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            {getStatusBadge(analysis.status)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              onClick={() => handleViewAnalysis(analysis.requirement_id)}
+                              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                            >
+                              View Analysis
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          <div className="flex flex-col items-center gap-2">
+                            <Search className="h-8 w-8 text-muted-foreground/60" />
+                            <p>No market analyses found. Try a different search or analyze a requirement.</p>
+                            <Button 
+                              className="mt-2"
+                              variant="outline"
+                              onClick={() => navigate('/dashboard/requirements')}
+                            >
+                              Go to Requirements
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        <div className="flex flex-col items-center gap-2">
-                          <Search className="h-8 w-8 text-muted-foreground/60" />
-                          <p>No market analyses found. Try a different search or analyze a requirement.</p>
-                          <Button 
-                            className="mt-2"
-                            variant="outline"
-                            onClick={() => navigate('/dashboard/requirements')}
-                          >
-                            Go to Requirements
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </AICard>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </AICard>
+        )}
       </div>
     );
   }
 
   // Single requirement view (when requirementId is provided and requirement exists)
   // Make sure requirement exists before trying to access its properties
-  if (!requirement) {
+  if (!requirement && dataFetchAttempted) {
     return (
       <div className="space-y-6">
         <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
@@ -675,6 +689,16 @@ const MarketSense = () => {
             </Button>
           </CardFooter>
         </Card>
+      </div>
+    );
+  }
+
+  // Show loading state if still loading or requirement not loaded yet
+  if (loading || !requirement) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
+        <p className="ml-2">Loading data...</p>
       </div>
     );
   }
