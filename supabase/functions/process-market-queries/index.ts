@@ -229,7 +229,7 @@ serve(async (req) => {
             for (const result of results) {
               console.log(`Saving result: ${result.title || 'No Title'} | ${result.url || 'No URL'}`);
               
-              // Store each result in market_research_sources
+              // Store each result in market_research_sources with the correct status
               const sourceResponse = await fetch(`${supabaseUrl}/rest/v1/market_research_sources`, {
                 method: 'POST',
                 headers: {
@@ -244,7 +244,7 @@ serve(async (req) => {
                   title: result.title || 'No Title',
                   url: result.url || '',
                   snippet: result.description || null,
-                  status: 'found'  // Using 'found' which is now allowed by the constraint
+                  status: 'pending_scrape'  // Changed from 'found' to 'pending_scrape'
                 })
               });
 

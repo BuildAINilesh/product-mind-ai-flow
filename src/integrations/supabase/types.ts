@@ -101,7 +101,9 @@ export type Database = {
           query_id: string
           requirement_id: string
           snippet: string | null
-          status: string
+          status:
+            | Database["public"]["Enums"]["market_research_source_status"]
+            | null
           title: string
           url: string
         }
@@ -111,7 +113,9 @@ export type Database = {
           query_id: string
           requirement_id: string
           snippet?: string | null
-          status: string
+          status?:
+            | Database["public"]["Enums"]["market_research_source_status"]
+            | null
           title: string
           url: string
         }
@@ -121,7 +125,9 @@ export type Database = {
           query_id?: string
           requirement_id?: string
           snippet?: string | null
-          status?: string
+          status?:
+            | Database["public"]["Enums"]["market_research_source_status"]
+            | null
           title?: string
           url?: string
         }
@@ -341,6 +347,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      firecrawl_query_status: "pending" | "searched" | "error"
       industry_enum:
         | "technology"
         | "healthcare"
@@ -353,7 +360,9 @@ export type Database = {
         | "energy"
         | "automotive"
         | "other"
+      market_research_source_status: "pending_scrape" | "scraped" | "error"
       requirement_status_enum: "Draft" | "Completed" | "Re_Draft"
+      scraped_data_status: "pending_summary" | "summarized" | "error"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -469,6 +478,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      firecrawl_query_status: ["pending", "searched", "error"],
       industry_enum: [
         "technology",
         "healthcare",
@@ -482,7 +492,9 @@ export const Constants = {
         "automotive",
         "other",
       ],
+      market_research_source_status: ["pending_scrape", "scraped", "error"],
       requirement_status_enum: ["Draft", "Completed", "Re_Draft"],
+      scraped_data_status: ["pending_summary", "summarized", "error"],
     },
   },
 } as const
