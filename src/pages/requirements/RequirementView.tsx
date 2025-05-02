@@ -150,7 +150,7 @@ const RequirementView = () => {
       // First, check if a market analysis entry already exists
       const { data: existingAnalysis, error: checkError } = await supabase
         .from('market_analysis')
-        .select('id')
+        .select('id, status')
         .eq('requirement_id', id)
         .maybeSingle();
         

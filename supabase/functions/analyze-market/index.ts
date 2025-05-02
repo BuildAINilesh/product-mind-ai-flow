@@ -55,6 +55,26 @@ serve(async (req) => {
     
     console.log(`Generating market analysis for project: ${requirement.project_name}`);
     
+    // NEW: Fetch research snippets from scraped_research_data
+    const { data: researchData, error: researchError } = await supabase
+      .from("scraped_research_data")
+      .select("summary")
+      .eq("requirement_id", requirementId)
+      .eq("status", "summarized");
+      
+    if (researchError) {
+      console.error(`Error fetching research data: ${researchError.message}`);
+      // Continue with analysis even if research data fetching fails
+    }
+    
+    // Extract and format research snippets
+    const researchSnippets = researchData 
+      ? researchData
+          .filter(item => item.summary)
+          .map(item => item.summary)
+          .join("\n\n")
+      : "No research snippets available.";
+    
     // Prepare data for OpenAI prompt
     const projectData = {
       project_name: requirement.project_name || "",
@@ -64,13 +84,14 @@ serve(async (req) => {
       key_features: analysis?.key_features || "",
       target_audience: analysis?.target_audience || "",
       problem_statement: analysis?.problem_statement || "",
+      proposed_solution: analysis?.proposed_solution || "",
     };
     
-    // Create the prompt for OpenAI
+    // Create the prompt for OpenAI with research snippets
     const prompt = `
     You are acting as an expert Market Research Analyst.
 
-    Based on the provided project details, create a comprehensive market analysis using the exact JSON structure requested.
+    Based on the provided project details and research snippets from trusted sources, create a comprehensive market analysis using the exact JSON structure requested.
 
     Project Details:
     Project Name: ${projectData.project_name}
@@ -80,17 +101,23 @@ serve(async (req) => {
     Key Features: ${projectData.key_features}
     Target Audience: ${projectData.target_audience}
     Problem Statement: ${projectData.problem_statement}
+    Proposed Solution: ${projectData.proposed_solution}
+
+    Research Snippets from Trusted Sources:
+    ${researchSnippets}
 
     Instructions:
+    - Use the research snippets to inform your analysis where available
     - Analyze the market potential for this product/service
     - Identify relevant market trends and opportunities
     - Research competitive landscape in this industry
-    - Provide realistic market insights based on the industry
-    - Do not invent specific statistics - use general market knowledge
+    - Provide insights directly from the research data when possible
+    - Reference specific data points from research when applicable
+    - For any gaps in research, use your general market knowledge
     - Keep each section concise (4-5 lines) and actionable
     - Use bullet points where appropriate
 
-    Based on the project details above, generate a market analysis in valid JSON format that matches the following structure:
+    Based on the project details and research snippets above, generate a market analysis in valid JSON format that matches the following structure:
 
     {
       "market_trends": string describing 3-5 current trends in this market,
@@ -102,6 +129,7 @@ serve(async (req) => {
       "confidence_score": number (0-100) indicating confidence level of this analysis
     }
 
+    Your confidence score should reflect the quality and relevance of the research snippets provided (higher score for more relevant research).
     Ensure the response is a valid JSON object that can be parsed.
     `;
     
