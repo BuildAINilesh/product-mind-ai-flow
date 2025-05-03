@@ -57,6 +57,7 @@ interface Project {
   username: string | null;
   status: "Draft" | "Completed" | "Re_Draft";
   created_at: string;
+  req_id: string | null;
 }
 
 interface RequirementAnalysisViewProps {
@@ -385,7 +386,7 @@ export const RequirementAnalysisView = ({
                   Last updated: {analysis?.updated_at && new Date(analysis.updated_at).toLocaleString()}
                 </div>
                 <div>
-                  Document ID: <span className="font-mono">{analysis?.requirement_id}</span>
+                  Document ID: <span className="font-mono">{project.req_id}</span>
                 </div>
               </div>
             </CardContent>
