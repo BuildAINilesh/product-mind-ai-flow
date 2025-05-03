@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Edit, Play, Check, Loader } from "lucide-react";
+import { ArrowLeft, Edit, Play, Check, Loader, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +21,24 @@ const ANALYSIS_CURRENT_STEP_KEY = "marketAnalysis_currentStep_";
 const ANALYSIS_TIMESTAMP_KEY = "marketAnalysis_timestamp_";
 const MAX_WAIT_TIME_MS = 30 * 60 * 1000; // 30 minutes maximum wait time
 
+// New component for showing database error information
+const DatabaseErrorInfoCard = ({ error }) => {
+  if (!error) return null;
+  
+  return (
+    <Alert variant="destructive" className="mb-4">
+      <AlertCircle className="h-4 w-4" />
+      <AlertTitle>Database Error</AlertTitle>
+      <AlertDescription>
+        <p className="mb-2">There was an error loading data from the database:</p>
+        <code className="block p-2 bg-muted/50 rounded text-sm overflow-auto">
+          {error.message || JSON.stringify(error)}
+        </code>
+      </AlertDescription>
+    </Alert>
+  );
+};
+
 const RequirementView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,6 +46,7 @@ const RequirementView = () => {
   const [project, setProject] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState(null);
   
   // Progress tracking states
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
@@ -45,6 +63,11 @@ const RequirementView = () => {
     const fetchProjectData = async () => {
       try {
         setLoading(true);
+        setDbError(null);
+        
+        if (!id) {
+          throw new Error("No requirement ID provided");
+        }
         
         // Fetch the basic project info
         const { data: projectData, error: projectError } = await supabase
@@ -58,23 +81,40 @@ const RequirementView = () => {
         }
 
         setProject(projectData);
+        console.log("Project data loaded:", projectData);
 
-        // If project is completed, fetch the analysis data
-        if (projectData.status === "Completed") {
-          const { data: analysisData, error: analysisError } = await supabase
+        // If project exists, fetch the analysis data regardless of status
+        // This is the main change - we always try to fetch analysis data
+        const { data: analysisData, error: analysisError } = await supabase
+          .from('requirement_analysis')
+          .select('*')
+          .eq('id', id) // This was the bug - using id (primary key) instead of requirement_id (foreign key)
+          .maybeSingle();
+
+        if (analysisError) {
+          console.error('Error fetching analysis with id:', analysisError);
+          
+          // Try again with requirement_id as the field
+          const { data: analysisDataRetry, error: analysisErrorRetry } = await supabase
             .from('requirement_analysis')
             .select('*')
             .eq('requirement_id', id)
             .maybeSingle();
-
-          if (analysisError) {
-            console.error('Error fetching analysis:', analysisError);
+            
+          if (analysisErrorRetry) {
+            console.error('Error fetching analysis with requirement_id:', analysisErrorRetry);
+            setDbError({ message: `Failed to load analysis: ${analysisErrorRetry.message}` });
           } else {
-            setAnalysis(analysisData);
+            console.log("Analysis data loaded with requirement_id:", analysisDataRetry);
+            setAnalysis(analysisDataRetry);
           }
+        } else {
+          console.log("Analysis data loaded with id:", analysisData);
+          setAnalysis(analysisData);
         }
       } catch (error) {
         console.error('Error fetching requirement:', error);
+        setDbError(error);
         toast({
           title: 'Error',
           description: 'Failed to load requirement details.',
@@ -697,6 +737,9 @@ const RequirementView = () => {
           )}
         </div>
       </div>
+
+      {/* Display database errors if any */}
+      {dbError && <DatabaseErrorInfoCard error={dbError} />}
 
       {/* Progress indicator for market analysis */}
       {analysisInProgress && (

@@ -152,15 +152,19 @@ serve(async (req) => {
       };
     }
     
-    // Add the requirement_id to the analysis data
+    // Make sure to set requirement_id to projectId, not the other way around
     analysisData.requirement_id = projectId;
     
     // Check if analysis already exists
-    const { data: existingAnalysis } = await supabase
+    const { data: existingAnalysis, error: checkError } = await supabase
       .from("requirement_analysis")
       .select("id")
-      .eq("requirement_id", projectId)
+      .eq("requirement_id", projectId) // Use requirement_id for the check
       .maybeSingle();
+      
+    if (checkError) {
+      console.error("Error checking existing analysis:", checkError);
+    }
     
     let result;
     
@@ -171,17 +175,23 @@ serve(async (req) => {
         .update(analysisData)
         .eq("id", existingAnalysis.id)
         .select();
+        
+      console.log("Updated existing analysis with ID:", existingAnalysis.id);
     } else {
       // Insert new analysis
       result = await supabase
         .from("requirement_analysis")
         .insert(analysisData)
         .select();
+        
+      console.log("Created new analysis");
     }
     
     if (result.error) {
       throw new Error(`Error saving analysis: ${result.error.message}`);
     }
+    
+    console.log("Analysis saved successfully:", result.data);
     
     // Finally update the requirement status
     await supabase
