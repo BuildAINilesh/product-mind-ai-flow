@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useSearchParams, useNavigate, Link } from "react-router-dom";
 import { 
@@ -27,11 +26,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Define constants for sessionStorage keys
+// Define constants for localStorage keys
 const ANALYSIS_STATUS_KEY = "marketAnalysis_status_";
 const ANALYSIS_STEPS_KEY = "marketAnalysis_steps_";
 const ANALYSIS_CURRENT_STEP_KEY = "marketAnalysis_currentStep_";
-const ANALYSIS_STARTED_KEY = "market_analysis_started_";
 
 // Define a type for the analysis process step
 type ProcessStep = {
@@ -69,7 +67,6 @@ const MarketSense = () => {
   
   console.log("Current requirementId:", requirementId);
   
-  // Fetch all market analyses when no specific requirementId is provided
   useEffect(() => {
     const fetchAllMarketAnalyses = async () => {
       if (requirementId) return; // Skip if we have a specific requirementId
@@ -77,14 +74,13 @@ const MarketSense = () => {
       setLoading(true);
       setError(null);
       try {
-        // Fix the query to use the correct join syntax and column names
+        // Fetch market analyses with their corresponding requirement details
         const { data, error } = await supabase
           .from('market_analysis')
           .select(`
             *,
             requirements:requirement_id (
-              id,
-              req_id,
+              requirement_id,
               project_name,
               industry_type,
               created_at,
@@ -112,7 +108,6 @@ const MarketSense = () => {
     fetchAllMarketAnalyses();
   }, [requirementId]);
   
-  // Fetch requirement details and market analysis data when a specific requirementId is provided
   useEffect(() => {
     const fetchData = async () => {
       if (!requirementId) {
@@ -124,21 +119,12 @@ const MarketSense = () => {
       setLoading(true);
       setError(null);
       try {
-        // Check if the analysis should be started automatically
-        // This happens if the user clicked "Generate Market Analysis" from the RequirementView
-        const autoStartAnalysis = sessionStorage.getItem(ANALYSIS_STARTED_KEY + requirementId) === 'true';
-        
         // Check if there's an ongoing analysis process for this requirement
-        const isProcessing = sessionStorage.getItem(ANALYSIS_STATUS_KEY + requirementId) === 'true';
-        if (isProcessing || autoStartAnalysis) {
-          console.log("Found ongoing analysis process or auto-start flag");
-          // Setup the UI to show progress
+        const isProcessing = localStorage.getItem(ANALYSIS_STATUS_KEY + requirementId) === 'true';
+        if (isProcessing) {
+          console.log("Found ongoing analysis process");
+          // Instead of redirecting, setup the UI to show progress
           checkOngoingAnalysisProcess();
-          
-          // Remove the auto-start flag if it exists
-          if (autoStartAnalysis) {
-            sessionStorage.removeItem(ANALYSIS_STARTED_KEY + requirementId);
-          }
         }
         
         // Fetch the requirement
@@ -212,15 +198,6 @@ const MarketSense = () => {
           toast.success("New market analysis draft has been created");
         }
         
-        // If auto-start flag was set, start the analysis automatically
-        if (autoStartAnalysis && !isProcessing) {
-          // Wait a bit to make sure UI is ready
-          setTimeout(() => {
-            console.log("Auto-starting market analysis");
-            handleGenerateAnalysis();
-          }, 1000);
-        }
-        
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to load project data. The requirement might not exist.");
@@ -234,19 +211,18 @@ const MarketSense = () => {
     fetchData();
   }, [requirementId]);
   
-  // Check if there's an ongoing analysis and restore its state
   const checkOngoingAnalysisProcess = () => {
     if (!requirementId) return;
     
-    const inProgress = sessionStorage.getItem(ANALYSIS_STATUS_KEY + requirementId) === 'true';
+    const inProgress = localStorage.getItem(ANALYSIS_STATUS_KEY + requirementId) === 'true';
     
     if (inProgress) {
       console.log("Found ongoing analysis process for requirement:", requirementId);
       setAnalysisInProgress(true);
       
       // Restore progress steps and current step
-      const savedSteps = sessionStorage.getItem(ANALYSIS_STEPS_KEY + requirementId);
-      const savedCurrentStep = sessionStorage.getItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+      const savedSteps = localStorage.getItem(ANALYSIS_STEPS_KEY + requirementId);
+      const savedCurrentStep = localStorage.getItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
       
       if (savedSteps) {
         try {
@@ -265,9 +241,11 @@ const MarketSense = () => {
     }
   };
   
-  // Periodically check if the market analysis has been completed
   useEffect(() => {
-    if (!requirementId || !analysisInProgress) return;
+    if (!requirementId) return;
+    
+    // Only poll if analysis is in progress
+    if (!analysisInProgress) return;
     
     const checkAnalysisCompletion = async () => {
       try {
@@ -287,9 +265,9 @@ const MarketSense = () => {
           setMarketAnalysis(data);
           
           // Reset in-progress status
-          sessionStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
-          sessionStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
-          sessionStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+          localStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
+          localStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
+          localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
           
           // Update steps to show all completed
           setProgressSteps(steps => steps.map(step => ({ ...step, status: "completed" })));
@@ -315,7 +293,6 @@ const MarketSense = () => {
     return () => clearInterval(interval);
   }, [requirementId, analysisInProgress, progressSteps.length, marketAnalysis?.market_trends]);
   
-  // Check market analysis status and update the UI accordingly
   const checkMarketAnalysisStatus = async () => {
     if (!requirementId) return;
     
@@ -334,9 +311,9 @@ const MarketSense = () => {
       if (data && data.status === 'Completed') {
         console.log("Market analysis has been completed, updating UI");
         // Reset in-progress status
-        sessionStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
-        sessionStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
-        sessionStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+        localStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
+        localStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
+        localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
         
         // Update steps to show all completed
         setProgressSteps(steps => steps.map(step => ({ ...step, status: "completed" })));
@@ -353,45 +330,21 @@ const MarketSense = () => {
     }
   };
   
-  // Update step status and save to sessionStorage
   const updateStepStatus = (stepIndex, status) => {
     setProgressSteps(prevSteps => {
       const updatedSteps = prevSteps.map((step, index) => 
         index === stepIndex ? { ...step, status } : step
       );
       
-      // Save to sessionStorage for persistence
+      // Save to localStorage for persistence
       if (requirementId) {
-        sessionStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(updatedSteps));
+        localStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(updatedSteps));
       }
       
       return updatedSteps;
     });
   };
-
-  // Helper function for summarizing additional content
-  const summarizeAdditionalContent = async (reqId) => {
-    try {
-      const { data: summaryData, error: summaryError } = await supabase.functions.invoke('summarize-research-content', {
-        body: { requirementId: reqId }
-      });
-      
-      if (summaryError) throw summaryError;
-      if (!summaryData.success) throw new Error(summaryData.message || "Failed to summarize additional research content");
-      
-      // Check if there's more content to summarize
-      if (summaryData.remaining && summaryData.remaining > 0) {
-        // Continue summarizing if needed
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
-        await summarizeAdditionalContent(reqId);
-      }
-    } catch (error) {
-      console.error("Error in summarize additional content:", error);
-      throw error;
-    }
-  };
   
-  // Handle generate analysis button click - initiate the analysis process
   const handleGenerateAnalysis = async () => {
     if (!requirementId) {
       toast.error("No requirement selected for analysis");
@@ -404,10 +357,10 @@ const MarketSense = () => {
       setCurrentStep(0);
       setAnalysisInProgress(true);
       
-      // Set sessionStorage flags to indicate analysis is in progress
-      sessionStorage.setItem(ANALYSIS_STATUS_KEY + requirementId, 'true');
-      sessionStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(progressSteps));
-      sessionStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '0');
+      // Set localStorage flags to indicate analysis is in progress
+      localStorage.setItem(ANALYSIS_STATUS_KEY + requirementId, 'true');
+      localStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(progressSteps));
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '0');
       
       // Step 1: Generate search queries
       updateStepStatus(0, "processing");
@@ -421,20 +374,12 @@ const MarketSense = () => {
         }
       });
       
-      if (queriesError) {
-        console.error("Error generating queries:", queriesError);
-        throw queriesError;
-      }
+      if (queriesError) throw queriesError;
+      if (!queriesData.success) throw new Error(queriesData.message || "Failed to generate search queries");
       
-      if (!queriesData.success) {
-        console.error("Query generation failed:", queriesData.message);
-        throw new Error(queriesData.message || "Failed to generate search queries");
-      }
-      
-      console.log("Queries generated successfully:", queriesData);
       updateStepStatus(0, "completed");
       setCurrentStep(1);
-      sessionStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '1');
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '1');
       
       // Step 2: Process search queries
       updateStepStatus(1, "processing");
@@ -442,20 +387,12 @@ const MarketSense = () => {
         body: { requirementId: requirementId }
       });
       
-      if (processError) {
-        console.error("Error processing queries:", processError);
-        throw processError;
-      }
+      if (processError) throw processError;
+      if (!processData.success) throw new Error(processData.message || "Failed to process search queries");
       
-      if (!processData.success) {
-        console.error("Query processing failed:", processData.message);
-        throw new Error(processData.message || "Failed to process search queries");
-      }
-      
-      console.log("Queries processed successfully:", processData);
       updateStepStatus(1, "completed");
       setCurrentStep(2);
-      sessionStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '2');
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '2');
       
       // Step 3: Scrape research sources
       updateStepStatus(2, "processing");
@@ -468,7 +405,7 @@ const MarketSense = () => {
       
       updateStepStatus(2, "completed");
       setCurrentStep(3);
-      sessionStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '3');
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '3');
       
       // Step 4: Summarize research content
       updateStepStatus(3, "processing");
@@ -488,7 +425,7 @@ const MarketSense = () => {
       
       updateStepStatus(3, "completed");
       setCurrentStep(4);
-      sessionStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '4');
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '4');
       
       // Step 5: Generate market analysis
       updateStepStatus(4, "processing");
@@ -510,10 +447,10 @@ const MarketSense = () => {
         setMarketAnalysis(updatedMarketData);
       }
       
-      // Clear sessionStorage flags since process is complete
-      sessionStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
-      sessionStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
-      sessionStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+      // Clear localStorage flags since process is complete
+      localStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
+      localStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
+      localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
       
       // Reset analysis in progress state after a short delay
       setTimeout(() => {
@@ -527,7 +464,29 @@ const MarketSense = () => {
       
       toast.error(error.message || "Failed to complete market analysis");
       
-      // Keep sessionStorage flags so user can see the failed state
+      // Keep localStorage flags so user can see the failed state
+    }
+  };
+  
+  const summarizeAdditionalContent = async (reqId) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('summarize-research-content', {
+        body: { requirementId: reqId }
+      });
+      
+      if (error) throw error;
+      if (!data.success) throw new Error(data.message || "Failed to summarize additional content");
+      
+      // Continue recursively if there's still more to summarize
+      if (data.remaining && data.remaining > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
+        await summarizeAdditionalContent(reqId);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error summarizing additional content:', error);
+      throw error;
     }
   };
   
@@ -583,6 +542,7 @@ const MarketSense = () => {
     // Your existing code here
   };
 
+  // Format section function to transform content with bullets
   const formatSection = (content) => {
     if (!content) return "No data available";
     
@@ -633,7 +593,7 @@ const MarketSense = () => {
   // Filter market analyses based on search query
   const filteredAnalyses = allMarketAnalyses.filter(analysis => 
     analysis?.requirements?.project_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    analysis?.requirements?.req_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    analysis?.requirements?.requirement_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     analysis?.requirements?.industry_type?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -758,7 +718,7 @@ const MarketSense = () => {
                     {filteredAnalyses.length > 0 ? (
                       filteredAnalyses.map((analysis) => (
                         <TableRow key={analysis.id}>
-                          <TableCell className="font-medium">{analysis.requirements?.req_id || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">{analysis.requirements?.requirement_id || 'N/A'}</TableCell>
                           <TableCell>{analysis.requirements?.project_name || 'Unknown Project'}</TableCell>
                           <TableCell>{analysis.requirements?.industry_type || 'N/A'}</TableCell>
                           <TableCell>{new Date(analysis.created_at).toLocaleDateString()}</TableCell>
@@ -897,153 +857,176 @@ const MarketSense = () => {
       {analysisInProgress && (
         <Alert className="mb-4">
           <AlertTitle className="flex items-center">
-            <Loader className="h-4 w-4 mr-2 animate-spin" />
+            <Loader className="h-4 w-4 animate-spin mr-2" />
             Market Analysis in Progress
           </AlertTitle>
-          <AlertDescription className="pt-4">
-            {progressSteps.map((step, index) => renderStepIndicator(step, index))}
+          <AlertDescription>
+            <div className="mt-3">
+              {progressSteps.map(renderStepIndicator)}
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              The analysis will continue processing even if you navigate away from this page.
+              You can return at any time to check progress.
+            </p>
           </AlertDescription>
         </Alert>
       )}
       
-      {/* Main content area */}
-      {marketAnalysis?.market_trends ? (
-        <div className="space-y-4">
-          <AICard>
+      {marketAnalysis?.market_trends || marketAnalysis?.demand_insights ? (
+        <div className="space-y-6">
+          {/* Market Overview Card */}
+          <Card>
             <CardHeader>
-              <CardTitle>Market Overview</CardTitle>
+              <CardTitle className="text-xl">Market Analysis Overview</CardTitle>
               <CardDescription>
-                Key insights about the current market landscape
+                Comprehensive market insights for {requirement.project_name}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="prose max-w-none dark:prose-invert">
-                {formatSection(marketAnalysis.market_overview)}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border rounded-lg p-4 bg-green-50">
+                    <h3 className="text-sm font-medium text-green-800 mb-1">Market Potential</h3>
+                    <div className="text-2xl font-bold text-green-700">
+                      {marketAnalysis.market_potential || "High"}
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-4 bg-blue-50">
+                    <h3 className="text-sm font-medium text-blue-800 mb-1">Competition Level</h3>
+                    <div className="text-2xl font-bold text-blue-700">
+                      {marketAnalysis.competition_level || "Medium"}
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-4 bg-purple-50">
+                    <h3 className="text-sm font-medium text-purple-800 mb-1">Entry Barriers</h3>
+                    <div className="text-2xl font-bold text-purple-700">
+                      {marketAnalysis.entry_barriers || "Moderate"}
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
-          </AICard>
-          
-          <AICard>
-            <CardHeader>
-              <CardTitle>Market Trends</CardTitle>
-              <CardDescription>
-                Current and emerging trends in the market
-              </CardDescription>
+          </Card>
+
+          {/* Market Trends Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-blue-500">
+              <CardTitle className="flex items-center">
+                <LineChart className="h-5 w-5 mr-2 text-blue-500" />
+                Market Trends
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="prose max-w-none dark:prose-invert">
+              <div className="prose max-w-none">
                 {formatSection(marketAnalysis.market_trends)}
               </div>
             </CardContent>
-          </AICard>
-          
-          <AICard>
-            <CardHeader>
-              <CardTitle>Target Audience</CardTitle>
-              <CardDescription>
-                Demographics and characteristics of potential users
-              </CardDescription>
+          </Card>
+
+          {/* Market Demand Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-green-500">
+              <CardTitle className="flex items-center">
+                <BarChart className="h-5 w-5 mr-2 text-green-500" />
+                Market Demand
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="prose max-w-none dark:prose-invert">
-                {formatSection(marketAnalysis.target_audience)}
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.demand_insights)}
               </div>
             </CardContent>
-          </AICard>
-          
-          <AICard>
-            <CardHeader>
-              <CardTitle>Competitor Analysis</CardTitle>
-              <CardDescription>
-                Overview of key competitors in the market
-              </CardDescription>
+          </Card>
+
+          {/* Competitive Analysis Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-amber-500">
+              <CardTitle className="flex items-center">
+                <Activity className="h-5 w-5 mr-2 text-amber-500" />
+                Top Competitors
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="prose max-w-none dark:prose-invert">
-                {formatSection(marketAnalysis.competitor_analysis)}
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.top_competitors)}
               </div>
             </CardContent>
-          </AICard>
-          
-          <AICard>
-            <CardHeader>
-              <CardTitle>Market Opportunities</CardTitle>
-              <CardDescription>
-                Potential opportunities for your product
-              </CardDescription>
+          </Card>
+
+          {/* Market Gap Opportunity Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-indigo-500">
+              <CardTitle className="flex items-center">
+                <Network className="h-5 w-5 mr-2 text-indigo-500" />
+                Market Gap & Opportunity
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="prose max-w-none dark:prose-invert">
-                {formatSection(marketAnalysis.market_opportunities)}
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.market_gap_opportunity)}
               </div>
             </CardContent>
-          </AICard>
-          
-          <AICard>
-            <CardHeader>
-              <CardTitle>Market Threats</CardTitle>
-              <CardDescription>
-                Potential challenges and risks in the market
-              </CardDescription>
+          </Card>
+
+          {/* SWOT Analysis Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-purple-500">
+              <CardTitle className="flex items-center">
+                <Lightbulb className="h-5 w-5 mr-2 text-purple-500" />
+                SWOT Analysis
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="prose max-w-none dark:prose-invert">
-                {formatSection(marketAnalysis.market_threats)}
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.swot_analysis)}
               </div>
             </CardContent>
-          </AICard>
-          
-          <AICard>
-            <CardHeader>
-              <CardTitle>Recommendations</CardTitle>
-              <CardDescription>
-                Strategic recommendations based on market analysis
-              </CardDescription>
+          </Card>
+
+          {/* Industry Benchmarks Section */}
+          <Card>
+            <CardHeader className="border-l-4 border-red-500">
+              <CardTitle className="flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-red-500" />
+                Industry Benchmarks
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="prose max-w-none dark:prose-invert">
-                {formatSection(marketAnalysis.recommendations)}
+              <div className="prose max-w-none">
+                {formatSection(marketAnalysis.industry_benchmarks)}
               </div>
             </CardContent>
-          </AICard>
+          </Card>
         </div>
       ) : (
-        <AICard>
+        <Card>
           <CardHeader>
-            <CardTitle>Generate Market Analysis</CardTitle>
+            <CardTitle>Market Analysis Not Generated</CardTitle>
             <CardDescription>
-              Use AI to generate comprehensive market analysis for your product
+              Generate a market analysis to get insights about the target market for your product.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8">
-              {analysisInProgress ? (
-                <div className="flex flex-col items-center">
-                  <div className="animate-spin h-16 w-16 border-4 border-primary/20 border-t-primary rounded-full mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Analysis in progress...</h3>
-                  <p className="text-muted-foreground">This may take a few minutes.</p>
-                </div>
-              ) : (
-                <>
-                  <LineChart className="h-16 w-16 mx-auto text-primary mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No market analysis generated yet</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Generate a comprehensive market analysis for this product requirement.
-                    This will include market trends, competitor analysis, and strategic recommendations.
-                  </p>
-                  <Button 
-                    onClick={handleGenerateAnalysis}
-                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                    size="lg"
-                  >
-                    <LineChart className="mr-2 h-4 w-4" />
-                    Generate Market Analysis
-                  </Button>
-                </>
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <LineChart className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No market analysis available yet</h3>
+              <p className="text-muted-foreground max-w-md">
+                Click the "Generate Market Analysis" button to start the market analysis process.
+                The AI will analyze market trends, demand, competition, and provide strategic recommendations.
+              </p>
+              
+              {!analysisInProgress && (
+                <Button 
+                  onClick={handleGenerateAnalysis}
+                  className="mt-6 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                >
+                  <LineChart className="mr-2 h-4 w-4" />
+                  Generate Market Analysis
+                </Button>
               )}
             </div>
           </CardContent>
-        </AICard>
+        </Card>
       )}
     </div>
   );

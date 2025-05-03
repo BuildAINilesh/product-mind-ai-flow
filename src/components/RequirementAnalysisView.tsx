@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
   Card,
@@ -90,11 +91,8 @@ export const RequirementAnalysisView = ({
   const noAnalysisData = !analysis && project.status !== "Completed";
   
   // Function to render content with fallback for empty sections
-  // Modified to only show fallback when content is null or undefined, not for empty strings
   const renderContent = (content: string | null, fallback: string = "Not available yet") => {
-    if (content === null || content === undefined) {
-      return <p className="text-muted-foreground">{fallback}</p>;
-    }
+    if (!content) return <p className="text-muted-foreground">{fallback}</p>;
     return <div className="whitespace-pre-line">{content}</div>;
   };
   

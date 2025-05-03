@@ -254,7 +254,7 @@ export type Database = {
           input_methods_used: string[] | null
           project_idea: string | null
           project_name: string
-          req_id: string | null
+          requirement_id: string | null
           status: Database["public"]["Enums"]["requirement_status_enum"] | null
           updated_at: string | null
           user_id: string | null
@@ -269,7 +269,7 @@ export type Database = {
           input_methods_used?: string[] | null
           project_idea?: string | null
           project_name: string
-          req_id?: string | null
+          requirement_id?: string | null
           status?: Database["public"]["Enums"]["requirement_status_enum"] | null
           updated_at?: string | null
           user_id?: string | null
@@ -284,7 +284,7 @@ export type Database = {
           input_methods_used?: string[] | null
           project_idea?: string | null
           project_name?: string
-          req_id?: string | null
+          requirement_id?: string | null
           status?: Database["public"]["Enums"]["requirement_status_enum"] | null
           updated_at?: string | null
           user_id?: string | null
