@@ -74,13 +74,14 @@ const MarketSense = () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch market analyses with their corresponding requirement details
+        // Fix the query to use the correct join syntax and column names
         const { data, error } = await supabase
           .from('market_analysis')
           .select(`
             *,
             requirements:requirement_id (
-              requirement_id,
+              id,
+              req_id,
               project_name,
               industry_type,
               created_at,
@@ -593,7 +594,7 @@ const MarketSense = () => {
   // Filter market analyses based on search query
   const filteredAnalyses = allMarketAnalyses.filter(analysis => 
     analysis?.requirements?.project_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    analysis?.requirements?.requirement_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    analysis?.requirements?.req_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     analysis?.requirements?.industry_type?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -718,7 +719,7 @@ const MarketSense = () => {
                     {filteredAnalyses.length > 0 ? (
                       filteredAnalyses.map((analysis) => (
                         <TableRow key={analysis.id}>
-                          <TableCell className="font-medium">{analysis.requirements?.requirement_id || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">{analysis.requirements?.req_id || 'N/A'}</TableCell>
                           <TableCell>{analysis.requirements?.project_name || 'Unknown Project'}</TableCell>
                           <TableCell>{analysis.requirements?.industry_type || 'N/A'}</TableCell>
                           <TableCell>{new Date(analysis.created_at).toLocaleDateString()}</TableCell>
