@@ -83,33 +83,18 @@ const RequirementView = () => {
         setProject(projectData);
         console.log("Project data loaded:", projectData);
 
-        // If project exists, fetch the analysis data regardless of status
-        // This is the main change - we always try to fetch analysis data
+        // If project exists, fetch the analysis data using requirement_id (foreign key)
         const { data: analysisData, error: analysisError } = await supabase
           .from('requirement_analysis')
           .select('*')
-          .eq('id', id) // This was the bug - using id (primary key) instead of requirement_id (foreign key)
+          .eq('requirement_id', id) // This is the correct way - using requirement_id field
           .maybeSingle();
 
         if (analysisError) {
-          console.error('Error fetching analysis with id:', analysisError);
-          
-          // Try again with requirement_id as the field
-          const { data: analysisDataRetry, error: analysisErrorRetry } = await supabase
-            .from('requirement_analysis')
-            .select('*')
-            .eq('requirement_id', id)
-            .maybeSingle();
-            
-          if (analysisErrorRetry) {
-            console.error('Error fetching analysis with requirement_id:', analysisErrorRetry);
-            setDbError({ message: `Failed to load analysis: ${analysisErrorRetry.message}` });
-          } else {
-            console.log("Analysis data loaded with requirement_id:", analysisDataRetry);
-            setAnalysis(analysisDataRetry);
-          }
+          console.error('Error fetching analysis with requirement_id:', analysisError);
+          setDbError({ message: `Failed to load analysis: ${analysisError.message}` });
         } else {
-          console.log("Analysis data loaded with id:", analysisData);
+          console.log("Analysis data loaded with requirement_id:", analysisData);
           setAnalysis(analysisData);
         }
       } catch (error) {
