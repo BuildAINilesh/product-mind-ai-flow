@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,13 +14,6 @@ type ProcessStep = {
   name: string;
   status: "pending" | "processing" | "completed" | "failed";
 };
-
-// Define status key for localStorage
-const ANALYSIS_STATUS_KEY = "marketAnalysis_status_";
-const ANALYSIS_STEPS_KEY = "marketAnalysis_steps_";
-const ANALYSIS_CURRENT_STEP_KEY = "marketAnalysis_currentStep_";
-const ANALYSIS_TIMESTAMP_KEY = "marketAnalysis_timestamp_";
-const MAX_WAIT_TIME_MS = 30 * 60 * 1000; // 30 minutes maximum wait time
 
 // New component for showing database error information
 const DatabaseErrorInfoCard = ({ error }) => {
@@ -112,190 +106,8 @@ const RequirementView = () => {
 
     if (id) {
       fetchProjectData();
-      
-      // Check if there's an ongoing analysis process for this requirement
-      checkOngoingAnalysisProcess();
     }
   }, [id, toast]);
-
-  // Function to check if there's an ongoing analysis process
-  const checkOngoingAnalysisProcess = () => {
-    if (!id) return;
-    
-    const inProgress = localStorage.getItem(ANALYSIS_STATUS_KEY + id) === 'true';
-    
-    if (inProgress) {
-      console.log("Found ongoing analysis process for requirement:", id);
-      
-      // Check if process has been running too long and might be stuck
-      const startTimestamp = localStorage.getItem(ANALYSIS_TIMESTAMP_KEY + id);
-      if (startTimestamp) {
-        const elapsedTime = Date.now() - parseInt(startTimestamp, 10);
-        
-        if (elapsedTime > MAX_WAIT_TIME_MS) {
-          // Process has been running too long, likely stuck
-          console.log("Analysis process appears to be stuck (running for more than 30 minutes)");
-          
-          // Check current status in database before resetting
-          checkMarketAnalysisStatus(true);
-          return;
-        }
-      }
-      
-      setAnalysisInProgress(true);
-      
-      // Restore progress steps and current step
-      const savedSteps = localStorage.getItem(ANALYSIS_STEPS_KEY + id);
-      const savedCurrentStep = localStorage.getItem(ANALYSIS_CURRENT_STEP_KEY + id);
-      
-      if (savedSteps) {
-        try {
-          setProgressSteps(JSON.parse(savedSteps));
-        } catch (e) {
-          console.error("Error parsing saved steps:", e);
-        }
-      }
-      
-      if (savedCurrentStep) {
-        setCurrentStep(parseInt(savedCurrentStep, 10));
-      }
-      
-      // Check if the market analysis has been completed
-      checkMarketAnalysisStatus();
-      
-      // Auto-start the analysis process if it's marked as in-progress but not yet started
-      // This handles the redirect from MarketSense
-      const autoStartAnalysis = localStorage.getItem("autoStartAnalysis_" + id);
-      if (autoStartAnalysis !== "started") {
-        localStorage.setItem("autoStartAnalysis_" + id, "started");
-        generateMarketAnalysis();
-      }
-    }
-  };
-  
-  // Function to check if market analysis has been completed
-  const checkMarketAnalysisStatus = async (isForceCheck = false) => {
-    if (!id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('market_analysis')
-        .select('status')
-        .eq('requirement_id', id)
-        .maybeSingle();
-        
-      if (error) {
-        console.error("Error checking market analysis status:", error);
-        return;
-      }
-      
-      if (data && data.status === 'Completed') {
-        console.log("Market analysis has been completed, updating UI");
-        // Reset in-progress status
-        localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
-        localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
-        localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
-        localStorage.removeItem(ANALYSIS_TIMESTAMP_KEY + id);
-        
-        // Update steps to show all completed
-        setProgressSteps(steps => steps.map(step => ({ ...step, status: "completed" })));
-        setCurrentStep(progressSteps.length);
-        
-        // Wait a bit and then reset the UI
-        setTimeout(() => {
-          setAnalysisInProgress(false);
-        }, 3000);
-        
-        return true;
-      } else if (isForceCheck && currentStep === 3) {
-        // If we're checking a potentially stuck process and it's on the summarizing step
-        console.log("Attempting to resume stalled summarization process");
-        resetSummarizationStep();
-        return false;
-      }
-      
-      return false;
-    } catch (e) {
-      console.error("Error checking market analysis:", e);
-      return false;
-    }
-  };
-  
-  // Function to reset and restart a stuck summarization process
-  const resetSummarizationStep = async () => {
-    if (!id) return;
-    
-    try {
-      toast({
-        title: "Resuming Analysis",
-        description: "The summarization process appeared to be stuck. Attempting to resume...",
-      });
-      
-      // Reset the current step's status
-      updateStepStatus(3, "processing");
-      
-      // Call summarize API to continue processing
-      const { data, error } = await supabase.functions.invoke('summarize-research-content', {
-        body: { requirementId: id }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Continue with next steps if summarization is complete or has fewer remaining items
-      const hasProgressMade = data?.totalSummarized > 0;
-      
-      if (hasProgressMade) {
-        console.log(`Summarization has processed ${data.totalSummarized} items`);
-        
-        // If there's more content to summarize, continue
-        if (data.remaining && data.remaining > 0) {
-          await summarizeAdditionalContent(id);
-        }
-        
-        // Continue to the next step
-        updateStepStatus(3, "completed");
-        setCurrentStep(4);
-        localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '4');
-        
-        // Generate market analysis
-        await analyzeMarketData();
-      } else {
-        // If no progress was made, the process might be truly stuck
-        updateStepStatus(3, "failed");
-        toast({
-          title: "Process Stuck",
-          description: "Unable to resume analysis. Please try again or contact support.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error resetting summarization step:', error);
-      updateStepStatus(3, "failed");
-      toast({
-        title: "Error",
-        description: "Failed to resume the analysis process.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Function to update step status
-  const updateStepStatus = (stepIndex, status) => {
-    setProgressSteps(prevSteps => {
-      const updatedSteps = prevSteps.map((step, index) => 
-        index === stepIndex ? { ...step, status } : step
-      );
-      
-      // Save to localStorage for persistence
-      if (id) {
-        localStorage.setItem(ANALYSIS_STEPS_KEY + id, JSON.stringify(updatedSteps));
-      }
-      
-      return updatedSteps;
-    });
-  };
 
   // Function to handle editing the requirement
   const handleEdit = () => {
@@ -376,44 +188,7 @@ const RequirementView = () => {
     }
   };
 
-  // Function to analyze market data directly (used in reset process)
-  const analyzeMarketData = async () => {
-    try {
-      updateStepStatus(4, "processing");
-      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-market', {
-        body: { requirementId: id }
-      });
-      
-      if (analysisError) throw analysisError;
-      updateStepStatus(4, "completed");
-      
-      // Clear localStorage flags since process is complete
-      localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
-      localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
-      localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
-      localStorage.removeItem(ANALYSIS_TIMESTAMP_KEY + id);
-      
-      // Navigate to the market analysis results after a short delay
-      setTimeout(() => {
-        navigate(`/dashboard/market-sense?requirementId=${id}`);
-      }, 1000);
-      
-      return true;
-    } catch (error) {
-      console.error('Error in market analysis process:', error);
-      updateStepStatus(4, "failed");
-      
-      toast({
-        title: "Error",
-        description: error.message || "Failed to complete market analysis",
-        variant: "destructive",
-      });
-      
-      return false;
-    }
-  };
-
-  // Function to trigger AI market analysis with visual progress indicators
+  // Function to generate market analysis with visual progress indicators
   const generateMarketAnalysis = async () => {
     if (!id) return;
     
@@ -422,12 +197,6 @@ const RequirementView = () => {
       setProgressSteps(prevSteps => prevSteps.map(step => ({ ...step, status: "pending" })));
       setCurrentStep(0);
       setAnalysisInProgress(true);
-      
-      // Set localStorage flags to indicate analysis is in progress
-      localStorage.setItem(ANALYSIS_STATUS_KEY + id, 'true');
-      localStorage.setItem(ANALYSIS_STEPS_KEY + id, JSON.stringify(progressSteps));
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '0');
-      localStorage.setItem(ANALYSIS_TIMESTAMP_KEY + id, Date.now().toString());
       
       // Step 1: Generate search queries
       updateStepStatus(0, "processing");
@@ -446,7 +215,6 @@ const RequirementView = () => {
       
       updateStepStatus(0, "completed");
       setCurrentStep(1);
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '1');
       
       // Step 2: Process search queries
       updateStepStatus(1, "processing");
@@ -459,7 +227,6 @@ const RequirementView = () => {
       
       updateStepStatus(1, "completed");
       setCurrentStep(2);
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '2');
       
       // Step 3: Scrape research sources
       updateStepStatus(2, "processing");
@@ -472,7 +239,6 @@ const RequirementView = () => {
       
       updateStepStatus(2, "completed");
       setCurrentStep(3);
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '3');
       
       // Step 4: Summarize research content
       updateStepStatus(3, "processing");
@@ -492,7 +258,6 @@ const RequirementView = () => {
       
       updateStepStatus(3, "completed");
       setCurrentStep(4);
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, '4');
       
       // Step 5: Generate market analysis
       updateStepStatus(4, "processing");
@@ -502,12 +267,6 @@ const RequirementView = () => {
       
       if (analysisError) throw analysisError;
       updateStepStatus(4, "completed");
-      
-      // Clear localStorage flags since process is complete
-      localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
-      localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
-      localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
-      localStorage.removeItem(ANALYSIS_TIMESTAMP_KEY + id);
       
       // Navigate to the market analysis results after a short delay
       setTimeout(() => {
@@ -524,8 +283,6 @@ const RequirementView = () => {
         description: error.message || "Failed to complete market analysis",
         variant: "destructive",
       });
-      
-      // Keep localStorage flags so user can see the failed state
     }
   };
   
@@ -556,17 +313,21 @@ const RequirementView = () => {
   const cancelAnalysis = () => {
     if (!id) return;
     
-    // Clear all analysis state and localStorage
-    localStorage.removeItem(ANALYSIS_STATUS_KEY + id);
-    localStorage.removeItem(ANALYSIS_STEPS_KEY + id);
-    localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + id);
-    localStorage.removeItem(ANALYSIS_TIMESTAMP_KEY + id);
-    localStorage.removeItem("autoStartAnalysis_" + id);
-    
     setAnalysisInProgress(false);
     toast({
       title: "Analysis Cancelled",
       description: "Market analysis process has been cancelled.",
+    });
+  };
+  
+  // Function to update step status
+  const updateStepStatus = (stepIndex, status) => {
+    setProgressSteps(prevSteps => {
+      const updatedSteps = prevSteps.map((step, index) => 
+        index === stepIndex ? { ...step, status } : step
+      );
+      
+      return updatedSteps;
     });
   };
   
