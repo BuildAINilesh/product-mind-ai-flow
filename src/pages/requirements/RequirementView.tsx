@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import RequirementAnalysisView from "@/components/RequirementAnalysisView";
+import { DatabaseErrorInfoCard, LimitedDataAlert } from "@/components/requirement-analysis";
 
 // Define a type for the analysis process step
 type ProcessStep = {
@@ -29,6 +30,7 @@ const RequirementView = () => {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dbError, setDbError] = useState(null);
   
   // Progress tracking states
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
@@ -50,18 +52,20 @@ const RequirementView = () => {
         
         setLoading(true);
         setError(null);
+        setDbError(null);
         
         console.log("Fetching requirement data for ID:", id);
         
-        // Fetch the basic project info
+        // Fetch the basic project info - Using id instead of requirement_id
         const { data: projectData, error: projectError } = await supabase
           .from('requirements')
           .select('*')
-          .eq('id', id)
+          .eq('id', id)  // Use 'id' which is the primary key
           .maybeSingle();
 
         if (projectError) {
           console.error("Error fetching project data:", projectError);
+          setDbError(projectError);
           throw projectError;
         }
 
@@ -83,11 +87,12 @@ const RequirementView = () => {
           const { data: analysisData, error: analysisError } = await supabase
             .from('requirement_analysis')
             .select('*')
-            .eq('requirement_id', id)
+            .eq('requirement_id', id)  // This is correct if requirement_analysis has a requirement_id column
             .maybeSingle();
 
           if (analysisError) {
             console.error('Error fetching analysis from requirement_analysis:', analysisError);
+            setDbError(analysisError);
           }
           
           // If we have analysis data, use it
@@ -208,11 +213,12 @@ const RequirementView = () => {
       const { data, error } = await supabase
         .from('market_analysis')
         .select('status')
-        .eq('requirement_id', id)
+        .eq('requirement_id', id)  // This is correct if market_analysis has a requirement_id column
         .maybeSingle();
         
       if (error) {
         console.error("Error checking market analysis status:", error);
+        setDbError(error);
         return;
       }
       
@@ -335,6 +341,7 @@ const RequirementView = () => {
     
     try {
       setLoading(true);
+      setDbError(null);
       
       toast({
         title: "Processing",
@@ -347,6 +354,7 @@ const RequirementView = () => {
       });
       
       if (error) {
+        setDbError(error);
         throw error;
       }
       
@@ -357,6 +365,7 @@ const RequirementView = () => {
         .eq('id', id);
         
       if (updateError) {
+        setDbError(updateError);
         throw updateError;
       }
       
@@ -368,6 +377,7 @@ const RequirementView = () => {
         .single();
         
       if (fetchError) {
+        setDbError(fetchError);
         throw fetchError;
       }
       
@@ -382,6 +392,7 @@ const RequirementView = () => {
 
       if (analysisError) {
         console.error('Error fetching analysis:', analysisError);
+        setDbError(analysisError);
       } else {
         setAnalysis(analysisData);
       }
@@ -411,7 +422,10 @@ const RequirementView = () => {
         body: { requirementId: id }
       });
       
-      if (analysisError) throw analysisError;
+      if (analysisError) {
+        setDbError(analysisError);
+        throw analysisError;
+      }
       updateStepStatus(4, "completed");
       
       // Clear localStorage flags since process is complete
@@ -449,6 +463,7 @@ const RequirementView = () => {
       setProgressSteps(prevSteps => prevSteps.map(step => ({ ...step, status: "pending" })));
       setCurrentStep(0);
       setAnalysisInProgress(true);
+      setDbError(null);
       
       // Set localStorage flags to indicate analysis is in progress
       localStorage.setItem(ANALYSIS_STATUS_KEY + id, 'true');
@@ -468,7 +483,10 @@ const RequirementView = () => {
         }
       });
       
-      if (queriesError) throw queriesError;
+      if (queriesError) {
+        setDbError(queriesError);
+        throw queriesError;
+      }
       if (!queriesData.success) throw new Error(queriesData.message || "Failed to generate search queries");
       
       updateStepStatus(0, "completed");
@@ -481,7 +499,10 @@ const RequirementView = () => {
         body: { requirementId: id }
       });
       
-      if (processError) throw processError;
+      if (processError) {
+        setDbError(processError);
+        throw processError;
+      }
       if (!processData.success) throw new Error(processData.message || "Failed to process search queries");
       
       updateStepStatus(1, "completed");
@@ -494,7 +515,10 @@ const RequirementView = () => {
         body: { requirementId: id }
       });
       
-      if (scrapeError) throw scrapeError;
+      if (scrapeError) {
+        setDbError(scrapeError);
+        throw scrapeError;
+      }
       if (!scrapeData.success) throw new Error(scrapeData.message || "Failed to scrape research sources");
       
       updateStepStatus(2, "completed");
@@ -507,7 +531,10 @@ const RequirementView = () => {
         body: { requirementId: id }
       });
       
-      if (summaryError) throw summaryError;
+      if (summaryError) {
+        setDbError(summaryError);
+        throw summaryError;
+      }
       if (!summaryData.success) throw new Error(summaryData.message || "Failed to summarize research content");
       
       // Check if there's more content to summarize
@@ -527,7 +554,10 @@ const RequirementView = () => {
         body: { requirementId: id }
       });
       
-      if (analysisError) throw analysisError;
+      if (analysisError) {
+        setDbError(analysisError);
+        throw analysisError;
+      }
       updateStepStatus(4, "completed");
       
       // Clear localStorage flags since process is complete
@@ -563,7 +593,10 @@ const RequirementView = () => {
         body: { requirementId: reqId }
       });
       
-      if (error) throw error;
+      if (error) {
+        setDbError(error);
+        throw error;
+      }
       if (!data.success) throw new Error(data.message || "Failed to summarize additional content");
       
       // Continue recursively if there's still more to summarize
@@ -651,6 +684,7 @@ const RequirementView = () => {
     if (!id) return;
     
     try {
+      setDbError(null);
       // First, check if a market analysis entry already exists
       const { data: existingAnalysis, error: checkError } = await supabase
         .from('market_analysis')
@@ -660,6 +694,7 @@ const RequirementView = () => {
         
       if (checkError) {
         console.error('Error checking for existing market analysis:', checkError);
+        setDbError(checkError);
         toast({
           title: "Error",
           description: "Failed to check for existing market analysis.",
@@ -679,6 +714,7 @@ const RequirementView = () => {
           
         if (error) {
           console.error('Error creating market analysis entry:', error);
+          setDbError(error);
           toast({
             title: "Error",
             description: "Failed to create market analysis entry.",
@@ -772,6 +808,11 @@ const RequirementView = () => {
           )}
         </div>
       </div>
+
+      {/* Database Error Display */}
+      {dbError && (
+        <DatabaseErrorInfoCard error={dbError} tableName="requirements" />
+      )}
 
       {/* Progress indicator for market analysis */}
       {analysisInProgress && (
