@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -33,7 +32,7 @@ import {
 
 type Requirement = {
   id: string;
-  req_id: string | null;
+  requirement_id: string;
   project_name: string;
   company_name: string | null;
   industry_type: string;
@@ -65,7 +64,7 @@ const RequirementsList = () => {
   
   const filteredRequirements = requirements.filter(req => 
     req.project_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    req.req_id?.toLowerCase().includes(searchQuery.toLowerCase())
+    req.requirement_id?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const triggerAnalysis = async (requirementId: string) => {
@@ -244,7 +243,7 @@ const RequirementsList = () => {
                 ) : filteredRequirements.length > 0 ? (
                   filteredRequirements.map((req) => (
                     <TableRow key={req.id}>
-                      <TableCell className="font-medium">{req.req_id}</TableCell>
+                      <TableCell className="font-medium">{req.requirement_id}</TableCell>
                       <TableCell>{req.project_name}</TableCell>
                       <TableCell>{req.industry_type}</TableCell>
                       <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>

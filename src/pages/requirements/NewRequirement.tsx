@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { DatabaseErrorInfoCard } from "@/components/requirement-analysis";
 
 // Type for the industry enum
 type IndustryType = Database["public"]["Enums"]["industry_enum"];
@@ -55,7 +55,6 @@ const NewRequirement = () => {
   const [processingSummary, setProcessingSummary] = useState(false);
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [dbError, setDbError] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     projectName: "",
@@ -219,7 +218,6 @@ const NewRequirement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setDbError(null);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -239,18 +237,6 @@ const NewRequirement = () => {
         formData.audioUploadUrl
       ].filter(url => url !== null) as string[];
 
-      console.log("Inserting requirement with data:", {
-        user_id: user.id,
-        project_name: formData.projectName,
-        company_name: formData.companyName,
-        industry_type: formData.industryType,
-        project_idea: formData.projectIdea,
-        input_methods_used: inputMethodsUsed,
-        file_urls: fileUrls,
-        document_summary: formData.documentSummary,
-        status: 'Draft'
-      });
-
       const { data: newRequirement, error } = await supabase
         .from('requirements')
         .insert({
@@ -267,23 +253,18 @@ const NewRequirement = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error("Database error:", error);
-        setDbError(error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Requirement created",
         description: "Your new requirement has been successfully created.",
       });
       
-      // Navigate to the requirement view page using the id property
+      // Navigate to the requirement view page
       navigate(`/dashboard/requirements/${newRequirement.id}`);
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating requirement:', error);
-      
       toast({
         title: "Error",
         description: "There was an error creating your requirement. Please try again.",
@@ -304,12 +285,6 @@ const NewRequirement = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {dbError && (
-            <div className="mb-6">
-              <DatabaseErrorInfoCard error={dbError} tableName="requirements" />
-            </div>
-          )}
-          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
