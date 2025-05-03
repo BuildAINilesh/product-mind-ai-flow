@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -279,7 +278,7 @@ const NewRequirement = () => {
         description: "Your new requirement has been successfully created.",
       });
       
-      // Navigate to the requirement view page - use the id property not requirement_id
+      // Navigate to the requirement view page using the id property
       navigate(`/dashboard/requirements/${newRequirement.id}`);
       
     } catch (error: any) {

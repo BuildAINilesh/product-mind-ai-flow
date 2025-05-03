@@ -44,7 +44,6 @@ interface Project {
   username: string | null;
   status: "Draft" | "Completed" | "Re_Draft";
   created_at: string;
-  requirement_id?: string | null;
 }
 
 interface RequirementAnalysisViewProps {
