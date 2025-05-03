@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useSearchParams, useNavigate, Link } from "react-router-dom";
 import { 
@@ -366,6 +367,28 @@ const MarketSense = () => {
       
       return updatedSteps;
     });
+  };
+
+  // Helper function for summarizing additional content
+  const summarizeAdditionalContent = async (reqId) => {
+    try {
+      const { data: summaryData, error: summaryError } = await supabase.functions.invoke('summarize-research-content', {
+        body: { requirementId: reqId }
+      });
+      
+      if (summaryError) throw summaryError;
+      if (!summaryData.success) throw new Error(summaryData.message || "Failed to summarize additional research content");
+      
+      // Check if there's more content to summarize
+      if (summaryData.remaining && summaryData.remaining > 0) {
+        // Continue summarizing if needed
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
+        await summarizeAdditionalContent(reqId);
+      }
+    } catch (error) {
+      console.error("Error in summarize additional content:", error);
+      throw error;
+    }
   };
   
   // Handle generate analysis button click - initiate the analysis process
@@ -873,3 +896,157 @@ const MarketSense = () => {
       {/* Progress indicator for market analysis */}
       {analysisInProgress && (
         <Alert className="mb-4">
+          <AlertTitle className="flex items-center">
+            <Loader className="h-4 w-4 mr-2 animate-spin" />
+            Market Analysis in Progress
+          </AlertTitle>
+          <AlertDescription className="pt-4">
+            {progressSteps.map((step, index) => renderStepIndicator(step, index))}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {/* Main content area */}
+      {marketAnalysis?.market_trends ? (
+        <div className="space-y-4">
+          <AICard>
+            <CardHeader>
+              <CardTitle>Market Overview</CardTitle>
+              <CardDescription>
+                Key insights about the current market landscape
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none dark:prose-invert">
+                {formatSection(marketAnalysis.market_overview)}
+              </div>
+            </CardContent>
+          </AICard>
+          
+          <AICard>
+            <CardHeader>
+              <CardTitle>Market Trends</CardTitle>
+              <CardDescription>
+                Current and emerging trends in the market
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none dark:prose-invert">
+                {formatSection(marketAnalysis.market_trends)}
+              </div>
+            </CardContent>
+          </AICard>
+          
+          <AICard>
+            <CardHeader>
+              <CardTitle>Target Audience</CardTitle>
+              <CardDescription>
+                Demographics and characteristics of potential users
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none dark:prose-invert">
+                {formatSection(marketAnalysis.target_audience)}
+              </div>
+            </CardContent>
+          </AICard>
+          
+          <AICard>
+            <CardHeader>
+              <CardTitle>Competitor Analysis</CardTitle>
+              <CardDescription>
+                Overview of key competitors in the market
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none dark:prose-invert">
+                {formatSection(marketAnalysis.competitor_analysis)}
+              </div>
+            </CardContent>
+          </AICard>
+          
+          <AICard>
+            <CardHeader>
+              <CardTitle>Market Opportunities</CardTitle>
+              <CardDescription>
+                Potential opportunities for your product
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none dark:prose-invert">
+                {formatSection(marketAnalysis.market_opportunities)}
+              </div>
+            </CardContent>
+          </AICard>
+          
+          <AICard>
+            <CardHeader>
+              <CardTitle>Market Threats</CardTitle>
+              <CardDescription>
+                Potential challenges and risks in the market
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none dark:prose-invert">
+                {formatSection(marketAnalysis.market_threats)}
+              </div>
+            </CardContent>
+          </AICard>
+          
+          <AICard>
+            <CardHeader>
+              <CardTitle>Recommendations</CardTitle>
+              <CardDescription>
+                Strategic recommendations based on market analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none dark:prose-invert">
+                {formatSection(marketAnalysis.recommendations)}
+              </div>
+            </CardContent>
+          </AICard>
+        </div>
+      ) : (
+        <AICard>
+          <CardHeader>
+            <CardTitle>Generate Market Analysis</CardTitle>
+            <CardDescription>
+              Use AI to generate comprehensive market analysis for your product
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              {analysisInProgress ? (
+                <div className="flex flex-col items-center">
+                  <div className="animate-spin h-16 w-16 border-4 border-primary/20 border-t-primary rounded-full mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Analysis in progress...</h3>
+                  <p className="text-muted-foreground">This may take a few minutes.</p>
+                </div>
+              ) : (
+                <>
+                  <LineChart className="h-16 w-16 mx-auto text-primary mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No market analysis generated yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Generate a comprehensive market analysis for this product requirement.
+                    This will include market trends, competitor analysis, and strategic recommendations.
+                  </p>
+                  <Button 
+                    onClick={handleGenerateAnalysis}
+                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                    size="lg"
+                  >
+                    <LineChart className="mr-2 h-4 w-4" />
+                    Generate Market Analysis
+                  </Button>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </AICard>
+      )}
+    </div>
+  );
+};
+
+export default MarketSense;
