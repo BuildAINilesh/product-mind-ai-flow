@@ -12,3 +12,4 @@ export * from './PendingAnalysisCard';
 export * from './AnalysisViewSkeleton';
 export * from './NotFoundCard';
 export * from './LimitedDataAlert';
+export * from './DatabaseErrorInfoCard';
