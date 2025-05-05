@@ -771,11 +771,11 @@ const RequirementView = () => {
             your project.
           </p>
           <Button
-            onClick={generateMarketAnalysis}
+            onClick={navigateToMarketSense}
             className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
           >
             <Play className="h-4 w-4 mr-2" />
-            Generate Market Analysis
+            MarketSense AI
           </Button>
         </div>
       )}
