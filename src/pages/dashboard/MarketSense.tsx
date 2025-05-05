@@ -74,25 +74,41 @@ const MarketSense = () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch market analyses with their corresponding requirement details
-        const { data, error } = await supabase
+        // Using an alternative approach with separate queries to get market analyses and requirement details
+        const { data: marketData, error: marketError } = await supabase
           .from('market_analysis')
-          .select(`
-            *,
-            requirements:requirement_id (
-              requirement_id,
-              project_name,
-              industry_type,
-              created_at,
-              status
-            )
-          `)
+          .select('*')
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (marketError) throw marketError;
+
+        // Get an array of requirement IDs from market_analysis table
+        const requirementIds = marketData.map(item => item.requirement_id).filter(Boolean);
         
-        console.log("Fetched market analyses:", data);
-        setAllMarketAnalyses(data.filter(item => item.requirements)); // Filter out any items without requirement data
+        // If we have requirement IDs, fetch the corresponding requirements
+        if (requirementIds.length > 0) {
+          const { data: requirementsData, error: reqError } = await supabase
+            .from('requirements')
+            .select('*')
+            .in('id', requirementIds);
+          
+          if (reqError) throw reqError;
+          
+          // Map the requirements data to each market analysis entry
+          const combinedData = marketData.map(marketItem => {
+            const matchingRequirement = requirementsData.find(req => req.id === marketItem.requirement_id);
+            return {
+              ...marketItem,
+              requirements: matchingRequirement || null
+            };
+          });
+          
+          console.log("Fetched and combined market analyses:", combinedData);
+          setAllMarketAnalyses(combinedData.filter(item => item.requirements)); // Filter out any items without requirement data
+        } else {
+          setAllMarketAnalyses([]);
+        }
+        
         setDataFetchAttempted(true);
         
       } catch (error) {
@@ -538,7 +554,7 @@ const MarketSense = () => {
     );
   };
   
-  const navigateToMarketSense = async () => {
+  const navigateToMarketSense = async (requirementId) => {
     // Your existing code here
   };
 
@@ -593,7 +609,7 @@ const MarketSense = () => {
   // Filter market analyses based on search query
   const filteredAnalyses = allMarketAnalyses.filter(analysis => 
     analysis?.requirements?.project_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    analysis?.requirements?.requirement_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    analysis?.requirements?.req_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     analysis?.requirements?.industry_type?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -718,7 +734,7 @@ const MarketSense = () => {
                     {filteredAnalyses.length > 0 ? (
                       filteredAnalyses.map((analysis) => (
                         <TableRow key={analysis.id}>
-                          <TableCell className="font-medium">{analysis.requirements?.requirement_id || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">{analysis.requirements?.req_id || 'N/A'}</TableCell>
                           <TableCell>{analysis.requirements?.project_name || 'Unknown Project'}</TableCell>
                           <TableCell>{analysis.requirements?.industry_type || 'N/A'}</TableCell>
                           <TableCell>{new Date(analysis.created_at).toLocaleDateString()}</TableCell>
