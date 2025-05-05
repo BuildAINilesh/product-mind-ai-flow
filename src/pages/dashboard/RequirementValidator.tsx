@@ -27,14 +27,15 @@ import { AICard, AIGradientText, AIBadge } from "@/components/ui/ai-elements";
 interface ValidationItem {
   id: string;
   requirement_id: string;
-  readiness_score: number;
+  readiness_score: number | null;
   created_at: string;
   status: string;
-  validation_verdict: string;
+  validation_verdict: string | null;
   requirements?: {
     req_id: string;
     project_name: string;
     industry_type: string;
+    id: string;
   } | null;
 }
 
@@ -111,6 +112,7 @@ const RequirementValidator = () => {
         .select(`
           *,
           requirements (
+            id,
             req_id,
             project_name,
             industry_type
@@ -142,7 +144,7 @@ const RequirementValidator = () => {
       const { data, error } = await supabase
         .from('requirements')
         .select('*')
-        .eq('id', requirementId)
+        .eq('req_id', requirementId)
         .single();
         
       if (error) {
@@ -410,7 +412,7 @@ const RequirementValidator = () => {
                         <TableCell className="font-medium">{validation.requirements?.req_id || 'N/A'}</TableCell>
                         <TableCell>{validation.requirements?.project_name || 'Unknown Project'}</TableCell>
                         <TableCell>{validation.requirements?.industry_type || 'N/A'}</TableCell>
-                        <TableCell>{validation.readiness_score ? `${validation.readiness_score}/100` : 'N/A'}</TableCell>
+                        <TableCell>{validation.readiness_score ? `${validation.readiness_score}/100` : 'Pending'}</TableCell>
                         <TableCell>{new Date(validation.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>
                           {getStatusBadge(validation.status)}
@@ -418,7 +420,7 @@ const RequirementValidator = () => {
                         <TableCell className="text-right">
                           <Button
                             size="sm"
-                            onClick={() => handleViewValidation(validation.requirement_id)}
+                            onClick={() => handleViewValidation(validation.requirements?.req_id || '')}
                             className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
                           >
                             View Validation

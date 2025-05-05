@@ -16,6 +16,8 @@ import { Lightbulb, AlertTriangle, ShieldCheck } from "lucide-react";
 import { RequirementData, RequirementAnalysisData, MarketAnalysisData, ResearchSource } from "@/hooks/useMarketAnalysis";
 import MarketAnalysisProgress from "./MarketAnalysisProgress";
 import MarketAnalysisContent from "./MarketAnalysisContent";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { ProcessStep } from "./MarketAnalysisProgress";
 
 interface MarketAnalysisDetailProps {
@@ -40,13 +42,64 @@ export const MarketAnalysisDetail = ({
   onGenerateAnalysis
 }: MarketAnalysisDetailProps) => {
   const navigate = useNavigate();
+  const [isCreatingValidation, setIsCreatingValidation] = useState(false);
   
   if (!requirement) {
     return null;
   }
   
-  const handleValidatorClick = () => {
-    navigate(`/dashboard/validator?requirementId=${requirement.req_id}`);
+  const handleValidatorClick = async () => {
+    if (!requirement.id) {
+      toast.error("Requirement ID is missing");
+      return;
+    }
+
+    setIsCreatingValidation(true);
+    
+    try {
+      // Check if validation already exists for this requirement
+      const { data: existingValidation, error: checkError } = await supabase
+        .from('requirement_validation')
+        .select('id')
+        .eq('requirement_id', requirement.id)
+        .maybeSingle();
+        
+      if (checkError) {
+        throw checkError;
+      }
+      
+      // If validation doesn't exist, create a new one
+      if (!existingValidation) {
+        const { data, error } = await supabase
+          .from('requirement_validation')
+          .insert([
+            { 
+              requirement_id: requirement.id,
+              status: 'Draft',
+              readiness_score: null,
+              validation_verdict: null
+            }
+          ])
+          .select()
+          .single();
+          
+        if (error) {
+          throw error;
+        }
+        
+        toast.success("Created validation record");
+      } else {
+        toast.info("Validation already exists for this requirement");
+      }
+      
+      // Navigate to validator page with the requirement ID
+      navigate(`/dashboard/validator?requirementId=${requirement.req_id}`);
+    } catch (error) {
+      console.error("Error creating validation:", error);
+      toast.error("Failed to create validation record");
+    } finally {
+      setIsCreatingValidation(false);
+    }
   };
 
   return (
@@ -109,10 +162,20 @@ export const MarketAnalysisDetail = ({
         <CardFooter className="pt-6 border-t flex justify-start">
           <Button 
             onClick={handleValidatorClick}
+            disabled={isCreatingValidation}
             className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 flex items-center gap-2"
           >
-            <ShieldCheck className="h-4 w-4" /> 
-            AI Validator
+            {isCreatingValidation ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                Creating Validation...
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="h-4 w-4" /> 
+                AI Validator
+              </>
+            )}
           </Button>
         </CardFooter>
       )}
