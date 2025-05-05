@@ -37,17 +37,6 @@ export const MarketAnalysisHeader = ({
         </div>
         
         <div className="flex gap-3">
-          {requirementId && (
-            <Button 
-              onClick={handleValidatorClick}
-              className="flex items-center gap-2"
-              variant="validator"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              AI Validator
-            </Button>
-          )}
-          
           {showBackButton && (
             <Button 
               variant="outline" 
@@ -56,6 +45,18 @@ export const MarketAnalysisHeader = ({
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Market Analyses
+            </Button>
+          )}
+          
+          {requirementId && (
+            <Button 
+              onClick={handleValidatorClick}
+              className="flex items-center gap-2"
+              variant="default"
+              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              AI Validator
             </Button>
           )}
         </div>

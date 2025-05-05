@@ -65,7 +65,7 @@ const RequirementValidator = () => {
         const { data, error } = await supabase
           .from('requirements')
           .select('*')
-          .eq('req_id', requirementId)
+          .eq('id', requirementId)
           .single();
           
         if (error) {
@@ -75,7 +75,8 @@ const RequirementValidator = () => {
         if (data) {
           // Set the requirement title and text from the fetched data
           setRequirementTitle(data.project_name || '');
-          setRequirementText(data.requirement_text || '');
+          // Using project_idea or document_summary as the requirement text since there's no requirement_text field
+          setRequirementText(data.project_idea || data.document_summary || '');
           toast.success(`Loaded requirement: ${data.project_name}`);
         }
       } catch (error) {
