@@ -1103,9 +1103,9 @@ const MarketSense = () => {
                 </div>
               )}
               
-              {/* Research Sources Section */}
+              {/* Research Sources Section - Ensure this is visible */}
               {marketAnalysis.research_sources && (
-                <div>
+                <div className="mt-6">
                   <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
                     Sources
