@@ -36,12 +36,14 @@ import {
   Sparkles, 
   Lightbulb,
   Shield,
-  FileText
+  FileText,
+  BrainCircuit
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIGradientText, AIBadge, AIBackground } from "@/components/ui/ai-elements";
 import { motion } from "framer-motion";
+import RequirementAnalysisView from "@/components/RequirementAnalysisView";
 
 interface ValidationItem {
   id: string;
@@ -73,8 +75,8 @@ const RequirementValidator = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // For individual requirement validation
-  const [requirementText, setRequirementText] = useState("");
-  const [requirementTitle, setRequirementTitle] = useState("");
+  const [requirement, setRequirement] = useState<any>(null);
+  const [requirementAnalysis, setRequirementAnalysis] = useState<any>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [validationData, setValidationData] = useState<ValidationItem | null>(null);
   const [isRequirementLoading, setIsRequirementLoading] = useState(false);
@@ -90,6 +92,7 @@ const RequirementValidator = () => {
   useEffect(() => {
     if (requirementId) {
       fetchRequirement();
+      fetchRequirementAnalysis();
       // Check if validation already exists for this requirement
       fetchExistingValidation(requirementId);
     }
@@ -147,17 +150,52 @@ const RequirementValidator = () => {
       }
       
       if (data) {
-        // Set the requirement title and text from the fetched data
-        setRequirementTitle(data.project_name || '');
-        // Using project_idea or document_summary as the requirement text since there's no requirement_text field
-        setRequirementText(data.project_idea || data.document_summary || '');
-        toast.success(`Loaded requirement: ${data.project_name}`);
+        setRequirement(data);
+        console.log("Loaded requirement:", data);
       }
     } catch (error) {
       console.error('Error fetching requirement:', error);
       toast.error('Failed to load requirement details');
     } finally {
       setIsRequirementLoading(false);
+    }
+  };
+
+  const fetchRequirementAnalysis = async () => {
+    if (!requirementId) return;
+    
+    try {
+      // Query the requirement_analysis table for the specified requirement
+      const { data: reqData, error: reqError } = await supabase
+        .from('requirements')
+        .select('id')
+        .eq('req_id', requirementId)
+        .single();
+        
+      if (reqError) {
+        console.error('Error fetching requirement ID:', reqError);
+        return;
+      }
+      
+      if (reqData) {
+        const { data, error } = await supabase
+          .from('requirement_analysis')
+          .select('*')
+          .eq('requirement_id', reqData.id)
+          .maybeSingle();
+          
+        if (error) {
+          console.error('Error fetching analysis:', error);
+          return;
+        }
+        
+        if (data) {
+          setRequirementAnalysis(data);
+          console.log("Loaded requirement analysis:", data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching requirement analysis:', error);
     }
   };
 
@@ -235,12 +273,6 @@ const RequirementValidator = () => {
     } finally {
       setIsValidating(false);
     }
-  };
-
-  const handleClear = () => {
-    setRequirementText("");
-    setRequirementTitle("");
-    setValidationData(null);
   };
 
   const handleViewValidation = (validationRequirementId: string) => {
@@ -326,6 +358,7 @@ const RequirementValidator = () => {
         </AIBackground>
 
         <div className="grid gap-6 md:grid-cols-12">
+          {/* Left Column - Requirement Details */}
           <div className="md:col-span-5">
             <Card>
               <CardHeader>
@@ -333,57 +366,67 @@ const RequirementValidator = () => {
                   <FileText className="h-5 w-5" /> Requirement Details
                 </CardTitle>
                 <CardDescription>
-                  Review the requirement information for validation
+                  Review the requirement and analysis for validation
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-6">
                 {isRequirementLoading ? (
                   <>
                     <Skeleton className="h-6 w-3/4 mb-2" />
                     <Skeleton className="h-28 w-full" />
                   </>
-                ) : (
-                  <>
-                    <div>
-                      <h3 className="font-semibold mb-1">{requirementTitle}</h3>
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">
-                        {requirementText}
+                ) : requirement && (
+                  <div className="space-y-6">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+                      <h3 className="font-medium text-lg mb-2">{requirement.project_name}</h3>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <Badge variant="outline">ID: {requirement.req_id}</Badge>
+                        <Badge variant="outline">{requirement.industry_type}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {requirement.project_idea || requirement.document_summary || "No description available"}
                       </p>
                     </div>
-                  </>
+                    
+                    <Button 
+                      className="w-full"
+                      variant="validator"
+                      disabled={isValidating || !requirementAnalysis} 
+                      onClick={handleValidate}
+                    >
+                      {isValidating ? (
+                        <>
+                          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                          Validating...
+                        </>
+                      ) : validationData?.status === "Completed" ? (
+                        <>
+                          <Shield className="h-4 w-4 mr-2" />
+                          Re-validate Requirement
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="h-4 w-4 mr-2" />
+                          Validate Requirement
+                        </>
+                      )}
+                    </Button>
+                    
+                    {!requirementAnalysis && (
+                      <div className="text-center p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md">
+                        <AlertTriangle className="h-4 w-4 mx-auto mb-2 text-amber-500" />
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                          This requirement needs to be analyzed first before validation can be performed.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </CardContent>
-              <CardFooter className="flex justify-between border-t pt-4">
-                <Button variant="outline" onClick={handleClear} disabled={isValidating}>
-                  Clear
-                </Button>
-                <Button 
-                  disabled={isValidating || isRequirementLoading} 
-                  onClick={handleValidate}
-                  variant="validator"
-                  className="flex items-center gap-2"
-                >
-                  {isValidating ? (
-                    <>
-                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                      Validating...
-                    </>
-                  ) : validationData?.status === "Completed" ? (
-                    <>
-                      <Shield className="h-4 w-4" />
-                      Re-validate Requirement
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="h-4 w-4" />
-                      Validate Requirement
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
             </Card>
           </div>
 
+          {/* Right Column - Analysis & Validation */}
           <div className="md:col-span-7">
             {isValidating ? (
               <Card>
@@ -553,52 +596,81 @@ const RequirementValidator = () => {
                 </Card>
               </motion.div>
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Validation Report</CardTitle>
-                  <CardDescription>
-                    AI-powered assessment of market readiness
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="px-6 py-8 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Strengths Placeholder */}
-                    <div className="p-4 border rounded-lg bg-green-50/30 dark:bg-green-950/10">
-                      <div className="flex items-center gap-2 mb-3">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <h4 className="font-medium">Strengths</h4>
-                      </div>
-                      <p className="text-sm text-muted-foreground">No strengths identified</p>
-                    </div>
-                    
-                    {/* Risks Placeholder */}
-                    <div className="p-4 border rounded-lg bg-red-50/30 dark:bg-red-950/10">
-                      <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="h-5 w-5 text-red-500" />
-                        <h4 className="font-medium">Risks</h4>
-                      </div>
-                      <p className="text-sm text-muted-foreground">No risks identified</p>
-                    </div>
-                    
-                    {/* Recommendations Placeholder */}
-                    <div className="p-4 border rounded-lg bg-blue-50/30 dark:bg-blue-950/10">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Lightbulb className="h-5 w-5 text-blue-500" />
-                        <h4 className="font-medium">Recommendations</h4>
-                      </div>
-                      <p className="text-sm text-muted-foreground">No recommendations provided</p>
-                    </div>
-                  </div>
+              requirementAnalysis ? (
+                <div className="space-y-6">
+                  {/* Analysis view */}
+                  <RequirementAnalysisView 
+                    project={requirement}
+                    analysis={requirementAnalysis}
+                    loading={isRequirementLoading}
+                    onRefresh={() => {
+                      fetchRequirementAnalysis();
+                      toast.success("Analysis refreshed");
+                    }}
+                  />
                   
-                  <div className="text-center text-sm text-muted-foreground mt-6">
-                    Click "Validate Requirement" to start the AI-powered validation process
-                  </div>
-                  
-                  <div className="text-xs text-muted-foreground text-right italic mt-8">
-                    Last updated: 5/6/2025, 3:43:06 AM
-                  </div>
-                </CardContent>
-              </Card>
+                  {/* Validation card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-[#9b87f5]" /> 
+                        AI Validation
+                      </CardTitle>
+                      <CardDescription>
+                        Validate this requirement against market data
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center py-6">
+                      <div className="text-center mb-6">
+                        <div className="inline-flex p-3 rounded-full bg-[#9b87f5]/10 mb-4">
+                          <Shield className="h-10 w-10 text-[#9b87f5]" />
+                        </div>
+                        <h3 className="text-lg font-medium mb-2">Ready for Validation</h3>
+                        <p className="text-muted-foreground max-w-md">
+                          Let AI evaluate this requirement against market data to determine market readiness,
+                          identify strengths, risks, and provide recommendations.
+                        </p>
+                      </div>
+                      <Button
+                        variant="validator"
+                        size="lg"
+                        className="gap-2"
+                        onClick={handleValidate}
+                        disabled={isValidating}
+                      >
+                        <Shield className="h-5 w-5" />
+                        Start Validation
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Requirement Analysis Required</CardTitle>
+                    <CardDescription>
+                      This requirement needs to be analyzed first
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="py-12 text-center">
+                    <div className="inline-flex p-4 rounded-full bg-amber-50 dark:bg-amber-950/30 mb-6">
+                      <AlertTriangle className="h-12 w-12 text-amber-500" />
+                    </div>
+                    <h3 className="text-xl font-medium mb-3">Analysis Required</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                      Before validating this requirement, you need to analyze it first.
+                      Please go to the Requirement Analysis page to generate insights.
+                    </p>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate(`/dashboard/requirements?id=${requirementId}`)}
+                    >
+                      <FileSearch className="h-4 w-4 mr-2" />
+                      View Requirement
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
             )}
           </div>
         </div>
