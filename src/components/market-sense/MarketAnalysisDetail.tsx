@@ -109,7 +109,7 @@ export const MarketAnalysisDetail = ({
         <CardFooter className="pt-6 border-t flex justify-start">
           <Button 
             onClick={handleValidatorClick}
-            className="flex items-center gap-2 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 flex items-center gap-2"
           >
             <ShieldCheck className="h-4 w-4" /> 
             AI Validator
