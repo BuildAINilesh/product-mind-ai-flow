@@ -1,0 +1,43 @@
+
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AIBackground, AIGradientText } from "@/components/ui/ai-elements";
+import { useNavigate } from "react-router-dom";
+
+interface MarketAnalysisHeaderProps {
+  projectName?: string;
+  showBackButton?: boolean;
+}
+
+export const MarketAnalysisHeader = ({ projectName, showBackButton = true }: MarketAnalysisHeaderProps) => {
+  const navigate = useNavigate();
+  
+  return (
+    <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
+      <div className="flex justify-between items-center relative z-10">
+        <div>
+          <h2 className="text-2xl font-bold">MarketSense <AIGradientText>AI</AIGradientText></h2>
+          <p className="text-muted-foreground mt-1">
+            {projectName 
+              ? `AI-powered market analysis for ${projectName}` 
+              : "AI-powered market analysis"
+            }
+          </p>
+        </div>
+        
+        {showBackButton && (
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard/market-sense')}
+            className="flex items-center gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Market Analyses
+          </Button>
+        )}
+      </div>
+    </AIBackground>
+  );
+};
+
+export default MarketAnalysisHeader;
