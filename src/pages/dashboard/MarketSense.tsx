@@ -621,6 +621,33 @@ const MarketSense = () => {
     }
   };
 
+  // Function to check for ongoing analysis process
+  const checkOngoingAnalysisProcess = () => {
+    if (!requirementId) return;
+    
+    try {
+      // Retrieve saved process data from localStorage
+      const currentStepSaved = localStorage.getItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+      const stepsSaved = localStorage.getItem(ANALYSIS_STEPS_KEY + requirementId);
+      
+      if (currentStepSaved && stepsSaved) {
+        // Parse the saved data
+        const parsedCurrentStep = parseInt(currentStepSaved);
+        const parsedSteps = JSON.parse(stepsSaved);
+        
+        // Update the state with the saved data
+        setCurrentStep(parsedCurrentStep);
+        setProgressSteps(parsedSteps);
+        setAnalysisInProgress(true);
+        
+        // Check if the analysis has been completed in the database
+        checkMarketAnalysisStatus();
+      }
+    } catch (error) {
+      console.error("Error checking ongoing analysis:", error);
+    }
+  };
+  
   // Format section function to transform content with bullets
   const formatSection = (content) => {
     if (!content) return "No data available";
@@ -859,4 +886,172 @@ const MarketSense = () => {
               onClick={() => navigate('/dashboard/market-sense')}
               className="flex items-center gap-1"
             >
-              <Arrow
+              <ArrowLeft className="h-4 w-4" />
+              Back to Market Analyses
+            </Button>
+          </div>
+        </AIBackground>
+        
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-destructive">Requirement Not Found</CardTitle>
+            <CardDescription>
+              We couldn't find the requirement you're looking for.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>The requirement with ID "{requirementId}" could not be found. It may have been deleted or you may not have access to it.</p>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/market-sense')}
+            >
+              Back to Market Analyses
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+  
+  // Main view for a specific requirement with its market analysis
+  return (
+    <div className="space-y-6">
+      <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
+        <div className="flex justify-between items-center relative z-10">
+          <div>
+            <h2 className="text-2xl font-bold">MarketSense <AIGradientText>AI</AIGradientText></h2>
+            <p className="text-muted-foreground mt-1">AI-powered market analysis for {requirement?.project_name}</p>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard/market-sense')}
+            className="flex items-center gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Market Analyses
+          </Button>
+        </div>
+      </AIBackground>
+      
+      {/* Requirement info card */}
+      <AICard>
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                {requirement?.req_id} - {requirement?.project_name}
+                {getStatusBadge(marketAnalysis?.status)}
+              </CardTitle>
+              <CardDescription>
+                Industry: {requirement?.industry_type}
+              </CardDescription>
+            </div>
+            
+            {!marketAnalysis?.market_trends && !analysisInProgress && (
+              <Button
+                onClick={handleGenerateAnalysis}
+                disabled={!requirementAnalysis || analyzing}
+                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+              >
+                <Lightbulb className="mr-2 h-4 w-4" />
+                Generate Market Analysis
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          {/* Progress UI when analysis is in progress */}
+          {analysisInProgress && (
+            <div className="mb-6 p-4 border rounded-lg bg-accent/10">
+              <h3 className="text-lg font-medium mb-3">Analysis in Progress</h3>
+              <div className="space-y-1">
+                {progressSteps.map((step, index) => renderStepIndicator(step, index))}
+              </div>
+              <p className="text-sm text-muted-foreground mt-3">
+                Please don't navigate away from this page. The analysis process may take a few minutes to complete.
+              </p>
+            </div>
+          )}
+          
+          {/* Display market analysis if available */}
+          {marketAnalysis?.market_trends && (
+            <div className="space-y-6">
+              {/* Market Trends Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <LineChart className="h-5 w-5 text-primary" />
+                  Market Trends
+                </h3>
+                <div className="p-4 border rounded-lg">
+                  {formatSection(marketAnalysis.market_trends)}
+                </div>
+              </div>
+              
+              {/* Target Audience Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Network className="h-5 w-5 text-primary" />
+                  Target Audience
+                </h3>
+                <div className="p-4 border rounded-lg">
+                  {formatSection(marketAnalysis.target_audience)}
+                </div>
+              </div>
+              
+              {/* Key Competitors Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <BarChart className="h-5 w-5 text-primary" />
+                  Key Competitors
+                </h3>
+                <div className="p-4 border rounded-lg">
+                  {formatSection(marketAnalysis.key_competitors)}
+                </div>
+              </div>
+              
+              {/* Strategic Recommendations Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Strategic Recommendations
+                </h3>
+                <div className="p-4 border rounded-lg">
+                  {formatSection(marketAnalysis.strategic_recommendations)}
+                </div>
+              </div>
+              
+              {/* Research Sources Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Research Sources
+                </h3>
+                <div className="p-4 border rounded-lg">
+                  {formatSection(marketAnalysis.research_sources)}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Display a message if no analysis and we're not in progress */}
+          {!marketAnalysis?.market_trends && !analysisInProgress && (
+            <Alert variant="default" className="bg-muted/50">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>No market analysis available</AlertTitle>
+              <AlertDescription>
+                Click the "Generate Market Analysis" button to start the AI-powered market analysis process.
+                This will research current market trends, competition, and strategic recommendations for this requirement.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </AICard>
+    </div>
+  );
+};
+
+export default MarketSense;
