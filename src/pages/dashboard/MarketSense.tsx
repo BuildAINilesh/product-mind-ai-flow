@@ -1136,9 +1136,9 @@ const MarketSense = () => {
                     Sources
                   </h3>
                   <div className="p-4 border rounded-lg bg-background">
-                    <Accordion type="single" collapsible defaultValue="sources" className="w-full">
+                    <Accordion type="single" collapsible className="w-full">
                       <AccordionItem value="sources" className="border-none">
-                        <AccordionTrigger className="text-md font-medium py-2">
+                        <AccordionTrigger className="text-sm font-medium py-2">
                           View Research Sources ({researchSources.length})
                         </AccordionTrigger>
                         <AccordionContent>
@@ -1176,9 +1176,9 @@ const MarketSense = () => {
                     Sources
                   </h3>
                   <div className="p-4 border rounded-lg bg-background">
-                    <Accordion type="single" collapsible defaultValue="sources" className="w-full">
+                    <Accordion type="single" collapsible className="w-full">
                       <AccordionItem value="sources" className="border-none">
-                        <AccordionTrigger className="text-md font-medium py-2">
+                        <AccordionTrigger className="text-sm font-medium py-2">
                           View Research Sources
                         </AccordionTrigger>
                         <AccordionContent>
