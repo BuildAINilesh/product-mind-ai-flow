@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { 
@@ -282,7 +281,6 @@ const RequirementValidator = () => {
                   disabled={isValidating || isRequirementLoading} 
                   onClick={handleValidate}
                   variant="validator"
-                  className="bg-gradient-to-r from-purple-600 to-purple-800 hover:opacity-90"
                 >
                   {isValidating ? (
                     <>Validating<span className="animate-pulse">...</span></>
