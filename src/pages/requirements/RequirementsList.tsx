@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -20,16 +19,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Play } from "lucide-react";
+import { Plus, Search, Eye } from "lucide-react";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 type Requirement = {
   id: string;
@@ -239,12 +232,12 @@ const RequirementsList = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead className="w-[300px]">Project</TableHead>
-                  <TableHead>Industry</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="w-[15%]">ID</TableHead>
+                  <TableHead className="w-[35%]">Project</TableHead>
+                  <TableHead className="w-[20%]">Industry</TableHead>
+                  <TableHead className="w-[15%]">Created</TableHead>
+                  <TableHead className="w-[10%]">Status</TableHead>
+                  <TableHead className="text-right w-[5%]">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -272,41 +265,15 @@ const RequirementsList = () => {
                       <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary/50">
-                              Actions
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-background">
-                            <DropdownMenuItem onClick={() => navigate(`/dashboard/requirements/${req.id}`)}>
-                              <Button variant="ghost" size="sm" className="w-full justify-start">
-                                View
-                              </Button>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/dashboard/requirements/edit/${req.id}`)}>
-                              <Button variant="ghost" size="sm" className="w-full justify-start">
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </Button>
-                            </DropdownMenuItem>
-                            {(req.status === "Draft" || req.status === "Re_Draft") && (
-                              <DropdownMenuItem onClick={() => triggerAnalysis(req.id)}>
-                                <Button variant="ghost" size="sm" className="w-full justify-start">
-                                  <Play className="mr-2 h-4 w-4" />
-                                  Analyze
-                                </Button>
-                              </DropdownMenuItem>
-                            )}
-                            {req.status === "Completed" && (
-                              <DropdownMenuItem onClick={() => navigateToMarketSense(req.id)}>
-                                <Button variant="ghost" size="sm" className="w-full justify-start">
-                                  MarketSense AI
-                                </Button>
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => navigate(`/dashboard/requirements/${req.id}`)}
+                          className="border-primary/20 hover:border-primary/50 flex items-center gap-1.5"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
