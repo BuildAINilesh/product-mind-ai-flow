@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,11 +22,15 @@ import {
   Paperclip,
   Lock,
   CalendarClock,
-  Shield
+  Shield,
+  RefreshCw
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface RequirementAnalysis {
   id: string;
@@ -64,13 +68,66 @@ interface RequirementAnalysisViewProps {
   project: Project | null;
   analysis: RequirementAnalysis | null;
   loading?: boolean;
+  onRefresh?: () => void;
 }
 
 export const RequirementAnalysisView = ({ 
   project, 
   analysis, 
-  loading = false 
+  loading = false,
+  onRefresh
 }: RequirementAnalysisViewProps) => {
+  const { toast } = useToast();
+  const [localAnalysis, setLocalAnalysis] = useState<RequirementAnalysis | null>(analysis);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Update local state when the analysis prop changes
+  useEffect(() => {
+    setLocalAnalysis(analysis);
+  }, [analysis]);
+
+  // Function to manually fetch analysis data if needed
+  const fetchAnalysisData = async () => {
+    if (!project?.id) return;
+    
+    try {
+      setIsRefreshing(true);
+      
+      const { data, error } = await supabase
+        .from('requirement_analysis')
+        .select('*')
+        .eq('requirement_id', project.id)
+        .maybeSingle();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setLocalAnalysis(data);
+        toast({
+          title: "Success",
+          description: "Analysis data refreshed successfully",
+        });
+      } else {
+        toast({
+          title: "Info",
+          description: "No analysis data found for this requirement",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching analysis data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh analysis data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+      if (onRefresh) onRefresh();
+    }
+  };
+
   if (loading) {
     return <AnalysisViewSkeleton />;
   }
@@ -89,7 +146,7 @@ export const RequirementAnalysisView = ({
   }
 
   // If there's no analysis data, show appropriate message
-  const noAnalysisData = !analysis && project.status !== "Completed";
+  const noAnalysisData = !localAnalysis && project.status !== "Completed";
   
   // Function to render content with fallback for empty sections
   const renderContent = (content: string | null, fallback: string = "Not available yet") => {
@@ -117,9 +174,23 @@ export const RequirementAnalysisView = ({
               <CardDescription>Business Requirements Document</CardDescription>
               <CardTitle className="text-2xl">{project.project_name}</CardTitle>
             </div>
-            <Badge variant={project.status === "Completed" ? "default" : "outline"}>
-              {project.status.replace('_', ' ')}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={project.status === "Completed" ? "default" : "outline"}>
+                {project.status.replace('_', ' ')}
+              </Badge>
+              {project.status === "Completed" && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex items-center gap-1"
+                  onClick={fetchAnalysisData}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         
@@ -141,12 +212,12 @@ export const RequirementAnalysisView = ({
             </div>
           </div>
 
-          {analysis?.analysis_confidence_score !== null && (
+          {localAnalysis?.analysis_confidence_score !== null && (
             <div className="flex items-center mb-6 p-3 bg-muted/30 rounded-md">
               <Shield className="h-5 w-5 mr-2 text-primary" />
               <span className="font-medium mr-1">Analysis Confidence Score:</span>
               <Badge variant="outline" className="ml-auto px-3 py-1 font-medium">
-                {analysis?.analysis_confidence_score}%
+                {localAnalysis?.analysis_confidence_score}%
               </Badge>
             </div>
           )}
@@ -182,7 +253,7 @@ export const RequirementAnalysisView = ({
                     "A quick summary of the project idea and objective"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.project_overview)}
+                    {renderContent(localAnalysis?.project_overview)}
                   </div>
                 </section>
 
@@ -194,7 +265,7 @@ export const RequirementAnalysisView = ({
                     "The problem the product/feature is solving"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.problem_statement)}
+                    {renderContent(localAnalysis?.problem_statement)}
                   </div>
                 </section>
 
@@ -206,7 +277,7 @@ export const RequirementAnalysisView = ({
                     "How this product/feature will solve the problem"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.proposed_solution)}
+                    {renderContent(localAnalysis?.proposed_solution)}
                   </div>
                 </section>
               </div>
@@ -228,7 +299,7 @@ export const RequirementAnalysisView = ({
                     "What business outcomes are expected? (Example: user growth, revenue, efficiency)"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.business_goals)}
+                    {renderContent(localAnalysis?.business_goals)}
                   </div>
                 </section>
 
@@ -240,7 +311,7 @@ export const RequirementAnalysisView = ({
                     "Who will use this product? Personas, segments"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.target_audience)}
+                    {renderContent(localAnalysis?.target_audience)}
                   </div>
                 </section>
 
@@ -252,7 +323,7 @@ export const RequirementAnalysisView = ({
                     "Quick snapshot from MarketSense AI module: competitors, gaps identified"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.competitive_landscape)}
+                    {renderContent(localAnalysis?.competitive_landscape)}
                   </div>
                 </section>
               </div>
@@ -274,12 +345,12 @@ export const RequirementAnalysisView = ({
                     "List major features or functionalities needed"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.key_features)}
+                    {renderContent(localAnalysis?.key_features)}
                   </div>
                 </section>
 
                 {/* User Stories Section */}
-                {analysis?.user_stories && (
+                {localAnalysis?.user_stories && (
                   <section>
                     {renderSectionHeader(
                       <User className="h-5 w-5 text-primary" />,
@@ -287,7 +358,7 @@ export const RequirementAnalysisView = ({
                       "High-level user journeys if applicable"
                     )}
                     <div className="bg-muted/30 p-4 rounded-md">
-                      {renderContent(analysis?.user_stories)}
+                      {renderContent(localAnalysis?.user_stories)}
                     </div>
                   </section>
                 )}
@@ -310,12 +381,12 @@ export const RequirementAnalysisView = ({
                     "Technical, operational, legal constraints; and any assumptions made"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.constraints_assumptions)}
+                    {renderContent(localAnalysis?.constraints_assumptions)}
                   </div>
                 </section>
 
                 {/* Risks & Mitigations Section */}
-                {analysis?.risks_mitigations && (
+                {localAnalysis?.risks_mitigations && (
                   <section>
                     {renderSectionHeader(
                       <AlertTriangle className="h-5 w-5 text-primary" />,
@@ -323,7 +394,7 @@ export const RequirementAnalysisView = ({
                       "What risks exist? How can they be mitigated?"
                     )}
                     <div className="bg-muted/30 p-4 rounded-md">
-                      {renderContent(analysis?.risks_mitigations)}
+                      {renderContent(localAnalysis?.risks_mitigations)}
                     </div>
                   </section>
                 )}
@@ -336,7 +407,7 @@ export const RequirementAnalysisView = ({
                     "High-level conditions for 'success' of this requirement"
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
-                    {renderContent(analysis?.acceptance_criteria)}
+                    {renderContent(localAnalysis?.acceptance_criteria)}
                   </div>
                 </section>
               </div>
@@ -344,7 +415,7 @@ export const RequirementAnalysisView = ({
           </Card>
 
           {/* Appendices Section */}
-          {analysis?.appendices && analysis.appendices.length > 0 && (
+          {localAnalysis?.appendices && localAnalysis.appendices.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle>Appendices</CardTitle>
@@ -358,7 +429,7 @@ export const RequirementAnalysisView = ({
                   )}
                   <div className="bg-muted/30 p-4 rounded-md">
                     <ul className="list-disc pl-5 space-y-1">
-                      {analysis.appendices.map((item, index) => (
+                      {localAnalysis.appendices.map((item, index) => (
                         <li key={index}>
                           <a 
                             href={item} 
@@ -383,7 +454,7 @@ export const RequirementAnalysisView = ({
               <div className="flex flex-wrap items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center">
                   <CalendarClock className="h-4 w-4 mr-1" />
-                  Last updated: {analysis?.updated_at && new Date(analysis.updated_at).toLocaleString()}
+                  Last updated: {localAnalysis?.updated_at && new Date(localAnalysis.updated_at).toLocaleString()}
                 </div>
                 <div>
                   Document ID: <span className="font-mono">{project.req_id}</span>

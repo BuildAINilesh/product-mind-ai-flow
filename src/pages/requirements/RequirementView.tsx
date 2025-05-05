@@ -38,57 +38,72 @@ const RequirementView = () => {
     { name: "Creating market analysis", status: "pending" }
   ]);
 
-  useEffect(() => {
-    const fetchProjectData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch the basic project info
-        const { data: projectData, error: projectError } = await supabase
-          .from('requirements')
-          .select('*')
-          .eq('id', id)
-          .single();
+  const fetchProjectData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch the basic project info
+      const { data: projectData, error: projectError } = await supabase
+        .from('requirements')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-        if (projectError) {
-          throw projectError;
-        }
+      if (projectError) {
+        throw projectError;
+      }
 
-        setProject(projectData);
+      setProject(projectData);
 
-        // If project is completed, fetch the analysis data
-        if (projectData.status === "Completed") {
-          const { data: analysisData, error: analysisError } = await supabase
-            .from('requirement_analysis')
-            .select('*')
-            .eq('requirement_id', id)
-            .maybeSingle();
+      // If project is completed, fetch the analysis data
+      if (projectData.status === "Completed") {
+        await fetchAnalysisData();
+      }
+    } catch (error) {
+      console.error('Error fetching requirement:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load requirement details.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          if (analysisError) {
-            console.error('Error fetching analysis:', analysisError);
-          } else {
-            setAnalysis(analysisData);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching requirement:', error);
+  // Separate function to fetch analysis data
+  const fetchAnalysisData = async () => {
+    try {
+      const { data: analysisData, error: analysisError } = await supabase
+        .from('requirement_analysis')
+        .select('*')
+        .eq('requirement_id', id)
+        .maybeSingle();
+
+      if (analysisError) {
+        console.error('Error fetching analysis:', analysisError);
         toast({
-          title: 'Error',
-          description: 'Failed to load requirement details.',
+          title: 'Warning',
+          description: 'Could not load analysis data.',
           variant: 'destructive',
         });
-      } finally {
-        setLoading(false);
+      } else {
+        console.log('Analysis data fetched:', analysisData);
+        setAnalysis(analysisData);
       }
-    };
+    } catch (error) {
+      console.error('Error in fetchAnalysisData:', error);
+    }
+  };
 
+  useEffect(() => {
     if (id) {
       fetchProjectData();
       
       // Check if there's an ongoing analysis process for this requirement
       checkOngoingAnalysisProcess();
     }
-  }, [id, toast]);
+  }, [id]);
 
   // Function to check if there's an ongoing analysis process
   const checkOngoingAnalysisProcess = () => {
@@ -232,17 +247,7 @@ const RequirementView = () => {
       setProject(updatedProject);
 
       // Fetch the newly created analysis
-      const { data: analysisData, error: analysisError } = await supabase
-        .from('requirement_analysis')
-        .select('*')
-        .eq('requirement_id', id)
-        .maybeSingle();
-
-      if (analysisError) {
-        console.error('Error fetching analysis:', analysisError);
-      } else {
-        setAnalysis(analysisData);
-      }
+      await fetchAnalysisData();
       
       toast({
         title: "Success",
@@ -512,6 +517,11 @@ const RequirementView = () => {
     }
   };
 
+  // Handle refresh of the analysis data
+  const handleRefreshAnalysis = () => {
+    fetchAnalysisData();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -579,7 +589,12 @@ const RequirementView = () => {
         </Alert>
       )}
 
-      <RequirementAnalysisView project={project} analysis={analysis} loading={loading} />
+      <RequirementAnalysisView 
+        project={project} 
+        analysis={analysis} 
+        loading={loading} 
+        onRefresh={handleRefreshAnalysis}
+      />
       
       {/* Market Analysis Generation Card (only show if not already in progress) */}
       {project && project.status === "Completed" && !analysisInProgress && (
