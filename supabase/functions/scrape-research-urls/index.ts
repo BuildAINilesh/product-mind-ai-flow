@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -493,7 +492,27 @@ serve(async (req) => {
 
     // Extract valid URLs
     const validSources = sources.filter(source => source.url && source.url.match(/^(http|https):\/\//));
-    const validUrls = validSources.map(source => source.url);
+    
+    // Organize sources by query_id to ensure we only take a maximum of 3 sources per query
+    const sourcesByQuery = {};
+    for (const source of validSources) {
+      if (!sourcesByQuery[source.query_id]) {
+        sourcesByQuery[source.query_id] = [];
+      }
+      sourcesByQuery[source.query_id].push(source);
+    }
+    
+    // Take a maximum of 3 sources per query
+    let limitedValidSources = [];
+    for (const queryId in sourcesByQuery) {
+      const querySources = sourcesByQuery[queryId];
+      limitedValidSources = limitedValidSources.concat(querySources.slice(0, 3));
+    }
+    
+    // Generate the final list of valid URLs
+    const validUrls = limitedValidSources.map(source => source.url);
+    
+    console.log(`Processing ${validUrls.length} valid URLs after limiting to 3 per query (from ${validSources.length} total valid URLs)`);
     
     // Mark invalid URLs as error
     const invalidSources = sources.filter(source => !source.url || !source.url.match(/^(http|https):\/\//));
@@ -514,6 +533,25 @@ serve(async (req) => {
       });
     }
     
+    // Mark sources beyond the limit as skipped
+    const skippedSources = validSources.filter(source => !limitedValidSources.includes(source));
+    for (const source of skippedSources) {
+      console.warn(`Skipping URL due to 3 per query limit: ${source.url}`);
+      
+      await fetch(`${supabaseUrl}/rest/v1/market_research_sources?id=eq.${source.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'apikey': `${supabaseServiceKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          status: 'skipped'
+        })
+      });
+    }
+    
     if (validUrls.length === 0) {
       return new Response(JSON.stringify({ 
         success: true, 
@@ -529,7 +567,7 @@ serve(async (req) => {
     console.log(`Processing ${validUrls.length} valid URLs in a single batch`);
     
     // Process all URLs in a single batch
-    const result = await processAllUrls(validUrls, validSources);
+    const result = await processAllUrls(validUrls, limitedValidSources);
     
     // Get pending summary count
     const pendingSummaryQuery = await fetch(
@@ -554,6 +592,9 @@ serve(async (req) => {
       success: true, 
       message: `Processed ${result.processed} URLs${result.errorCount > 0 ? ` with ${result.errorCount} errors` : ''}`,
       totalUrls: sources.length,
+      validUrls: validSources.length,
+      limitedUrls: limitedValidSources.length,
+      skippedUrls: skippedSources.length,
       invalidUrls: invalidSources.length,
       processedUrls: result.processed,
       successCount: result.successCount || 0,

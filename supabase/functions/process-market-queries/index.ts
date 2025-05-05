@@ -145,7 +145,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             query: query.query,
-            limit: 5 // Get top 5 results per query
+            limit: 3 // Changed from 5 to 3 - Get top 3 results per query
           })
         };
         
@@ -157,7 +157,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             query: query.query,
-            limit: 5
+            limit: 3 // Changed from 5 to 3
           })
         });
         
@@ -244,7 +244,7 @@ serve(async (req) => {
                   title: result.title || 'No Title',
                   url: result.url || '',
                   snippet: result.description || null,
-                  status: 'pending_scrape'  // Changed from 'found' to 'pending_scrape'
+                  status: 'pending_scrape'
                 })
               });
 
