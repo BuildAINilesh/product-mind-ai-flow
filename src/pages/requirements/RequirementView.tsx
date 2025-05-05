@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Edit, Play, Check, Loader } from "lucide-react";
+import { ArrowLeft, BrainCircuit, Loader, Edit, Plus, Check, Play } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -695,10 +695,10 @@ const RequirementView = () => {
               <Button
                 onClick={triggerAnalysis}
                 disabled={loading}
-                className="flex items-center gap-2"
+                className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
               >
-                <Play className="h-4 w-4" />
-                {loading ? "Processing..." : "Analyze"}
+                <BrainCircuit className="h-4 w-4" />
+                Analyze
               </Button>
             )}
 
@@ -732,12 +732,35 @@ const RequirementView = () => {
         </Alert>
       )}
 
-      <RequirementAnalysisView
-        project={project}
-        analysis={analysis}
-        loading={loading}
-        onRefresh={handleRefreshAnalysis}
-      />
+      {project && project.status === "Draft" && (
+        <div className="py-12 text-center">
+          <div className="inline-flex p-4 rounded-full bg-blue-50 dark:bg-blue-950 mb-4">
+            <BrainCircuit className="h-12 w-12 text-primary" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Ready for Analysis</h3>
+          <p className="text-muted-foreground max-w-md mx-auto mb-6">
+            This requirement hasn't been analyzed yet. 
+            Click the "Analyze" button to generate the AI-powered analysis.
+          </p>
+          <Button 
+            onClick={triggerAnalysis}
+            size="lg" 
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <BrainCircuit className="h-5 w-5 mr-2" />
+            Analyze
+          </Button>
+        </div>
+      )}
+
+      {project && project.status === "Completed" && (
+        <RequirementAnalysisView
+          project={project}
+          analysis={analysis}
+          loading={loading}
+          onRefresh={handleRefreshAnalysis}
+        />
+      )}
 
       {/* Market Analysis Generation Card (only show if not already in progress) */}
       {project && project.status === "Completed" && !analysisInProgress && (
