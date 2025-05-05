@@ -1137,14 +1137,14 @@ const MarketSense = () => {
                   </h3>
                   <div className="p-4 border rounded-lg bg-background">
                     <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="sources" className="border-none">
+                      <AccordionItem value="item-1" className="border-none">
                         <AccordionTrigger className="text-sm font-medium py-2">
                           View Research Sources ({researchSources.length})
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-3 mt-2">
                             {researchSources.map((source, index) => (
-                              <div key={source.id} className="flex items-start py-2 border-b border-gray-100 last:border-0">
+                              <div key={source.id || index} className="flex items-start py-2 border-b border-gray-100 last:border-0">
                                 <ExternalLink className="h-4 w-4 mr-2 mt-1 flex-shrink-0 text-primary" />
                                 {source.url ? (
                                   <a 
@@ -1177,7 +1177,7 @@ const MarketSense = () => {
                   </h3>
                   <div className="p-4 border rounded-lg bg-background">
                     <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="sources" className="border-none">
+                      <AccordionItem value="item-1" className="border-none">
                         <AccordionTrigger className="text-sm font-medium py-2">
                           View Research Sources
                         </AccordionTrigger>
