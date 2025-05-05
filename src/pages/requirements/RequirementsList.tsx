@@ -116,7 +116,7 @@ const RequirementsList = () => {
       // First, check if a market analysis entry already exists
       const { data: existingAnalysis, error: checkError } = await supabase
         .from('market_analysis')
-        .select('id')
+        .select('id, status')
         .eq('requirement_id', requirementId)
         .maybeSingle();
         
@@ -148,7 +148,29 @@ const RequirementsList = () => {
           });
           return;
         }
+        
+        // Verify the entry was created by fetching it again
+        const { data: verifyCreation, error: verifyError } = await supabase
+          .from('market_analysis')
+          .select('id')
+          .eq('requirement_id', requirementId)
+          .maybeSingle();
+          
+        if (verifyError || !verifyCreation) {
+          console.error('Error verifying market analysis creation:', verifyError);
+          toast({
+            title: "Warning",
+            description: "Market analysis entry may not have been created properly.",
+          });
+        } else {
+          console.log('Successfully created market analysis entry:', verifyCreation);
+        }
+      } else {
+        console.log('Using existing market analysis:', existingAnalysis);
       }
+      
+      // Add a small delay to ensure the database has processed the entry
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Navigate to the main MarketSense dashboard with the requirement ID as a URL parameter
       navigate(`/dashboard/market-sense?requirementId=${requirementId}`);

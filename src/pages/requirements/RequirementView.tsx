@@ -471,12 +471,14 @@ const RequirementView = () => {
       
       // If no entry exists, create one
       if (!existingAnalysis) {
-        const { error } = await supabase
+        const { data: newAnalysis, error } = await supabase
           .from('market_analysis')
           .insert({
             requirement_id: id,
             status: 'Draft'
-          });
+          })
+          .select('id')
+          .single();
           
         if (error) {
           console.error('Error creating market analysis entry:', error);
@@ -487,7 +489,14 @@ const RequirementView = () => {
           });
           return;
         }
+        
+        console.log('Created new market analysis:', newAnalysis);
+      } else {
+        console.log('Using existing market analysis:', existingAnalysis);
       }
+      
+      // Add a small delay to ensure the database has processed the entry
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Navigate to the main MarketSense dashboard with the requirement ID as a URL parameter
       console.log("Navigating to MarketSense with requirementId:", id);
