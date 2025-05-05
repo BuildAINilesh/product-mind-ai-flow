@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -36,11 +35,12 @@ import {
   AlertCircle,
   Sparkles, 
   Lightbulb,
-  Shield
+  Shield,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { AICard, AIGradientText, AIBadge } from "@/components/ui/ai-elements";
+import { AICard, AIGradientText, AIBadge, AIBackground } from "@/components/ui/ai-elements";
 import { motion } from "framer-motion";
 
 interface ValidationItem {
@@ -307,51 +307,51 @@ const RequirementValidator = () => {
   if (requirementId) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center relative z-10">
-          <div>
-            <h2 className="text-2xl font-bold">AI <AIGradientText>Validator</AIGradientText></h2>
-            <p className="text-muted-foreground mt-1">Analyze requirements for clarity, completeness, and consistency</p>
+        <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <h2 className="text-2xl font-bold">AI <AIGradientText>Validator</AIGradientText></h2>
+              <p className="text-muted-foreground mt-1">Analyze requirements for clarity, completeness, and consistency</p>
+            </div>
+            
+            <Button 
+              onClick={handleBackToList}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to Validations
+            </Button>
           </div>
-          
-          <Button 
-            onClick={handleBackToList}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back to Validations
-          </Button>
-        </div>
+        </AIBackground>
 
         <div className="grid gap-6 md:grid-cols-12">
           <div className="md:col-span-5">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileSearch className="h-5 w-5" /> Requirement Details
+                  <FileText className="h-5 w-5" /> Requirement Details
                 </CardTitle>
                 <CardDescription>
                   Review the requirement information for validation
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {isRequirementLoading ? (
-                    <>
-                      <Skeleton className="h-6 w-3/4 mb-2" />
-                      <Skeleton className="h-28 w-full" />
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <h3 className="font-semibold mb-1">{requirementTitle}</h3>
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">
-                          {requirementText}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
+              <CardContent className="space-y-2">
+                {isRequirementLoading ? (
+                  <>
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-28 w-full" />
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <h3 className="font-semibold mb-1">{requirementTitle}</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        {requirementText}
+                      </p>
+                    </div>
+                  </>
+                )}
               </CardContent>
               <CardFooter className="flex justify-between border-t pt-4">
                 <Button variant="outline" onClick={handleClear} disabled={isValidating}>
@@ -370,7 +370,7 @@ const RequirementValidator = () => {
                     </>
                   ) : validationData?.status === "Completed" ? (
                     <>
-                      <CheckSquare className="h-4 w-4" />
+                      <Shield className="h-4 w-4" />
                       Re-validate Requirement
                     </>
                   ) : (
@@ -555,17 +555,48 @@ const RequirementValidator = () => {
             ) : (
               <Card>
                 <CardHeader>
-                  <CardTitle>Validation Results</CardTitle>
+                  <CardTitle>Validation Report</CardTitle>
                   <CardDescription>
-                    Click "Validate Requirement" to start the AI-powered validation process
+                    AI-powered assessment of market readiness
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center py-10 text-center">
-                  <Shield className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">
-                    No validation has been performed yet. The AI validator will analyze the requirement 
-                    against market data to determine its readiness score and provide recommendations.
-                  </p>
+                <CardContent className="px-6 py-8 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Strengths Placeholder */}
+                    <div className="p-4 border rounded-lg bg-green-50/30 dark:bg-green-950/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <h4 className="font-medium">Strengths</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">No strengths identified</p>
+                    </div>
+                    
+                    {/* Risks Placeholder */}
+                    <div className="p-4 border rounded-lg bg-red-50/30 dark:bg-red-950/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <h4 className="font-medium">Risks</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">No risks identified</p>
+                    </div>
+                    
+                    {/* Recommendations Placeholder */}
+                    <div className="p-4 border rounded-lg bg-blue-50/30 dark:bg-blue-950/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Lightbulb className="h-5 w-5 text-blue-500" />
+                        <h4 className="font-medium">Recommendations</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">No recommendations provided</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center text-sm text-muted-foreground mt-6">
+                    Click "Validate Requirement" to start the AI-powered validation process
+                  </div>
+                  
+                  <div className="text-xs text-muted-foreground text-right italic mt-8">
+                    Last updated: 5/6/2025, 3:43:06 AM
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -578,12 +609,14 @@ const RequirementValidator = () => {
   // Show validations list when no requirementId is provided
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center relative z-10">
-        <div>
-          <h2 className="text-2xl font-bold">AI <AIGradientText>Validator</AIGradientText></h2>
-          <p className="text-muted-foreground mt-1">Analyze requirements for clarity, completeness, and consistency</p>
+      <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
+        <div className="flex justify-between items-center relative z-10">
+          <div>
+            <h2 className="text-2xl font-bold">AI <AIGradientText>Validator</AIGradientText></h2>
+            <p className="text-muted-foreground mt-1">Analyze requirements for clarity, completeness, and consistency</p>
+          </div>
         </div>
-      </div>
+      </AIBackground>
       
       {loading ? (
         <div className="flex items-center justify-center h-64">
