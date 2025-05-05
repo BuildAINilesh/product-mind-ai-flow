@@ -129,10 +129,10 @@ Output format:
 
     console.log(`Generated ${queries.length} search queries`);
 
-    // Store queries in the database
+    // Store queries in the database - Updated to use the correct table name
     const storedQueries = [];
     for (const query of queries) {
-      // Create a record in the firecrawl_queries table
+      // Create a record in the firecrawl_queries table (not market_research_queries)
       const queryResponse = await fetch(`${supabaseUrl}/rest/v1/firecrawl_queries`, {
         method: 'POST',
         headers: {

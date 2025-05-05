@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -399,9 +398,9 @@ const RequirementView = () => {
         queriesData
       );
       
-      // Get the total number of queries
+      // Get the total number of queries - Updated to use the correct table name
       const { data: queriesCount, error: countError } = await supabase
-        .from("market_research_queries")
+        .from("firecrawl_queries")
         .select("id", { count: "exact" })
         .eq("requirement_id", id);
         

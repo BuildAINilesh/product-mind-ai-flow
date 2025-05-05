@@ -371,9 +371,9 @@ const MarketSense = () => {
       if (queriesError) throw queriesError;
       if (!queriesData.success) throw new Error(queriesData.message || "Failed to generate search queries");
       
-      // Get the total number of queries
+      // Get the total number of queries - Updated to use the correct table name
       const { data: queriesCount, error: countError } = await supabase
-        .from("market_research_queries")
+        .from("firecrawl_queries")
         .select("id", { count: "exact" })
         .eq("requirement_id", requirementId);
         
