@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search, FileText, Loader, BarChart, Activity, Network } from "lucide-react";
+import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search, FileText, Loader, Activity, Network } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
@@ -943,7 +943,11 @@ const MarketSense = () => {
             <div>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 {requirement?.req_id} - {requirement?.project_name}
-                {getStatusBadge(marketAnalysis?.status)}
+                {marketAnalysis?.status && (
+                  <Badge variant={marketAnalysis.status === 'Completed' ? 'success' : 'outline'}>
+                    {marketAnalysis.status}
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
                 Industry: {requirement?.industry_type}
@@ -992,48 +996,106 @@ const MarketSense = () => {
               </div>
               
               {/* Target Audience Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  <Network className="h-5 w-5 text-primary" />
-                  Target Audience
-                </h3>
-                <div className="p-4 border rounded-lg">
-                  {formatSection(marketAnalysis.target_audience)}
+              {marketAnalysis.target_audience && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <Network className="h-5 w-5 text-primary" />
+                    Target Audience
+                  </h3>
+                  <div className="p-4 border rounded-lg">
+                    {formatSection(marketAnalysis.target_audience)}
+                  </div>
                 </div>
-              </div>
+              )}
               
-              {/* Key Competitors Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  <BarChart className="h-5 w-5 text-primary" />
-                  Key Competitors
-                </h3>
-                <div className="p-4 border rounded-lg">
-                  {formatSection(marketAnalysis.key_competitors)}
+              {/* Demand Insights Section */}
+              {marketAnalysis.demand_insights && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    Demand Insights
+                  </h3>
+                  <div className="p-4 border rounded-lg">
+                    {formatSection(marketAnalysis.demand_insights)}
+                  </div>
                 </div>
-              </div>
+              )}
               
-              {/* Strategic Recommendations Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Strategic Recommendations
-                </h3>
-                <div className="p-4 border rounded-lg">
-                  {formatSection(marketAnalysis.strategic_recommendations)}
+              {/* Top Competitors Section */}
+              {marketAnalysis.top_competitors && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Top Competitors
+                  </h3>
+                  <div className="p-4 border rounded-lg">
+                    {formatSection(marketAnalysis.top_competitors)}
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {/* Market Gap & Opportunity Section */}
+              {marketAnalysis.market_gap_opportunity && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-primary" />
+                    Market Gap & Opportunity
+                  </h3>
+                  <div className="p-4 border rounded-lg">
+                    {formatSection(marketAnalysis.market_gap_opportunity)}
+                  </div>
+                </div>
+              )}
+              
+              {/* SWOT Analysis Section */}
+              {marketAnalysis.swot_analysis && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    SWOT Analysis
+                  </h3>
+                  <div className="p-4 border rounded-lg">
+                    {formatSection(marketAnalysis.swot_analysis)}
+                  </div>
+                </div>
+              )}
+              
+              {/* Industry Benchmarks Section */}
+              {marketAnalysis.industry_benchmarks && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Industry Benchmarks
+                  </h3>
+                  <div className="p-4 border rounded-lg">
+                    {formatSection(marketAnalysis.industry_benchmarks)}
+                  </div>
+                </div>
+              )}
+              
+              {/* Confidence Score Display */}
+              {marketAnalysis.confidence_score && (
+                <div className="mt-4 p-4 border rounded-lg bg-muted/20">
+                  <h3 className="text-sm font-medium mb-2">Analysis Confidence Score</h3>
+                  <div className="flex items-center">
+                    <Progress value={marketAnalysis.confidence_score} className="h-2 flex-1" />
+                    <span className="ml-2 text-sm font-medium">{marketAnalysis.confidence_score}%</span>
+                  </div>
+                </div>
+              )}
               
               {/* Research Sources Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Research Sources
-                </h3>
-                <div className="p-4 border rounded-lg">
-                  {formatSection(marketAnalysis.research_sources)}
+              {marketAnalysis.research_sources && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Research Sources
+                  </h3>
+                  <div className="p-4 border rounded-lg">
+                    {formatSection(marketAnalysis.research_sources)}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
           
