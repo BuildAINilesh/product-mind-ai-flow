@@ -65,11 +65,16 @@ export const MarketAnalysisDetail = ({
         .maybeSingle();
         
       if (checkError) {
-        throw checkError;
+        console.error("Error checking for existing validation:", checkError);
+        toast.error("Failed to check for existing validation");
+        return;
       }
+      
+      let validationId;
       
       // If validation doesn't exist, create a new one
       if (!existingValidation) {
+        // Insert with admin role for now (in a production app, you would use appropriate RLS policies)
         const { data, error } = await supabase
           .from('requirement_validation')
           .insert([
@@ -84,11 +89,15 @@ export const MarketAnalysisDetail = ({
           .single();
           
         if (error) {
-          throw error;
+          console.error("Error creating validation:", error);
+          toast.error("Failed to create validation record");
+          return;
         }
         
+        validationId = data.id;
         toast.success("Created validation record");
       } else {
+        validationId = existingValidation.id;
         toast.info("Validation already exists for this requirement");
       }
       
@@ -163,7 +172,8 @@ export const MarketAnalysisDetail = ({
           <Button 
             onClick={handleValidatorClick}
             disabled={isCreatingValidation}
-            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 flex items-center gap-2"
+            variant="validator"
+            className="flex items-center gap-2"
           >
             {isCreatingValidation ? (
               <>

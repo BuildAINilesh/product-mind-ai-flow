@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckSquare, AlertTriangle, FileSearch, Search, Shield, ShieldCheck } from "lucide-react";
+import { CheckSquare, AlertTriangle, FileSearch, Search, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIGradientText, AIBadge } from "@/components/ui/ai-elements";
@@ -121,6 +121,8 @@ const RequirementValidator = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
+        console.error('Error fetching validations:', error);
+        toast.error('Failed to load validations');
         throw error;
       }
 
@@ -148,6 +150,8 @@ const RequirementValidator = () => {
         .single();
         
       if (error) {
+        console.error('Error fetching requirement:', error);
+        toast.error('Failed to load requirement details');
         throw error;
       }
       
@@ -168,7 +172,7 @@ const RequirementValidator = () => {
 
   const handleValidate = () => {
     if (!requirementText.trim()) {
-      toast("Please enter a requirement to validate.");
+      toast.error("Please enter a requirement to validate.");
       return;
     }
 
@@ -179,7 +183,7 @@ const RequirementValidator = () => {
       setValidationResults(mockValidationResults);
       setScore(78);
       setIsValidating(false);
-      toast("Requirement validation complete.");
+      toast.success("Requirement validation complete.");
     }, 2000);
   };
 
@@ -277,7 +281,8 @@ const RequirementValidator = () => {
                 <Button 
                   disabled={isValidating || isRequirementLoading} 
                   onClick={handleValidate}
-                  className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                  variant="validator"
+                  className="bg-gradient-to-r from-purple-600 to-purple-800 hover:opacity-90"
                 >
                   {isValidating ? (
                     <>Validating<span className="animate-pulse">...</span></>
@@ -420,8 +425,8 @@ const RequirementValidator = () => {
                         <TableCell className="text-right">
                           <Button
                             size="sm"
+                            variant="validator"
                             onClick={() => handleViewValidation(validation.requirements?.req_id || '')}
-                            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
                           >
                             View Validation
                           </Button>
