@@ -944,7 +944,7 @@ const MarketSense = () => {
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 {requirement?.req_id} - {requirement?.project_name}
                 {marketAnalysis?.status && (
-                  <Badge variant={marketAnalysis.status === 'Completed' ? 'success' : 'outline'}>
+                  <Badge variant={marketAnalysis.status === 'Completed' ? 'default' : 'outline'}>
                     {marketAnalysis.status}
                   </Badge>
                 )}
