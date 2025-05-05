@@ -1089,10 +1089,50 @@ const MarketSense = () => {
                 <div>
                   <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
-                    Research Sources
+                    Sources
                   </h3>
                   <div className="p-4 border rounded-lg">
-                    {formatSection(marketAnalysis.research_sources)}
+                    <Accordion type="single" collapsible className="w-full">
+                      <AccordionItem value="sources">
+                        <AccordionTrigger className="text-md font-medium">
+                          View Research Sources
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2 mt-2">
+                            {marketAnalysis.research_sources.split(/[\n\r]/)
+                              .filter(source => source.trim().length > 0)
+                              .map((source, index) => {
+                                // Extract URL if present in the source text
+                                const urlMatch = source.match(/https?:\/\/[^\s]+/);
+                                const url = urlMatch ? urlMatch[0] : "";
+                                
+                                // Clean up the source text to get just the title
+                                let title = source.replace(/https?:\/\/[^\s]+/, "").trim();
+                                // Remove list markers if any
+                                title = title.replace(/^[•\-\d.]+\s*/, "");
+                                
+                                return (
+                                  <div key={index} className="flex items-start py-1">
+                                    <ExternalLink className="h-4 w-4 mr-2 mt-1 flex-shrink-0 text-muted-foreground" />
+                                    {url ? (
+                                      <a 
+                                        href={url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline"
+                                      >
+                                        {title || url}
+                                      </a>
+                                    ) : (
+                                      <span>{title || source}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </div>
                 </div>
               )}
