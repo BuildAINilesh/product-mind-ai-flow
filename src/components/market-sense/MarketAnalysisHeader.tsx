@@ -40,8 +40,8 @@ export const MarketAnalysisHeader = ({
           {requirementId && (
             <Button 
               onClick={handleValidatorClick}
-              className="flex items-center gap-1"
-              variant="outline"
+              className="flex items-center gap-2"
+              variant="validator"
             >
               <ShieldCheck className="h-4 w-4" />
               AI Validator
@@ -52,7 +52,7 @@ export const MarketAnalysisHeader = ({
             <Button 
               variant="outline" 
               onClick={() => navigate('/dashboard/market-sense')}
-              className="flex items-center gap-1"
+              className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Market Analyses

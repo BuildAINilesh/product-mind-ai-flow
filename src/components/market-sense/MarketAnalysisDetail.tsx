@@ -106,13 +106,14 @@ export const MarketAnalysisDetail = ({
       
       {/* Add a footer with Validator button when market analysis is completed */}
       {marketAnalysis?.market_trends && (
-        <CardFooter className="pt-6 border-t flex justify-end">
+        <CardFooter className="pt-6 border-t flex justify-between">
           <Button 
             onClick={handleValidatorClick}
             className="flex items-center gap-2"
+            variant="validator"
           >
             <ShieldCheck className="h-4 w-4" /> 
-            Continue to AI Validator
+            AI Validator
           </Button>
         </CardFooter>
       )}
