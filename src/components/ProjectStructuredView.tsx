@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -399,7 +398,7 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle className="flex items-center">
-                  <BarChart className="h-5 w-5 mr-2" />
+                  <BarChart3 className="h-5 w-5 mr-2" />
                   Top Competitors
                 </CardTitle>
                 <CardDescription>Key players and their strengths in this market</CardDescription>
