@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,10 @@ const RequirementView = () => {
   // Separate function to fetch analysis data
   const fetchAnalysisData = async () => {
     try {
+      if (!id) return;
+      
+      console.log('Fetching analysis data for requirement ID:', id);
+      
       const { data: analysisData, error: analysisError } = await supabase
         .from('requirement_analysis')
         .select('*')
@@ -519,6 +524,7 @@ const RequirementView = () => {
 
   // Handle refresh of the analysis data
   const handleRefreshAnalysis = () => {
+    console.log('Refreshing analysis data...');
     fetchAnalysisData();
   };
 
