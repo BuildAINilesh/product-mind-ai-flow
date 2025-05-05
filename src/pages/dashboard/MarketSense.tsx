@@ -11,7 +11,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, LineChart, Lightbulb, Check, AlertTriangle, BarChart3, Search, FileText, Loader, Activity, Network } from "lucide-react";
+import { 
+  ArrowLeft, 
+  LineChart, 
+  Lightbulb, 
+  Check, 
+  AlertTriangle, 
+  BarChart3, 
+  Search, 
+  FileText, 
+  Loader, 
+  Activity, 
+  Network,
+  ExternalLink 
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIBackground, AIBadge, AIGradientText } from "@/components/ui/ai-elements";
@@ -25,6 +38,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // Define constants for localStorage keys
 const ANALYSIS_STATUS_KEY = "marketAnalysis_status_";
