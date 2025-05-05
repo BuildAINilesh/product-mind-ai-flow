@@ -20,9 +20,13 @@ import {
   BarChart3,
   LineChart,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Network,
+  Activity,
+  TrendingUp
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface StructuredDocument {
   problem: string;
@@ -38,6 +42,20 @@ interface StructuredDocument {
   [key: string]: any; // To accommodate any other fields
 }
 
+interface MarketAnalysis {
+  market_trends?: string;
+  demand_insights?: string;
+  top_competitors?: string;
+  market_gap_opportunity?: string;
+  swot_analysis?: string;
+  industry_benchmarks?: string;
+  confidence_score?: number;
+  target_audience?: string;
+  strategic_recommendations?: string;
+  research_sources?: string;
+  status?: string;
+}
+
 interface ProjectData {
   id: string;
   project_name: string;
@@ -46,6 +64,7 @@ interface ProjectData {
   username: string;
   project_idea: string | null;
   structured_document: StructuredDocument | null;
+  market_analysis?: MarketAnalysis | null;
   [key: string]: any; // For any other fields
 }
 
@@ -69,6 +88,31 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
     return structuredDoc[key] || 
            structuredDoc[key.replace(/([A-Z])/g, '_$1').toLowerCase()] ||
            "";
+  };
+
+  // Helper function to format content with bullets
+  const formatSection = (content: string | undefined) => {
+    if (!content) return "Not available";
+    
+    // Check if content contains bullet points
+    if (content.includes("•") || content.includes("-")) {
+      // Convert string with bullet points to an array of points
+      return (
+        <ul className="list-disc pl-5 space-y-1">
+          {content.split(/[•\-]\s+/)
+            .map(item => item.trim())
+            .filter(item => item.length > 0)
+            .map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+        </ul>
+      );
+    }
+    
+    // If no bullet points, just return the text with paragraphs
+    return content.split("\n").map((paragraph, index) => (
+      paragraph ? <p key={index} className="mb-2">{paragraph}</p> : null
+    ));
   };
 
   if (loading) {
@@ -278,7 +322,20 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
       {project.market_analysis && (
         <>
           <div className="border-t pt-6 mt-8">
-            <h2 className="text-2xl font-bold mb-4">Market Analysis</h2>
+            <h2 className="text-2xl font-bold mb-4 flex items-center">
+              <BarChart3 className="h-6 w-6 mr-2" />
+              Market Analysis
+              {project.market_analysis.status && (
+                <Badge variant="outline" className="ml-2">
+                  {project.market_analysis.status}
+                </Badge>
+              )}
+            </h2>
+            {project.market_analysis.confidence_score && (
+              <div className="mb-4 text-sm text-muted-foreground">
+                Analysis confidence score: {project.market_analysis.confidence_score}%
+              </div>
+            )}
           </div>
           
           {/* Market Trends */}
@@ -286,7 +343,7 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle className="flex items-center">
-                  <BarChart3 className="h-5 w-5 mr-2" />
+                  <LineChart className="h-5 w-5 mr-2" />
                   Market Trends
                 </CardTitle>
                 <CardDescription>Current trends in the {project.industry_type} market</CardDescription>
@@ -294,17 +351,37 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             </CardHeader>
             <CardContent>
               <div className="whitespace-pre-line">
-                {project.market_analysis.market_trends || "Not available"}
+                {formatSection(project.market_analysis.market_trends)}
               </div>
             </CardContent>
           </Card>
+          
+          {/* Target Audience */}
+          {project.market_analysis.target_audience && (
+            <Card className="border-l-4 border-l-violet-500">
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <Network className="h-5 w-5 mr-2" />
+                    Target Audience
+                  </CardTitle>
+                  <CardDescription>Analysis of the target market and customer segments</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="whitespace-pre-line">
+                  {formatSection(project.market_analysis.target_audience)}
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           {/* Demand Insights */}
           <Card className="border-l-4 border-l-emerald-500">
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle className="flex items-center">
-                  <LineChart className="h-5 w-5 mr-2" />
+                  <TrendingUp className="h-5 w-5 mr-2" />
                   Demand Insights
                 </CardTitle>
                 <CardDescription>Analysis of potential demand and customer needs</CardDescription>
@@ -312,7 +389,7 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             </CardHeader>
             <CardContent>
               <div className="whitespace-pre-line">
-                {project.market_analysis.demand_insights || "Not available"}
+                {formatSection(project.market_analysis.demand_insights)}
               </div>
             </CardContent>
           </Card>
@@ -322,7 +399,7 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle className="flex items-center">
-                  <Lightbulb className="h-5 w-5 mr-2" />
+                  <BarChart className="h-5 w-5 mr-2" />
                   Top Competitors
                 </CardTitle>
                 <CardDescription>Key players and their strengths in this market</CardDescription>
@@ -330,10 +407,30 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             </CardHeader>
             <CardContent>
               <div className="whitespace-pre-line">
-                {project.market_analysis.top_competitors || "Not available"}
+                {formatSection(project.market_analysis.top_competitors)}
               </div>
             </CardContent>
           </Card>
+          
+          {/* Strategic Recommendations */}
+          {project.market_analysis.strategic_recommendations && (
+            <Card className="border-l-4 border-l-amber-500">
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <Activity className="h-5 w-5 mr-2" />
+                    Strategic Recommendations
+                  </CardTitle>
+                  <CardDescription>Suggested strategic approaches based on market analysis</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="whitespace-pre-line">
+                  {formatSection(project.market_analysis.strategic_recommendations)}
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           {/* Market Gap & Opportunity */}
           <Card className="border-l-4 border-l-teal-500">
@@ -348,7 +445,7 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             </CardHeader>
             <CardContent>
               <div className="whitespace-pre-line">
-                {project.market_analysis.market_gap_opportunity || "Not available"}
+                {formatSection(project.market_analysis.market_gap_opportunity)}
               </div>
             </CardContent>
           </Card>
@@ -366,7 +463,7 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             </CardHeader>
             <CardContent>
               <div className="whitespace-pre-line">
-                {project.market_analysis.swot_analysis || "Not available"}
+                {formatSection(project.market_analysis.swot_analysis)}
               </div>
             </CardContent>
           </Card>
@@ -384,15 +481,30 @@ export const ProjectStructuredView = ({ project, loading = false }: ProjectStruc
             </CardHeader>
             <CardContent>
               <div className="whitespace-pre-line">
-                {project.market_analysis.industry_benchmarks || "Not available"}
+                {formatSection(project.market_analysis.industry_benchmarks)}
               </div>
-              {project.market_analysis.confidence_score && (
-                <div className="mt-4 text-sm text-muted-foreground">
-                  Analysis confidence score: {project.market_analysis.confidence_score}%
-                </div>
-              )}
             </CardContent>
           </Card>
+          
+          {/* Research Sources */}
+          {project.market_analysis.research_sources && (
+            <Card className="border-l-4 border-l-gray-500">
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <Search className="h-5 w-5 mr-2" />
+                    Research Sources
+                  </CardTitle>
+                  <CardDescription>Sources used for market research analysis</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="whitespace-pre-line">
+                  {formatSection(project.market_analysis.research_sources)}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>
