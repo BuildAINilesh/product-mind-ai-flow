@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { 
@@ -5,7 +6,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter 
 } from "@/components/ui/card";
 import { 
   Table,
@@ -18,18 +20,41 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckSquare, AlertTriangle, FileSearch, Search, ShieldCheck } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { 
+  CheckSquare, 
+  AlertTriangle, 
+  FileSearch, 
+  Search, 
+  ShieldCheck, 
+  ChevronLeft,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Sparkles, 
+  Lightbulb,
+  Shield
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AICard, AIGradientText, AIBadge } from "@/components/ui/ai-elements";
+import { motion } from "framer-motion";
 
 interface ValidationItem {
   id: string;
   requirement_id: string;
   readiness_score: number | null;
   created_at: string;
+  updated_at: string;
   status: string;
   validation_verdict: string | null;
+  validation_summary: string | null;
+  strengths: string[] | null;
+  risks: string[] | null;
+  recommendations: string[] | null;
   requirements?: {
     req_id: string;
     project_name: string;
@@ -37,40 +62,6 @@ interface ValidationItem {
     id: string;
   } | null;
 }
-
-// Mock validation results for individual requirement validation
-const mockValidationResults = [
-  {
-    id: 1,
-    type: "warning",
-    message: "Ambiguous term detected: 'user-friendly'",
-    suggestion: "Consider specifying measurable criteria for user-friendliness"
-  },
-  {
-    id: 2,
-    type: "error",
-    message: "Missing acceptance criteria",
-    suggestion: "Add specific, testable acceptance criteria to the requirement"
-  },
-  {
-    id: 3,
-    type: "warning",
-    message: "Potentially unrealistic timeline",
-    suggestion: "Review the timeline with the development team"
-  },
-  {
-    id: 4,
-    type: "success",
-    message: "Clear stakeholders identified",
-    suggestion: null
-  },
-  {
-    id: 5,
-    type: "success",
-    message: "Business value is well articulated",
-    suggestion: null
-  }
-];
 
 const RequirementValidator = () => {
   const [searchParams] = useSearchParams();
@@ -85,8 +76,7 @@ const RequirementValidator = () => {
   const [requirementText, setRequirementText] = useState("");
   const [requirementTitle, setRequirementTitle] = useState("");
   const [isValidating, setIsValidating] = useState(false);
-  const [validationResults, setValidationResults] = useState<any[]>([]);
-  const [score, setScore] = useState<number | null>(null);
+  const [validationData, setValidationData] = useState<ValidationItem | null>(null);
   const [isRequirementLoading, setIsRequirementLoading] = useState(false);
   
   // Fetch validation list when component loads (no requirementId is provided)
@@ -100,6 +90,8 @@ const RequirementValidator = () => {
   useEffect(() => {
     if (requirementId) {
       fetchRequirement();
+      // Check if validation already exists for this requirement
+      fetchExistingValidation(requirementId);
     }
   }, [requirementId]);
 
@@ -169,28 +161,86 @@ const RequirementValidator = () => {
     }
   };
 
-  const handleValidate = () => {
-    if (!requirementText.trim()) {
-      toast.error("Please enter a requirement to validate.");
+  const fetchExistingValidation = async (reqId: string) => {
+    try {
+      // First get the requirement ID (UUID) from the req_id
+      const { data: reqData, error: reqError } = await supabase
+        .from('requirements')
+        .select('id')
+        .eq('req_id', reqId)
+        .single();
+        
+      if (reqError) {
+        console.error('Error fetching requirement ID:', reqError);
+        return;
+      }
+      
+      if (reqData) {
+        // Now fetch the validation using the requirement UUID
+        const { data, error } = await supabase
+          .from('requirement_validation')
+          .select('*')
+          .eq('requirement_id', reqData.id)
+          .maybeSingle();
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching validation:', error);
+          return;
+        }
+        
+        if (data) {
+          setValidationData(data);
+          console.log("Found existing validation:", data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching existing validation:', error);
+    }
+  };
+
+  const handleValidate = async () => {
+    if (!requirementId) {
+      toast.error("Requirement ID is missing");
       return;
     }
 
     setIsValidating(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      setValidationResults(mockValidationResults);
-      setScore(78);
+    try {
+      toast.info("Starting AI validation process...", { duration: 2000 });
+      
+      // Call the AI validator edge function
+      const { data, error } = await supabase.functions.invoke('ai-validator', {
+        body: { requirementId }
+      });
+      
+      if (error) {
+        console.error("Validation error:", error);
+        toast.error(`Validation failed: ${error.message}`);
+        throw error;
+      }
+      
+      if (!data.success) {
+        throw new Error(data.message || "Validation process failed");
+      }
+      
+      // Update the local state with the validation results
+      setValidationData(data.record[0] || data.data);
+      
+      toast.success("Requirement validation complete!");
+      
+    } catch (error) {
+      console.error('Error validating requirement:', error);
+      toast.error(error.message || 'Validation failed. Please try again.');
+    } finally {
       setIsValidating(false);
-      toast.success("Requirement validation complete.");
-    }, 2000);
+    }
   };
 
   const handleClear = () => {
     setRequirementText("");
     setRequirementTitle("");
-    setValidationResults([]);
-    setScore(null);
+    setValidationData(null);
   };
 
   const handleViewValidation = (validationRequirementId: string) => {
@@ -213,6 +263,36 @@ const RequirementValidator = () => {
         return <AIBadge variant="neural">Draft</AIBadge>;
       default:
         return <AIBadge variant="neural">Draft</AIBadge>;
+    }
+  };
+  
+  const getVerdictBadge = (verdict: string | null) => {
+    if (!verdict) return null;
+    
+    switch (verdict.toLowerCase()) {
+      case "validated":
+        return (
+          <Badge className="bg-green-500 hover:bg-green-600 flex items-center gap-1 text-white px-2 py-1">
+            <CheckCircle className="h-3.5 w-3.5" />
+            Validated
+          </Badge>
+        );
+      case "needs_refinement":
+        return (
+          <Badge className="bg-yellow-500 hover:bg-yellow-600 flex items-center gap-1 text-white px-2 py-1">
+            <AlertCircle className="h-3.5 w-3.5" />
+            Needs Refinement
+          </Badge>
+        );
+      case "high_risk":
+        return (
+          <Badge className="bg-red-500 hover:bg-red-600 flex items-center gap-1 text-white px-2 py-1">
+            <XCircle className="h-3.5 w-3.5" />
+            High Risk
+          </Badge>
+        );
+      default:
+        return null;
     }
   };
 
@@ -238,118 +318,254 @@ const RequirementValidator = () => {
             variant="outline"
             className="flex items-center gap-2"
           >
+            <ChevronLeft className="h-4 w-4" />
             Back to Validations
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-2">
+        <div className="grid gap-6 md:grid-cols-12">
+          <div className="md:col-span-5">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileSearch className="h-5 w-5" /> Requirement Input
+                  <FileSearch className="h-5 w-5" /> Requirement Details
                 </CardTitle>
                 <CardDescription>
-                  {requirementId 
-                    ? "Review and edit the requirement before validation" 
-                    : "Enter or paste your requirement for validation"}
+                  Review the requirement information for validation
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <Input 
-                      placeholder="Requirement title" 
-                      className="mb-4"
-                      value={requirementTitle}
-                      onChange={(e) => setRequirementTitle(e.target.value)}
-                      disabled={isRequirementLoading}
-                    />
-                    <Textarea 
-                      placeholder="Enter your requirement details here..."
-                      className="min-h-[200px]"
-                      value={requirementText}
-                      onChange={(e) => setRequirementText(e.target.value)}
-                      disabled={isRequirementLoading}
-                    />
-                  </div>
+                  {isRequirementLoading ? (
+                    <>
+                      <Skeleton className="h-6 w-3/4 mb-2" />
+                      <Skeleton className="h-28 w-full" />
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <h3 className="font-semibold mb-1">{requirementTitle}</h3>
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">
+                          {requirementText}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
-              <CardContent className="flex justify-between">
-                <Button variant="outline" onClick={handleClear}>Clear</Button>
+              <CardFooter className="flex justify-between border-t pt-4">
+                <Button variant="outline" onClick={handleClear} disabled={isValidating}>
+                  Clear
+                </Button>
                 <Button 
                   disabled={isValidating || isRequirementLoading} 
                   onClick={handleValidate}
                   variant="validator"
+                  className="flex items-center gap-2"
                 >
                   {isValidating ? (
-                    <>Validating<span className="animate-pulse">...</span></>
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                      Validating...
+                    </>
+                  ) : validationData?.status === "Completed" ? (
+                    <>
+                      <CheckSquare className="h-4 w-4" />
+                      Re-validate Requirement
+                    </>
                   ) : (
-                    'Validate Requirement'
+                    <>
+                      <Shield className="h-4 w-4" />
+                      Validate Requirement
+                    </>
                   )}
                 </Button>
-              </CardContent>
+              </CardFooter>
             </Card>
           </div>
 
-          <div>
-            {validationResults.length > 0 && (
+          <div className="md:col-span-7">
+            {isValidating ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI Validation in Progress</CardTitle>
+                  <CardDescription>
+                    Please wait while our AI analyzes the requirement and market data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center py-8">
+                  <div className="animate-pulse flex flex-col items-center">
+                    <Sparkles className="h-12 w-12 text-[#9b87f5] mb-4" />
+                    <p className="text-center mb-4">
+                      AI is evaluating the requirement against market data...
+                    </p>
+                    <Progress value={50} className="w-64 h-2" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : validationData ? (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="border shadow-md overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-slate-50 to-purple-50 dark:from-slate-900 dark:to-[#1a1528] border-b pb-4">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div>
+                        <CardTitle className="text-xl">Validation Report</CardTitle>
+                        <CardDescription>
+                          AI-powered assessment of market readiness
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {getVerdictBadge(validationData.validation_verdict)}
+                        {validationData.readiness_score !== null && (
+                          <div className="bg-white dark:bg-slate-800 rounded-md p-2 shadow-sm border">
+                            <div className="text-xs text-muted-foreground mb-1">Readiness Score</div>
+                            <div className="text-xl font-semibold">
+                              {validationData.readiness_score}/100
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="p-6 space-y-6">
+                    {/* Summary Section */}
+                    {validationData.validation_summary && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                          <div className="p-1.5 rounded-md bg-[#9b87f5]/10">
+                            <Shield className="h-5 w-5 text-[#9b87f5]" />
+                          </div>
+                          Summary
+                        </h3>
+                        <p className="text-muted-foreground">
+                          {validationData.validation_summary}
+                        </p>
+                      </div>
+                    )}
+
+                    <Separator />
+                    
+                    {/* Progress Bar */}
+                    {validationData.readiness_score !== null && (
+                      <div className="my-6">
+                        <div className="mb-2 flex justify-between items-center">
+                          <span className="text-sm font-medium">Market Readiness</span>
+                          <span className="text-sm font-medium">{validationData.readiness_score}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                          <div 
+                            className={`h-2.5 rounded-full ${
+                              validationData.readiness_score > 75 ? "bg-green-500" : 
+                              validationData.readiness_score > 50 ? "bg-yellow-400" : 
+                              validationData.readiness_score > 25 ? "bg-orange-500" : "bg-red-500"
+                            }`}
+                            style={{ width: `${validationData.readiness_score}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Key Points Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                      {/* Strengths */}
+                      <Card className="border-green-100 dark:border-green-900 bg-green-50/50 dark:bg-green-950/20">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2 text-green-800 dark:text-green-400">
+                            <CheckCircle className="h-4 w-4" />
+                            Strengths
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {validationData.strengths && validationData.strengths.length > 0 ? (
+                            <ul className="space-y-1 text-sm">
+                              {validationData.strengths.map((strength, index) => (
+                                <li key={index} className="flex items-start">
+                                  <span className="mr-2 text-green-500">•</span>
+                                  <span>{strength}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No strengths identified</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Risks */}
+                      <Card className="border-red-100 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2 text-red-800 dark:text-red-400">
+                            <AlertTriangle className="h-4 w-4" />
+                            Risks
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {validationData.risks && validationData.risks.length > 0 ? (
+                            <ul className="space-y-1 text-sm">
+                              {validationData.risks.map((risk, index) => (
+                                <li key={index} className="flex items-start">
+                                  <span className="mr-2 text-red-500">•</span>
+                                  <span>{risk}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No risks identified</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Recommendations */}
+                      <Card className="border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2 text-blue-800 dark:text-blue-400">
+                            <Lightbulb className="h-4 w-4" />
+                            Recommendations
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {validationData.recommendations && validationData.recommendations.length > 0 ? (
+                            <ul className="space-y-1 text-sm">
+                              {validationData.recommendations.map((rec, index) => (
+                                <li key={index} className="flex items-start">
+                                  <span className="mr-2 text-blue-500">•</span>
+                                  <span>{rec}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No recommendations provided</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="bg-gray-50 dark:bg-gray-900/50 border-t p-4">
+                    <p className="text-xs text-muted-foreground">
+                      Last updated: {new Date(validationData.updated_at).toLocaleString()}
+                    </p>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            ) : (
               <Card>
                 <CardHeader>
                   <CardTitle>Validation Results</CardTitle>
-                  {score !== null && (
-                    <div className="mt-2">
-                      <div className="text-sm font-medium mb-1">Quality Score</div>
-                      <div className="w-full bg-muted rounded-full h-2.5 mb-1">
-                        <div 
-                          className={`h-2.5 rounded-full ${
-                            score > 80 ? "bg-green-500" : 
-                            score > 60 ? "bg-yellow-400" : "bg-red-500"
-                          }`}
-                          style={{ width: `${score}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-sm text-muted-foreground text-right">{score}/100</div>
-                    </div>
-                  )}
+                  <CardDescription>
+                    Click "Validate Requirement" to start the AI-powered validation process
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {validationResults.map((result) => (
-                      <div 
-                        key={result.id} 
-                        className={`p-3 rounded-md border ${
-                          result.type === "error" ? "bg-red-50 border-red-200" : 
-                          result.type === "warning" ? "bg-yellow-50 border-yellow-200" : 
-                          "bg-green-50 border-green-200"
-                        }`}
-                      >
-                        <div className="flex items-start">
-                          <div className="mr-2 mt-0.5">
-                            {result.type === "error" ? (
-                              <AlertTriangle className="h-4 w-4 text-red-600" />
-                            ) : result.type === "warning" ? (
-                              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                            ) : (
-                              <CheckSquare className="h-4 w-4 text-green-600" />
-                            )}
-                          </div>
-                          <div>
-                            <p className={`text-sm font-medium ${
-                              result.type === "error" ? "text-red-700" : 
-                              result.type === "warning" ? "text-yellow-700" : 
-                              "text-green-700"
-                            }`}>{result.message}</p>
-                            {result.suggestion && (
-                              <p className="text-xs mt-1 text-muted-foreground">
-                                Suggestion: {result.suggestion}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <CardContent className="flex flex-col items-center py-10 text-center">
+                  <Shield className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">
+                    No validation has been performed yet. The AI validator will analyze the requirement 
+                    against market data to determine its readiness score and provide recommendations.
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -402,8 +618,9 @@ const RequirementValidator = () => {
                     <TableHead>ID</TableHead>
                     <TableHead className="w-[300px]">Project</TableHead>
                     <TableHead>Industry</TableHead>
+                    <TableHead>Verdict</TableHead>
                     <TableHead>Score</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead>Updated</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
@@ -415,8 +632,25 @@ const RequirementValidator = () => {
                         <TableCell className="font-medium">{validation.requirements?.req_id || 'N/A'}</TableCell>
                         <TableCell>{validation.requirements?.project_name || 'Unknown Project'}</TableCell>
                         <TableCell>{validation.requirements?.industry_type || 'N/A'}</TableCell>
+                        <TableCell>
+                          {validation.validation_verdict ? (
+                            <Badge 
+                              className={
+                                validation.validation_verdict === "validated" ? "bg-green-500" :
+                                validation.validation_verdict === "needs_refinement" ? "bg-yellow-500" :
+                                "bg-red-500"
+                              }
+                            >
+                              {validation.validation_verdict === "validated" ? "Validated" :
+                               validation.validation_verdict === "needs_refinement" ? "Needs Refinement" :
+                               "High Risk"}
+                            </Badge>
+                          ) : (
+                            "Pending"
+                          )}
+                        </TableCell>
                         <TableCell>{validation.readiness_score ? `${validation.readiness_score}/100` : 'Pending'}</TableCell>
-                        <TableCell>{new Date(validation.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(validation.updated_at).toLocaleDateString()}</TableCell>
                         <TableCell>
                           {getStatusBadge(validation.status)}
                         </TableCell>
@@ -426,6 +660,7 @@ const RequirementValidator = () => {
                             variant="validator"
                             onClick={() => handleViewValidation(validation.requirements?.req_id || '')}
                           >
+                            <Shield className="mr-1 h-4 w-4" />
                             View Validation
                           </Button>
                         </TableCell>
@@ -433,7 +668,7 @@ const RequirementValidator = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         <div className="flex flex-col items-center gap-2">
                           <ShieldCheck className="h-8 w-8 text-muted-foreground/60" />
                           <p>No validations found. Try a different search or validate a requirement.</p>
