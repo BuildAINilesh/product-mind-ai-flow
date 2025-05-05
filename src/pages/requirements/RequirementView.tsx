@@ -75,8 +75,10 @@ const RequirementView = () => {
   // Separate function to fetch analysis data
   const fetchAnalysisData = async () => {
     try {
+      if (!id) return;
+
       console.log(
-        "Fetching analysis data for requirement_id:",
+        "Fetching analysis data for requirement ID:",
         id,
         "with type:",
         typeof id
@@ -660,6 +662,7 @@ const RequirementView = () => {
 
   // Handle refresh of the analysis data
   const handleRefreshAnalysis = () => {
+    console.log("Refreshing analysis data...");
     fetchAnalysisData();
   };
 

@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -28,8 +28,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false);
-  const [explicitAuthEvent, setExplicitAuthEvent] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,17 +45,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Only navigate on explicit sign in/out events, not on token refresh or window focus
         if (initialAuthCheckDone) {
-          // Only redirect on actual sign in/sign out events, not token refreshes
           if (event === 'SIGNED_IN') {
-            setExplicitAuthEvent(true);
-            navigate('/dashboard');
-            toast({
-              title: "Welcome back!",
-              description: "You have successfully signed in.",
-            });
+            // Only redirect to dashboard if not already on a dashboard route
+            const isDashboardRoute = location.pathname.startsWith('/dashboard');
+            if (!isDashboardRoute) {
+              navigate('/dashboard');
+              toast({
+                title: "Welcome back!",
+                description: "You have successfully signed in.",
+              });
+            }
           }
           if (event === 'SIGNED_OUT') {
-            setExplicitAuthEvent(true);
             navigate('/');
             toast({
               title: "Signed out",
@@ -77,7 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast, initialAuthCheckDone]);
+  }, [navigate, toast, initialAuthCheckDone, location.pathname]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
