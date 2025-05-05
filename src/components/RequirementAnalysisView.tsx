@@ -1,10 +1,9 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Loader, RefreshCcw } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 
 // Define prop types for the component
 type RequirementAnalysisViewProps = {
@@ -15,8 +14,6 @@ type RequirementAnalysisViewProps = {
 };
 
 const RequirementAnalysisView = ({ project, analysis, loading, onRefresh }: RequirementAnalysisViewProps) => {
-  const [activeTab, setActiveTab] = useState("overview");
-
   // Helper function to check if a section has content
   const hasContent = (section: string | null | undefined) => {
     return section && section.trim().length > 0;
@@ -94,52 +91,50 @@ const RequirementAnalysisView = ({ project, analysis, loading, onRefresh }: Requ
             </p>
           </div>
         ) : analysis ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-4 grid grid-cols-2 md:grid-cols-4 lg:w-auto">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="requirements">Requirements</TabsTrigger>
-              <TabsTrigger value="market">Market</TabsTrigger>
-              <TabsTrigger value="development">Development</TabsTrigger>
-            </TabsList>
-            
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-4">
-              {renderSection("Project Overview", analysis.project_overview)}
+          <div className="space-y-8">
+            {/* Overview Section */}
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold pb-2 border-b">Project Overview</h2>
+              {renderSection("Project Summary", analysis.project_overview)}
               {renderSection("Problem Statement", analysis.problem_statement)}
               {renderSection("Proposed Solution", analysis.proposed_solution)}
-              
-              {analysis.analysis_confidence_score && (
-                <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">AI Confidence Score</span>
-                    <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
-                      {analysis.analysis_confidence_score}%
-                    </span>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
+            </div>
             
-            {/* Requirements Tab */}
-            <TabsContent value="requirements" className="space-y-4">
+            {/* Requirements Section */}
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold pb-2 border-b">Requirements</h2>
               {renderSection("Key Features", analysis.key_features)}
               {renderSection("Business Goals", analysis.business_goals)}
               {renderSection("Target Audience", analysis.target_audience)}
               {renderSection("Acceptance Criteria", analysis.acceptance_criteria)}
               {renderSection("User Stories", analysis.user_stories)}
-            </TabsContent>
+            </div>
             
-            {/* Market Tab */}
-            <TabsContent value="market" className="space-y-4">
+            {/* Market Section */}
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold pb-2 border-b">Market Analysis</h2>
               {renderSection("Competitive Landscape", analysis.competitive_landscape)}
               {renderSection("Constraints & Assumptions", analysis.constraints_assumptions)}
-            </TabsContent>
+            </div>
             
-            {/* Development Tab */}
-            <TabsContent value="development" className="space-y-4">
+            {/* Development Section */}
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold pb-2 border-b">Development Considerations</h2>
               {renderSection("Risks & Mitigations", analysis.risks_mitigations)}
-            </TabsContent>
-          </Tabs>
+            </div>
+            
+            {/* Confidence Score */}
+            {analysis.analysis_confidence_score && (
+              <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">AI Confidence Score</span>
+                  <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
+                    {analysis.analysis_confidence_score}%
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="py-8 text-center">
             <p className="text-muted-foreground mb-4">
