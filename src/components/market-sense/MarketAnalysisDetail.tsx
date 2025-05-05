@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -173,7 +172,7 @@ export const MarketAnalysisDetail = ({
             onClick={handleValidatorClick}
             disabled={isCreatingValidation}
             variant="validator"
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+            className="flex items-center gap-2"
           >
             {isCreatingValidation ? (
               <>
