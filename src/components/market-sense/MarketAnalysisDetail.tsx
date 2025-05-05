@@ -1,16 +1,18 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Card, 
   CardContent, 
   CardHeader, 
   CardTitle, 
-  CardDescription 
+  CardDescription,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Lightbulb, AlertTriangle } from "lucide-react";
+import { Lightbulb, AlertTriangle, ShieldCheck } from "lucide-react";
 import { RequirementData, RequirementAnalysisData, MarketAnalysisData, ResearchSource } from "@/hooks/useMarketAnalysis";
 import MarketAnalysisProgress from "./MarketAnalysisProgress";
 import MarketAnalysisContent from "./MarketAnalysisContent";
@@ -37,10 +39,15 @@ export const MarketAnalysisDetail = ({
   currentStep,
   onGenerateAnalysis
 }: MarketAnalysisDetailProps) => {
+  const navigate = useNavigate();
   
   if (!requirement) {
     return null;
   }
+  
+  const handleValidatorClick = () => {
+    navigate(`/dashboard/validator?requirementId=${requirement.req_id}`);
+  };
 
   return (
     <Card>
@@ -96,6 +103,19 @@ export const MarketAnalysisDetail = ({
           </Alert>
         )}
       </CardContent>
+      
+      {/* Add a footer with Validator button when market analysis is completed */}
+      {marketAnalysis?.market_trends && (
+        <CardFooter className="pt-6 border-t flex justify-end">
+          <Button 
+            onClick={handleValidatorClick}
+            className="flex items-center gap-2"
+          >
+            <ShieldCheck className="h-4 w-4" /> 
+            Continue to AI Validator
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 };

@@ -1,10 +1,13 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckSquare, AlertTriangle, FileSearch } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock validation results
 const mockValidationResults = [
@@ -41,10 +44,50 @@ const mockValidationResults = [
 ];
 
 const RequirementValidator = () => {
+  const [searchParams] = useSearchParams();
+  const requirementId = searchParams.get('requirementId');
+  
   const [requirementText, setRequirementText] = useState("");
+  const [requirementTitle, setRequirementTitle] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [validationResults, setValidationResults] = useState<any[]>([]);
   const [score, setScore] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Fetch requirement details if requirementId is provided
+  useEffect(() => {
+    const fetchRequirement = async () => {
+      if (!requirementId) return;
+      
+      setIsLoading(true);
+      try {
+        // Query the requirements table for the specified requirement
+        const { data, error } = await supabase
+          .from('requirements')
+          .select('*')
+          .eq('req_id', requirementId)
+          .single();
+          
+        if (error) {
+          throw error;
+        }
+        
+        if (data) {
+          // Set the requirement title and text from the fetched data
+          setRequirementTitle(data.project_name || '');
+          setRequirementText(data.requirement_text || '');
+          toast.success(`Loaded requirement: ${data.project_name}`);
+        }
+      } catch (error) {
+        console.error('Error fetching requirement:', error);
+        toast.error('Failed to load requirement details');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchRequirement();
+  }, [requirementId]);
 
   const handleValidate = () => {
     if (!requirementText.trim()) {
@@ -65,6 +108,7 @@ const RequirementValidator = () => {
 
   const handleClear = () => {
     setRequirementText("");
+    setRequirementTitle("");
     setValidationResults([]);
     setScore(null);
   };
@@ -86,7 +130,9 @@ const RequirementValidator = () => {
                 <FileSearch className="h-5 w-5" /> Requirement Input
               </CardTitle>
               <CardDescription>
-                Enter or paste your requirement for validation
+                {requirementId 
+                  ? "Review and edit the requirement before validation" 
+                  : "Enter or paste your requirement for validation"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -94,13 +140,17 @@ const RequirementValidator = () => {
                 <div>
                   <Input 
                     placeholder="Requirement title" 
-                    className="mb-4" 
+                    className="mb-4"
+                    value={requirementTitle}
+                    onChange={(e) => setRequirementTitle(e.target.value)}
+                    disabled={isLoading}
                   />
                   <Textarea 
                     placeholder="Enter your requirement details here..."
                     className="min-h-[200px]"
                     value={requirementText}
                     onChange={(e) => setRequirementText(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -108,7 +158,7 @@ const RequirementValidator = () => {
             <CardFooter className="flex justify-between">
               <Button variant="outline" onClick={handleClear}>Clear</Button>
               <Button 
-                disabled={isValidating} 
+                disabled={isValidating || isLoading} 
                 onClick={handleValidate}
               >
                 {isValidating ? (

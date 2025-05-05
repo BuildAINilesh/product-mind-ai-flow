@@ -243,6 +243,56 @@ export type Database = {
           },
         ]
       }
+      requirement_validation: {
+        Row: {
+          created_at: string | null
+          id: string
+          readiness_score: number | null
+          recommendations: string[] | null
+          requirement_id: string | null
+          risks: string[] | null
+          status: string | null
+          strengths: string[] | null
+          updated_at: string | null
+          validation_summary: string | null
+          validation_verdict: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          readiness_score?: number | null
+          recommendations?: string[] | null
+          requirement_id?: string | null
+          risks?: string[] | null
+          status?: string | null
+          strengths?: string[] | null
+          updated_at?: string | null
+          validation_summary?: string | null
+          validation_verdict?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          readiness_score?: number | null
+          recommendations?: string[] | null
+          requirement_id?: string | null
+          risks?: string[] | null
+          status?: string | null
+          strengths?: string[] | null
+          updated_at?: string | null
+          validation_summary?: string | null
+          validation_verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requirement_validation_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: true
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requirements: {
         Row: {
           company_name: string | null

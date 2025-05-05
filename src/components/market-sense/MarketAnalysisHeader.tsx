@@ -1,5 +1,5 @@
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIBackground, AIGradientText } from "@/components/ui/ai-elements";
 import { useNavigate } from "react-router-dom";
@@ -7,10 +7,21 @@ import { useNavigate } from "react-router-dom";
 interface MarketAnalysisHeaderProps {
   projectName?: string;
   showBackButton?: boolean;
+  requirementId?: string | null;
 }
 
-export const MarketAnalysisHeader = ({ projectName, showBackButton = true }: MarketAnalysisHeaderProps) => {
+export const MarketAnalysisHeader = ({ 
+  projectName, 
+  showBackButton = true,
+  requirementId
+}: MarketAnalysisHeaderProps) => {
   const navigate = useNavigate();
+  
+  const handleValidatorClick = () => {
+    if (requirementId) {
+      navigate(`/dashboard/validator?requirementId=${requirementId}`);
+    }
+  };
   
   return (
     <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
@@ -25,16 +36,29 @@ export const MarketAnalysisHeader = ({ projectName, showBackButton = true }: Mar
           </p>
         </div>
         
-        {showBackButton && (
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/dashboard/market-sense')}
-            className="flex items-center gap-1"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Market Analyses
-          </Button>
-        )}
+        <div className="flex gap-3">
+          {requirementId && (
+            <Button 
+              onClick={handleValidatorClick}
+              className="flex items-center gap-1"
+              variant="outline"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              AI Validator
+            </Button>
+          )}
+          
+          {showBackButton && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/market-sense')}
+              className="flex items-center gap-1"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Market Analyses
+            </Button>
+          )}
+        </div>
       </div>
     </AIBackground>
   );

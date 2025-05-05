@@ -73,7 +73,10 @@ const MarketSense = () => {
   // Main view for a specific requirement with its market analysis
   return (
     <div className="space-y-6">
-      <MarketAnalysisHeader projectName={requirement?.project_name} />
+      <MarketAnalysisHeader 
+        projectName={requirement?.project_name} 
+        requirementId={requirementId}
+      />
       
       {/* Requirement info card */}
       <MarketAnalysisDetail
