@@ -58,6 +58,17 @@ type ProcessStep = {
   total?: number;
 };
 
+// Define a type for research sources
+type ResearchSource = {
+  id: string;
+  title: string;
+  url: string;
+  created_at: string;
+  requirement_id: string;
+  snippet?: string | null;
+  status?: string | null;
+};
+
 const MarketSense = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -71,6 +82,7 @@ const MarketSense = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
   const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
+  const [researchSources, setResearchSources] = useState<ResearchSource[]>([]);
   
   // Analysis progress tracking states
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
@@ -212,6 +224,19 @@ const MarketSense = () => {
         // If market analysis exists, set it
         if (marketData) {
           setMarketAnalysis(marketData);
+          
+          // Fetch research sources from market_research_sources table
+          const { data: sourcesData, error: sourcesError } = await supabase
+            .from('market_research_sources')
+            .select('*')
+            .eq('requirement_id', requirementId);
+            
+          if (sourcesError) {
+            console.error("Error fetching research sources:", sourcesError);
+          } else {
+            console.log("Research sources data:", sourcesData);
+            setResearchSources(sourcesData || []);
+          }
         } else {
           // If market analysis doesn't exist, create a draft entry
           console.log("Creating new market analysis draft");
@@ -1103,8 +1128,48 @@ const MarketSense = () => {
                 </div>
               )}
               
-              {/* Research Sources Section - Ensure this is visible */}
-              {marketAnalysis.research_sources && (
+              {/* Research Sources Section - Using market_research_sources table data */}
+              {researchSources.length > 0 && (
+                <div className="mt-8 border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Sources
+                  </h3>
+                  <div className="p-4 border rounded-lg bg-background">
+                    <Accordion type="single" collapsible defaultValue="sources" className="w-full">
+                      <AccordionItem value="sources" className="border-none">
+                        <AccordionTrigger className="text-md font-medium py-2">
+                          View Research Sources ({researchSources.length})
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 mt-2">
+                            {researchSources.map((source, index) => (
+                              <div key={source.id} className="flex items-start py-2 border-b border-gray-100 last:border-0">
+                                <ExternalLink className="h-4 w-4 mr-2 mt-1 flex-shrink-0 text-primary" />
+                                {source.url ? (
+                                  <a 
+                                    href={source.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    {source.title || source.url}
+                                  </a>
+                                ) : (
+                                  <span>{source.title}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
+                </div>
+              )}
+              
+              {/* Fallback: Display legacy research sources from market_analysis.research_sources field if available */}
+              {!researchSources.length && marketAnalysis.research_sources && (
                 <div className="mt-8 border-t pt-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
