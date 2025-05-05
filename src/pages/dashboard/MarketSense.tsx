@@ -1105,19 +1105,19 @@ const MarketSense = () => {
               
               {/* Research Sources Section - Ensure this is visible */}
               {marketAnalysis.research_sources && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                <div className="mt-8 border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
                     Sources
                   </h3>
-                  <div className="p-4 border rounded-lg">
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="sources">
-                        <AccordionTrigger className="text-md font-medium">
+                  <div className="p-4 border rounded-lg bg-background">
+                    <Accordion type="single" collapsible defaultValue="sources" className="w-full">
+                      <AccordionItem value="sources" className="border-none">
+                        <AccordionTrigger className="text-md font-medium py-2">
                           View Research Sources
                         </AccordionTrigger>
                         <AccordionContent>
-                          <div className="space-y-2 mt-2">
+                          <div className="space-y-3 mt-2">
                             {marketAnalysis.research_sources.split(/[\n\r]/)
                               .filter(source => source.trim().length > 0)
                               .map((source, index) => {
@@ -1131,14 +1131,14 @@ const MarketSense = () => {
                                 title = title.replace(/^[•\-\d.]+\s*/, "");
                                 
                                 return (
-                                  <div key={index} className="flex items-start py-1">
-                                    <ExternalLink className="h-4 w-4 mr-2 mt-1 flex-shrink-0 text-muted-foreground" />
+                                  <div key={index} className="flex items-start py-2 border-b border-gray-100 last:border-0">
+                                    <ExternalLink className="h-4 w-4 mr-2 mt-1 flex-shrink-0 text-primary" />
                                     {url ? (
                                       <a 
                                         href={url} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline"
+                                        className="text-primary hover:underline"
                                       >
                                         {title || url}
                                       </a>
