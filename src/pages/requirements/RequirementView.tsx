@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ import RequirementAnalysisView from "@/components/RequirementAnalysisView";
 type ProcessStep = {
   name: string;
   status: "pending" | "processing" | "completed" | "failed";
+  current?: number;
+  total?: number;
 };
 
 // Define status key for localStorage
@@ -32,9 +35,9 @@ const RequirementView = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progressSteps, setProgressSteps] = useState<ProcessStep[]>([
     { name: "Generating search queries", status: "pending" },
-    { name: "Searching the web", status: "pending" },
-    { name: "Scraping content", status: "pending" },
-    { name: "Summarizing research", status: "pending" },
+    { name: "Searching the web", status: "pending", current: 0, total: 5 },
+    { name: "Scraping content", status: "pending", current: 0, total: 9 },
+    { name: "Summarizing research", status: "pending", current: 0, total: 9 },
     { name: "Creating market analysis", status: "pending" },
   ]);
 
@@ -257,11 +260,17 @@ const RequirementView = () => {
   };
 
   // Function to update step status
-  const updateStepStatus = (stepIndex, status) => {
+  const updateStepStatus = (stepIndex, status, current = null, total = null) => {
     setProgressSteps((prevSteps) => {
-      const updatedSteps = prevSteps.map((step, index) =>
-        index === stepIndex ? { ...step, status } : step
-      );
+      const updatedSteps = prevSteps.map((step, index) => {
+        if (index === stepIndex) {
+          const updatedStep = { ...step, status };
+          if (current !== null) updatedStep.current = current;
+          if (total !== null) updatedStep.total = total;
+          return updatedStep;
+        }
+        return step;
+      });
 
       // Save to localStorage for persistence
       if (id) {
@@ -389,6 +398,16 @@ const RequirementView = () => {
         "Generate market queries response from Supabase:",
         queriesData
       );
+      
+      // Get the total number of queries
+      const { data: queriesCount, error: countError } = await supabase
+        .from("market_research_queries")
+        .select("id", { count: "exact" })
+        .eq("requirement_id", id);
+        
+      const totalQueries = queriesCount?.length || 5;
+      updateStepStatus(1, "pending", 0, totalQueries); // Update the total for search queries
+      
       updateStepStatus(0, "completed");
       setCurrentStep(1);
       localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, "1");
@@ -410,7 +429,18 @@ const RequirementView = () => {
         "Process market queries response from Supabase:",
         processData
       );
-      updateStepStatus(1, "completed");
+      
+      // Get count of market research sources
+      const { data: sourcesCount, error: sourcesError } = await supabase
+        .from("market_research_sources")
+        .select("id", { count: "exact" })
+        .eq("requirement_id", id);
+        
+      const totalSources = sourcesCount?.length || 9;
+      updateStepStatus(2, "pending", 0, totalSources); // Update the total for scraping
+      updateStepStatus(3, "pending", 0, totalSources); // Update the total for summarizing
+      
+      updateStepStatus(1, "completed", totalQueries, totalQueries);
       setCurrentStep(2);
       localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, "2");
 
@@ -428,7 +458,7 @@ const RequirementView = () => {
         );
 
       console.log("Scrape research URLs response from Supabase:", scrapeData);
-      updateStepStatus(2, "completed");
+      updateStepStatus(2, "completed", totalSources, totalSources);
       setCurrentStep(3);
       localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, "3");
 
@@ -448,12 +478,14 @@ const RequirementView = () => {
       console.log("Summarize research response from Supabase:", summaryData);
       // Check if there's more content to summarize
       if (summaryData.remaining && summaryData.remaining > 0) {
-        // Continue summarizing if needed
+        // Continue summarizing if needed - update progress
+        const processedCount = totalSources - summaryData.remaining;
+        updateStepStatus(3, "processing", processedCount, totalSources);
         await new Promise((resolve) => setTimeout(resolve, 1000)); // Small delay
-        await summarizeAdditionalContent(id);
+        await summarizeAdditionalContent(id, processedCount, totalSources);
       }
 
-      updateStepStatus(3, "completed");
+      updateStepStatus(3, "completed", totalSources, totalSources);
       setCurrentStep(4);
       localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, "4");
 
@@ -493,7 +525,7 @@ const RequirementView = () => {
   };
 
   // Helper function to continue summarizing content if needed
-  const summarizeAdditionalContent = async (reqId) => {
+  const summarizeAdditionalContent = async (reqId, processedCount, totalCount) => {
     try {
       const { data, error } = await supabase.functions.invoke(
         "summarize-research-content",
@@ -509,10 +541,18 @@ const RequirementView = () => {
         );
 
       console.log("Additional content summarization from Supabase:", data);
-      // Continue recursively if there's still more to summarize
+      
+      // Update progress
       if (data.remaining && data.remaining > 0) {
+        const newProcessedCount = totalCount - data.remaining;
+        updateStepStatus(3, "processing", newProcessedCount, totalCount);
+        
+        // Continue recursively if there's still more to summarize
         await new Promise((resolve) => setTimeout(resolve, 1000)); // Small delay
-        await summarizeAdditionalContent(reqId);
+        await summarizeAdditionalContent(reqId, newProcessedCount, totalCount);
+      } else {
+        // All done
+        updateStepStatus(3, "processing", totalCount, totalCount);
       }
 
       return data;
@@ -538,13 +578,17 @@ const RequirementView = () => {
       }
     };
 
-    // Calculate progress percentage - only for active step
-    const progressPercentage =
-      isActive && step.status === "processing"
-        ? 50
-        : step.status === "completed"
-        ? 100
-        : 0;
+    // Calculate progress percentage
+    let progressPercentage = 0;
+    if (step.status === "completed") {
+      progressPercentage = 100;
+    } else if (step.status === "processing") {
+      if (step.current !== undefined && step.total) {
+        progressPercentage = Math.floor((step.current / step.total) * 100);
+      } else {
+        progressPercentage = isActive ? 50 : 0;
+      }
+    }
 
     return (
       <div key={index} className="mb-2">
@@ -574,6 +618,10 @@ const RequirementView = () => {
             }`}
           >
             {step.name}
+            {step.current !== undefined && step.total ? 
+              <span className="ml-1 text-xs font-normal text-slate-500">
+                ({step.current}/{step.total})
+              </span> : null}
           </span>
         </div>
         {(step.status === "processing" || step.status === "completed") && (
