@@ -1,10 +1,18 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface ValidationItem {
   id: string;
@@ -63,22 +71,40 @@ const ValidationDashboardList = ({
       validation?.status?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Format the date string
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' });
+  };
+
+  // Get status badge class
+  const getStatusBadgeClass = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      case "analyzing":
+      case "processing":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+      case "draft":
+      default:
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+    }
+  };
+
   return (
     <Card className="border shadow-sm">
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Validations Dashboard</CardTitle>
-          <Button onClick={handleNavigateToRequirements}>
-            View Requirements
-          </Button>
-        </div>
+        <CardTitle>Validation Analyses</CardTitle>
+        <CardDescription>
+          View and manage your AI-powered requirement validations for all projects
+        </CardDescription>
         <div className="mt-4">
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search validations..."
-              className="pl-9 w-full"
+              className="pl-10 w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -92,58 +118,43 @@ const ValidationDashboardList = ({
             <p className="ml-2">Loading validations...</p>
           </div>
         ) : filteredValidations.length > 0 ? (
-          <div className="space-y-4">
-            {filteredValidations.map((validation) => (
-              <Card
-                key={validation.id}
-                className="border p-4 hover:bg-muted/30 transition cursor-pointer"
-                onClick={() =>
-                  handleViewValidation(validation.requirements?.req_id || "")
-                }
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium text-lg">
-                      {validation.requirements?.project_name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {validation.requirements?.req_id} ·{" "}
-                      {validation.requirements?.industry_type}
-                    </p>
-                    {validation.validation_summary && (
-                      <p className="mt-2 text-sm line-clamp-2">
-                        {validation.validation_summary}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <div className={`text-sm font-medium px-3 py-1 rounded-full ${
-                      validation.status === "Completed" 
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
-                        : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                    }`}>
-                      {validation.status}
-                    </div>
-                    {validation.readiness_score !== null && (
-                      <div className="mt-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">Score:</span>
-                          <span className={`text-sm font-bold ${
-                            (validation.readiness_score || 0) >= 80
-                              ? "text-green-600 dark:text-green-400"
-                              : (validation.readiness_score || 0) >= 60
-                              ? "text-amber-600 dark:text-amber-400"
-                              : "text-red-600 dark:text-red-400"
-                          }`}>
-                            {validation.readiness_score}
-                          </span>
-                        </div>
+          <div className="border rounded-md overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead className="w-[300px]">Project</TableHead>
+                  <TableHead>Industry</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredValidations.map((validation) => (
+                  <TableRow key={validation.id}>
+                    <TableCell className="font-medium">{validation.requirements?.req_id || 'N/A'}</TableCell>
+                    <TableCell>{validation.requirements?.project_name || 'Unknown Project'}</TableCell>
+                    <TableCell>{validation.requirements?.industry_type || 'N/A'}</TableCell>
+                    <TableCell>{formatDate(validation.created_at)}</TableCell>
+                    <TableCell>
+                      <div className={`text-xs font-medium px-2 py-1 rounded-full inline-flex ${getStatusBadgeClass(validation.status)}`}>
+                        {validation.status}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        onClick={() => handleViewValidation(validation.requirements?.req_id || "")}
+                        className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                      >
+                        View Validation
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground">

@@ -1,7 +1,8 @@
 
-import { AIBackground, AIGradientText } from "@/components/ui/ai-elements";
+import { AIGradientText } from "@/components/ui/ai-elements";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 interface ValidationDashboardHeaderProps {
   showBackButton?: boolean;
@@ -17,11 +18,7 @@ const ValidationDashboardHeader = ({
   const navigate = useNavigate();
 
   return (
-    <AIBackground
-      variant="neural"
-      intensity="medium"
-      className="rounded-lg mb-6 p-6"
-    >
+    <div className="space-y-6">
       <div className="flex justify-between items-center relative z-10">
         <div>
           <h2 className="text-2xl font-bold">
@@ -33,22 +30,23 @@ const ValidationDashboardHeader = ({
             </p>
           ) : (
             <p className="text-muted-foreground mt-1">
-              Evaluate requirements for quality, completeness, and market fit
+              AI-powered validation for your product requirements
             </p>
           )}
         </div>
 
         {showBackButton && (
-          <Button
-            onClick={() => navigate("/dashboard/validator")}
+          <Button 
+            onClick={() => navigate("/dashboard/requirements")}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-1"
           >
-            Back to Validation Dashboard
+            <ArrowLeft className="h-4 w-4" />
+            Back to Requirements
           </Button>
         )}
       </div>
-    </AIBackground>
+    </div>
   );
 };
 
