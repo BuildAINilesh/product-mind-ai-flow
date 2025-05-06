@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,25 +15,37 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { ArrowLeft } from "lucide-react"; // Import ArrowLeft icon
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [renderConfirmed, setRenderConfirmed] = useState(false);
   const { signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate(); // Add navigate for programmatic routing
 
+  // Debug render
+  useEffect(() => {
+    console.log("Login page rendered");
+    setRenderConfirmed(true);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
+      console.log("Attempting to sign in...");
       await signIn(email, password);
       // The redirect happens in AuthProvider
-    } catch (error) {
+    } catch (error: any) {
       // Error is handled in AuthProvider
       console.error("Login error:", error);
+      setError(error?.message || "An error occurred during login");
     } finally {
       setLoading(false);
     }
@@ -42,6 +54,11 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <div className="w-full max-w-md">
+        {/* Debug info to verify the page is rendering */}
+        {renderConfirmed && (
+          <div className="mb-4 text-sm text-green-600">Page render confirmed</div>
+        )}
+
         {/* Add Back to Home button */}
         <div className="mb-4">
           <Button 
@@ -60,6 +77,13 @@ const Login = () => {
           <span className="ml-2 font-bold text-xl">ProductMind</span>
         </Link>
         
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Sign In</CardTitle>

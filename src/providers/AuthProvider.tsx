@@ -34,61 +34,97 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Debug auth state
   useEffect(() => {
-    console.log("Current auth state:", { user, session, loading, initialAuthCheckDone, currentPath: location.pathname });
+    console.log("Current auth state:", { 
+      user: user ? "User exists" : "No user", 
+      session: session ? "Session exists" : "No session", 
+      loading, 
+      initialAuthCheckDone, 
+      currentPath: location.pathname 
+    });
   }, [user, session, loading, initialAuthCheckDone, location.pathname]);
 
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log(`Auth state change event: ${event}`);
-        
-        // Update session and user state
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setLoading(false);
+    console.log("AuthProvider mounted");
+    let subscription: { unsubscribe: () => void };
 
-        // Only navigate on explicit sign in/out events, not on token refresh or window focus
-        if (initialAuthCheckDone) {
-          if (event === 'SIGNED_IN') {
-            // Only redirect to dashboard if not already on a dashboard route
-            const isDashboardRoute = location.pathname.startsWith('/dashboard');
-            if (!isDashboardRoute) {
-              navigate('/dashboard');
+    async function setupAuth() {
+      try {
+        // Set up auth state listener first
+        const authListener = supabase.auth.onAuthStateChange((event, currentSession) => {
+          console.log(`Auth state change event: ${event}`);
+          
+          // Update session and user state
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          setLoading(false);
+
+          // Only navigate on explicit sign in/out events, not on token refresh or window focus
+          if (initialAuthCheckDone) {
+            if (event === 'SIGNED_IN') {
+              // Only redirect to dashboard if not already on a dashboard route
+              const isDashboardRoute = location.pathname.startsWith('/dashboard');
+              if (!isDashboardRoute) {
+                navigate('/dashboard');
+                toast({
+                  title: "Welcome back!",
+                  description: "You have successfully signed in.",
+                });
+              }
+            }
+            if (event === 'SIGNED_OUT') {
+              navigate('/');
               toast({
-                title: "Welcome back!",
-                description: "You have successfully signed in.",
+                title: "Signed out",
+                description: "You have been signed out successfully.",
               });
             }
           }
-          if (event === 'SIGNED_OUT') {
-            navigate('/');
-            toast({
-              title: "Signed out",
-              description: "You have been signed out successfully.",
-            });
-          }
-        }
-      }
-    );
+        });
 
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Initial session check:", currentSession ? "Session found" : "No session");
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setLoading(false);
-      setInitialAuthCheckDone(true);
-    });
+        subscription = authListener.data.subscription;
+
+        // Then check for existing session
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error getting session:", error);
+          throw error;
+        }
+        
+        console.log("Initial session check:", data.session ? "Session found" : "No session");
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        setLoading(false);
+        setInitialAuthCheckDone(true);
+      } catch (error) {
+        console.error("Error in auth setup:", error);
+        setLoading(false);
+        setInitialAuthCheckDone(true);
+      }
+    }
+
+    setupAuth();
 
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
-  }, [navigate, toast, initialAuthCheckDone, location.pathname]);
+  }, [navigate, toast, location.pathname]);
+
+  // Update initialAuthCheckDone separately
+  useEffect(() => {
+    if (initialAuthCheckDone) {
+      console.log("Initial auth check complete, current path:", location.pathname);
+      // If user is authenticated and on login page, redirect to dashboard
+      if (session && (location.pathname === '/login' || location.pathname === '/register')) {
+        navigate('/dashboard');
+      }
+    }
+  }, [initialAuthCheckDone, session, location.pathname, navigate]);
 
   const signIn = async (email: string, password: string) => {
     console.log("Attempting sign in with:", email);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -102,6 +138,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       throw error;
     }
+    
+    return data;
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
