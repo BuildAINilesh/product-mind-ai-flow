@@ -14,7 +14,13 @@ const TestResultPanel = ({ testCases }: TestResultPanelProps) => {
   const [activeTab, setActiveTab] = useState("functional");
   
   if (!testCases) {
-    return null;
+    return (
+      <Card className="h-full flex items-center justify-center">
+        <CardContent className="pt-6 text-center text-muted-foreground">
+          <p>Generate test cases to see results here</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   const handleCopyTestCase = (testCase: TestCase) => {
@@ -47,31 +53,43 @@ Expected Result: ${testCase.expectedResult}`;
           
           <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
             <TabsContent value="functional">
-              {testCases.functional.map((testCase: TestCase) => (
-                <TestCaseCard 
-                  key={testCase.id} 
-                  testCase={testCase} 
-                  onCopy={() => handleCopyTestCase(testCase)} 
-                />
-              ))}
+              {testCases.functional.length > 0 ? (
+                testCases.functional.map((testCase: TestCase) => (
+                  <TestCaseCard 
+                    key={testCase.id} 
+                    testCase={testCase} 
+                    onCopy={() => handleCopyTestCase(testCase)} 
+                  />
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No functional test cases generated</p>
+              )}
             </TabsContent>
             <TabsContent value="integration">
-              {testCases.integration.map((testCase: TestCase) => (
-                <TestCaseCard 
-                  key={testCase.id} 
-                  testCase={testCase} 
-                  onCopy={() => handleCopyTestCase(testCase)} 
-                />
-              ))}
+              {testCases.integration.length > 0 ? (
+                testCases.integration.map((testCase: TestCase) => (
+                  <TestCaseCard 
+                    key={testCase.id} 
+                    testCase={testCase} 
+                    onCopy={() => handleCopyTestCase(testCase)} 
+                  />
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No integration test cases generated</p>
+              )}
             </TabsContent>
             <TabsContent value="user">
-              {testCases.user.map((testCase: TestCase) => (
-                <TestCaseCard 
-                  key={testCase.id} 
-                  testCase={testCase} 
-                  onCopy={() => handleCopyTestCase(testCase)} 
-                />
-              ))}
+              {testCases.user.length > 0 ? (
+                testCases.user.map((testCase: TestCase) => (
+                  <TestCaseCard 
+                    key={testCase.id} 
+                    testCase={testCase} 
+                    onCopy={() => handleCopyTestCase(testCase)} 
+                  />
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No user test cases generated</p>
+              )}
             </TabsContent>
           </div>
         </Tabs>

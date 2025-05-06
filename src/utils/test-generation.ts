@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 export interface TestCase {
   id: string;
   title: string;
@@ -162,4 +164,60 @@ export const generateTestCasesFromRequirements = (requirementText: string): Test
       }
     ]
   };
+};
+
+// Fetch test cases from the database
+export const fetchTestCasesForRequirement = async (requirementId: string): Promise<TestCases | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('test_cases')
+      .select('*')
+      .eq('requirement_id', requirementId);
+      
+    if (error) {
+      console.error('Error fetching test cases:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      return null;
+    }
+    
+    // Convert database test cases to the TestCases format
+    const testCases: TestCases = {
+      functional: [],
+      integration: [],
+      user: []
+    };
+    
+    data.forEach(testCase => {
+      const steps = typeof testCase.steps === 'string' ? 
+        JSON.parse(testCase.steps) : 
+        testCase.steps;
+        
+      const formattedTestCase: TestCase = {
+        id: testCase.id,
+        title: testCase.test_title,
+        description: testCase.description || 'No description provided',
+        steps: steps,
+        expectedResult: testCase.expected_result
+      };
+      
+      switch (testCase.type) {
+        case 'functional':
+          testCases.functional.push(formattedTestCase);
+          break;
+        case 'integration':
+          testCases.integration.push(formattedTestCase);
+          break;
+        default:
+          testCases.user.push(formattedTestCase);
+      }
+    });
+    
+    return testCases;
+  } catch (error) {
+    console.error('Error processing test cases:', error);
+    return null;
+  }
 };

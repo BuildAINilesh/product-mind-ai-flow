@@ -41,6 +41,62 @@ export type Database = {
           },
         ]
       }
+      forgeflow: {
+        Row: {
+          created_at: string | null
+          id: string
+          requirement_id: string | null
+          test_cases_status:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+          updated_at: string | null
+          use_cases_status:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+          user_stories_status:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          requirement_id?: string | null
+          test_cases_status?:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+          updated_at?: string | null
+          use_cases_status?:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+          user_stories_status?:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          requirement_id?: string | null
+          test_cases_status?:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+          updated_at?: string | null
+          use_cases_status?:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+          user_stories_status?:
+            | Database["public"]["Enums"]["requirement_status_enum"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forgeflow_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: true
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_analysis: {
         Row: {
           confidence_score: number | null
@@ -389,6 +445,133 @@ export type Database = {
           },
         ]
       }
+      test_cases: {
+        Row: {
+          created_at: string | null
+          expected_result: string
+          id: string
+          requirement_id: string
+          steps: string
+          test_title: string
+          type: Database["public"]["Enums"]["test_case_type"]
+          use_case_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expected_result: string
+          id?: string
+          requirement_id: string
+          steps: string
+          test_title: string
+          type: Database["public"]["Enums"]["test_case_type"]
+          use_case_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expected_result?: string
+          id?: string
+          requirement_id?: string
+          steps?: string
+          test_title?: string
+          type?: Database["public"]["Enums"]["test_case_type"]
+          use_case_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_cases_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_cases_use_case_id_fkey"
+            columns: ["use_case_id"]
+            isOneToOne: false
+            referencedRelation: "use_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      use_cases: {
+        Row: {
+          actor: string | null
+          alt_flow: string | null
+          created_at: string | null
+          id: string
+          main_flow: string | null
+          outcome: string | null
+          preconditions: string | null
+          requirement_id: string
+          title: string
+          trigger: string | null
+        }
+        Insert: {
+          actor?: string | null
+          alt_flow?: string | null
+          created_at?: string | null
+          id?: string
+          main_flow?: string | null
+          outcome?: string | null
+          preconditions?: string | null
+          requirement_id: string
+          title: string
+          trigger?: string | null
+        }
+        Update: {
+          actor?: string | null
+          alt_flow?: string | null
+          created_at?: string | null
+          id?: string
+          main_flow?: string | null
+          outcome?: string | null
+          preconditions?: string | null
+          requirement_id?: string
+          title?: string
+          trigger?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "use_cases_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_stories: {
+        Row: {
+          actor: string | null
+          created_at: string | null
+          id: string
+          requirement_id: string
+          story: string
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string | null
+          id?: string
+          requirement_id: string
+          story: string
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string | null
+          id?: string
+          requirement_id?: string
+          story?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_stories_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -414,6 +597,7 @@ export type Database = {
       market_research_source_status: "pending_scrape" | "scraped" | "error"
       requirement_status_enum: "Draft" | "Completed" | "Re_Draft"
       scraped_data_status: "pending_summary" | "summarized" | "error"
+      test_case_type: "functional" | "edge" | "integration" | "negative"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -547,6 +731,7 @@ export const Constants = {
       market_research_source_status: ["pending_scrape", "scraped", "error"],
       requirement_status_enum: ["Draft", "Completed", "Re_Draft"],
       scraped_data_status: ["pending_summary", "summarized", "error"],
+      test_case_type: ["functional", "edge", "integration", "negative"],
     },
   },
 } as const
