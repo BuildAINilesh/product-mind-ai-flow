@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input"; 
 import { ClipboardCheck, FileText, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import { TestCases, generateTestCasesFromRequirements } from "@/utils/test-generation";
+import { TestCases, generateTestCasesFromRequirements, TestCase } from "@/utils/test-generation";
 import TestResultPanel from "@/components/test-gen/TestResultPanel";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -71,27 +71,40 @@ const TestGen = () => {
     setIsSaving(true);
 
     try {
+      // Fix: type needs to be explicitly cast to the expected enum values
       // Save test cases to the database
       const allTestCases = [
-        ...testCases.functional.map(tc => ({ ...tc, type: 'functional' })),
-        ...testCases.integration.map(tc => ({ ...tc, type: 'integration' })),
-        ...testCases.user.map(tc => ({ ...tc, type: 'functional' }))  // Map user tests as functional type
+        ...testCases.functional.map(tc => ({ 
+          requirement_id: requirementId,
+          test_title: tc.title,
+          steps: JSON.stringify(tc.steps),
+          expected_result: tc.expectedResult,
+          type: 'functional' as const  // Type assertion to const
+        })),
+        ...testCases.integration.map(tc => ({ 
+          requirement_id: requirementId,
+          test_title: tc.title,
+          steps: JSON.stringify(tc.steps),
+          expected_result: tc.expectedResult,
+          type: 'integration' as const  // Type assertion to const
+        })),
+        ...testCases.user.map(tc => ({ 
+          requirement_id: requirementId,
+          test_title: tc.title,
+          steps: JSON.stringify(tc.steps),
+          expected_result: tc.expectedResult,
+          type: 'functional' as const  // Type assertion to const
+        }))
       ];
       
-      // Prepare data for insertion
-      const testCasesForDb = allTestCases.map(tc => ({
-        requirement_id: requirementId,
-        test_title: tc.title,
-        steps: JSON.stringify(tc.steps),
-        expected_result: tc.expectedResult,
-        type: tc.type
-      }));
-      
-      const { error } = await supabase
-        .from('test_cases')
-        .insert(testCasesForDb);
-      
-      if (error) throw error;
+      // Insert each test case individually to avoid array type mismatch
+      for (const testCase of allTestCases) {
+        const { error } = await supabase
+          .from('test_cases')
+          .insert(testCase);
+        
+        if (error) throw error;
+      }
       
       // Update forgeflow table status
       await supabase

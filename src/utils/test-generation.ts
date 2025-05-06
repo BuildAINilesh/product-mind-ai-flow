@@ -198,7 +198,7 @@ export const fetchTestCasesForRequirement = async (requirementId: string): Promi
       const formattedTestCase: TestCase = {
         id: testCase.id,
         title: testCase.test_title,
-        description: testCase.description || 'No description provided',
+        description: testCase.test_title || 'No description provided', // Fix: Use test_title as description since it doesn't exist in DB
         steps: steps,
         expectedResult: testCase.expected_result
       };
