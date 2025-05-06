@@ -38,7 +38,7 @@ const TestGen = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">TestGen</h1>
+        <h1 className="text-2xl font-bold">ForgeFlow AI</h1>
         <p className="text-muted-foreground">
           Generate comprehensive test cases from requirements
         </p>

@@ -57,7 +57,7 @@ const RequirementValidator = () => {
               disabled={isValidating}
             >
               <BrainCircuit className="h-4 w-4" />
-              {isValidating ? "Validating..." : validationData ? "Create TestGen" : "Analyze"}
+              {isValidating ? "Validating..." : validationData ? "Create ForgeFlow AI" : "Analyze"}
             </Button>
           </div>
         </div>
