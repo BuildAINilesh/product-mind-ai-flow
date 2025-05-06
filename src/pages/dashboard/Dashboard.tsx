@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -277,7 +278,7 @@ const Dashboard = () => {
                   <Network className="h-5 w-5 text-secondary" />
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-1">Neural TestGen</h4>
+                  <h4 className="font-semibold mb-1">ForgeFlow AI</h4>
                   <p className="text-sm text-muted-foreground mb-3">
                     Generate comprehensive test cases using advanced AI models.
                   </p>

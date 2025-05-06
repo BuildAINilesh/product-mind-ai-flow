@@ -75,7 +75,7 @@ const DashboardSidebar = () => {
     },
     { 
       icon: <Network size={18} />, 
-      label: "Neural TestGen", 
+      label: "ForgeFlow AI", 
       href: "/dashboard/test-gen" 
     },
     { 
