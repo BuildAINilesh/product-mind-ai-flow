@@ -43,7 +43,7 @@ const RequirementValidator = () => {
             className="gap-1"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Requirements
+            Back to Market Sense
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" className="gap-1">
@@ -57,7 +57,7 @@ const RequirementValidator = () => {
               disabled={isValidating}
             >
               <BrainCircuit className="h-4 w-4" />
-              {isValidating ? "Validating..." : validationData ? "Re-analyze" : "Analyze"}
+              {isValidating ? "Validating..." : validationData ? "Create TestGen" : "Analyze"}
             </Button>
           </div>
         </div>

@@ -37,12 +37,12 @@ const ValidationDashboardHeader = ({
 
         {showBackButton && (
           <Button 
-            onClick={() => navigate("/dashboard/requirements")}
+            onClick={() => navigate("/dashboard/market-sense")}
             variant="outline"
             className="flex items-center gap-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Requirements
+            Back to Market Sense
           </Button>
         )}
       </div>
