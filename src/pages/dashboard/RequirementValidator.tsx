@@ -37,7 +37,7 @@ const RequirementValidator = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <Button
-            onClick={() => navigate("/dashboard/requirements")}
+            onClick={() => navigate("/dashboard/market-sense")}
             variant="outline"
             size="sm"
             className="gap-1"
