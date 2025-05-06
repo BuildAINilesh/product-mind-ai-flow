@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { ArrowLeft } from "lucide-react"; // Import ArrowLeft icon
+import { ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Login = () => {
@@ -22,15 +22,22 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [renderConfirmed, setRenderConfirmed] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, session } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate(); // Add navigate for programmatic routing
+  const navigate = useNavigate();
 
-  // Debug render
+  // Debug auth state on mount
   useEffect(() => {
-    console.log("Login page rendered");
-    setRenderConfirmed(true);
+    console.log("Login page mounted, auth session:", session ? "exists" : "none");
+  }, [session]);
+
+  // Set up demo credentials for easy testing
+  useEffect(() => {
+    // Only set demo credentials in development
+    if (import.meta.env.DEV) {
+      setEmail("test@example.com");
+      setPassword("password123");
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,13 +46,18 @@ const Login = () => {
     setError(null);
 
     try {
-      console.log("Attempting to sign in...");
+      console.log("Attempting to sign in with email:", email);
       await signIn(email, password);
       // The redirect happens in AuthProvider
+      console.log("Sign in completed without errors");
     } catch (error: any) {
-      // Error is handled in AuthProvider
-      console.error("Login error:", error);
+      console.error("Login error details:", error);
       setError(error?.message || "An error occurred during login");
+      toast({
+        title: "Login failed",
+        description: error?.message || "Please check your credentials and try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -54,12 +66,12 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <div className="w-full max-w-md">
-        {/* Debug info to verify the page is rendering */}
-        {renderConfirmed && (
-          <div className="mb-4 text-sm text-green-600">Page render confirmed</div>
-        )}
+        {/* Debug info */}
+        <div className="mb-4 text-sm text-muted-foreground">
+          Page rendered successfully. {new Date().toISOString()}
+        </div>
 
-        {/* Add Back to Home button */}
+        {/* Back to Home button */}
         <div className="mb-4">
           <Button 
             variant="ghost" 
