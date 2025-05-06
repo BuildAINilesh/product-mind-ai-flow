@@ -251,7 +251,7 @@ export type Database = {
           recommendations: string[] | null
           requirement_id: string | null
           risks: string[] | null
-          status: string | null
+          status: Database["public"]["Enums"]["requirement_status_enum"] | null
           strengths: string[] | null
           updated_at: string | null
           validation_summary: string | null
@@ -264,7 +264,7 @@ export type Database = {
           recommendations?: string[] | null
           requirement_id?: string | null
           risks?: string[] | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["requirement_status_enum"] | null
           strengths?: string[] | null
           updated_at?: string | null
           validation_summary?: string | null
@@ -277,7 +277,7 @@ export type Database = {
           recommendations?: string[] | null
           requirement_id?: string | null
           risks?: string[] | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["requirement_status_enum"] | null
           strengths?: string[] | null
           updated_at?: string | null
           validation_summary?: string | null

@@ -219,9 +219,32 @@ export function useValidation(requirementId: string | null) {
       }
 
       // Update the local state with the validation results
-      setValidationData(data.record[0] || data.data);
+      if (data.record && data.record[0]) {
+        // Ensure the status is set to "Completed"
+        const validationRecord = {
+          ...data.record[0],
+          status: "Completed"
+        };
+        setValidationData(validationRecord);
+        
+        // Also update the status in the database
+        const { error: updateError } = await supabase
+          .from("requirement_validation")
+          .update({ status: "Completed" })
+          .eq("id", validationRecord.id);
+          
+        if (updateError) {
+          console.error("Error updating validation status:", updateError);
+        }
+      } else if (data.data) {
+        const validationRecord = {
+          ...data.data,
+          status: "Completed"
+        };
+        setValidationData(validationRecord);
+      }
+      
       fetchValidations(); // Refresh the validations list
-
       toast.success("Requirement validation complete!");
     } catch (error: any) {
       console.error("Error validating requirement:", error);

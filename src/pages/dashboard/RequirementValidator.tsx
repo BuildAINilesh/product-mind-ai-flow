@@ -67,8 +67,8 @@ const RequirementValidator = () => {
             <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
             <p className="ml-2">Loading requirement...</p>
           </div>
-        ) : validationData ? (
-          // Show validation results if available
+        ) : validationData && validationData.status === "Completed" ? (
+          // Show validation results only if status is Completed
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Left column - Summary and scores */}
             <div className="md:col-span-2 space-y-6">
