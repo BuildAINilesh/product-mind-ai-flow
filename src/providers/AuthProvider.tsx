@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [initialAuthCheckDone, session, location.pathname, navigate]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<void> => {
     console.log("Attempting sign in with:", email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -139,7 +139,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw error;
     }
     
-    return data;
+    // We don't need to return data as the auth state will be updated via the onAuthStateChange event
+    console.log("Sign in successful:", data);
+    // Not returning anything explicitly to match the Promise<void> return type
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
