@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -31,6 +31,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+
+  // Debug auth state
+  useEffect(() => {
+    console.log("Current auth state:", { user, session, loading, initialAuthCheckDone, currentPath: location.pathname });
+  }, [user, session, loading, initialAuthCheckDone, location.pathname]);
 
   useEffect(() => {
     // Set up auth state listener first
@@ -69,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", currentSession ? "Session found" : "No session");
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
@@ -81,12 +87,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [navigate, toast, initialAuthCheckDone, location.pathname]);
 
   const signIn = async (email: string, password: string) => {
+    console.log("Attempting sign in with:", email);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      console.error("Sign in error:", error);
       toast({
         title: "Error signing in",
         description: error.message,

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -29,8 +30,10 @@ const Login = () => {
 
     try {
       await signIn(email, password);
+      // The redirect happens in AuthProvider
     } catch (error) {
       // Error is handled in AuthProvider
+      console.error("Login error:", error);
     } finally {
       setLoading(false);
     }
