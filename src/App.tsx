@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,10 +30,14 @@ import NewRequirement from "./pages/requirements/NewRequirement";
 import EditRequirement from "./pages/requirements/EditRequirement";
 import MarketSense from "./pages/dashboard/MarketSense";
 import RequirementValidator from "./pages/dashboard/RequirementValidator";
+import ForgeFlowAI from "./pages/dashboard/ForgeFlowAI";
+import ForgeFlowSimple from "./pages/dashboard/ForgeFlowSimple";
 import TestGen from "./pages/dashboard/TestGen";
 import BugShield from "./pages/dashboard/BugShield";
 import SmartSignoff from "./pages/dashboard/SmartSignoff";
 import Profile from "./pages/dashboard/Profile";
+import TestPage from "./pages/dashboard/TestPage";
+import ForgeFlowDirectTest from "./pages/dashboard/ForgeFlowDirectTest";
 
 // Add imports for Settings and Support
 import Settings from "./pages/dashboard/Settings";
@@ -64,16 +67,26 @@ const App = () => (
               <Route path="/careers" element={<Career />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
-              
+              <Route path="/test" element={<TestPage />} />
+              <Route path="/forge-test" element={<ForgeFlowDirectTest />} />
+              <Route path="/forge-simple" element={<ForgeFlowSimple />} />
+
               {/* Dashboard Routes */}
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="requirements" element={<RequirementsList />} />
                 <Route path="requirements/:id" element={<RequirementView />} />
                 <Route path="requirements/new" element={<NewRequirement />} />
-                <Route path="requirements/edit/:id" element={<EditRequirement />} />
+                <Route
+                  path="requirements/edit/:id"
+                  element={<EditRequirement />}
+                />
                 <Route path="market-sense" element={<MarketSense />} />
                 <Route path="validator" element={<RequirementValidator />} />
+                <Route path="forgeflow" element={<ForgeFlowAI />} />
+                <Route path="forge-direct" element={<ForgeFlowDirectTest />} />
+                <Route path="forge-simple" element={<ForgeFlowSimple />} />
+                <Route path="test" element={<TestPage />} />
                 <Route path="test-gen" element={<TestGen />} />
                 <Route path="bug-shield" element={<BugShield />} />
                 <Route path="signoff" element={<SmartSignoff />} />
@@ -81,7 +94,7 @@ const App = () => (
                 <Route path="support" element={<Support />} />
                 <Route path="profile" element={<Profile />} />
               </Route>
-              
+
               {/* Catch-all Route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
