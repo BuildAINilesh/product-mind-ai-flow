@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { UserStory, UseCase, TestCase } from "@/hooks/useCaseGenerator";
@@ -12,7 +11,7 @@ import {
   BookIcon,
   CodeIcon,
   TestTubeIcon,
-  RefreshIcon,
+  RefreshCw,
 } from "lucide-react";
 import Loader from "@/components/shared/Loader";
 
@@ -137,7 +136,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
             </>
           ) : (
             <>
-              <RefreshIcon className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" />
               <span>Generate All</span>
             </>
           )}
@@ -232,7 +231,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
                   </>
                 ) : (
                   <>
-                    <RefreshIcon className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
                     <span>
                       {statusData.userStoriesStatus === "Draft" || statusData.userStoriesStatus === "Failed"
                         ? "Generate"
@@ -297,7 +296,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
                   </>
                 ) : (
                   <>
-                    <RefreshIcon className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
                     <span>
                       {statusData.useCasesStatus === "Draft" || statusData.useCasesStatus === "Failed"
                         ? "Generate"
@@ -362,7 +361,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
                   </>
                 ) : (
                   <>
-                    <RefreshIcon className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
                     <span>
                       {statusData.testCasesStatus === "Draft" || statusData.testCasesStatus === "Failed"
                         ? "Generate"
