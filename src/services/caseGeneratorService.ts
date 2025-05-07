@@ -3,11 +3,11 @@ import {
   UserStory,
   UseCase,
   TestCase,
-} from "@/hooks/useForgeFlow";
+} from "@/hooks/useCaseGenerator";
 import axios from "axios";
 
 // Base API URL - replace with your actual API URL
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Mock data for testing
 const mockCaseGeneratorItems: ForgeFlowItem[] = [
