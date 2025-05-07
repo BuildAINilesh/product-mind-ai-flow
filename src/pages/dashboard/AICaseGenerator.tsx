@@ -25,6 +25,7 @@ const AICaseGenerator = () => {
     isGenerating,
     dataFetchAttempted,
     handleGenerate,
+    statusData,
   } = useCaseGenerator(requirementId);
 
   // When navigating from validator page, auto-generate if no data exists yet
@@ -65,6 +66,7 @@ const AICaseGenerator = () => {
         testCases={testCases}
         isRequirementLoading={isRequirementLoading}
         isGenerating={isGenerating}
+        statusData={statusData}
         handleGenerate={handleGenerate}
       />
     );

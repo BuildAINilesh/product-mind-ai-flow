@@ -64,6 +64,15 @@ export const useCaseGenerator = (requirementId: string | null) => {
   const [isRequirementLoading, setIsRequirementLoading] =
     useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [statusData, setStatusData] = useState<{
+    userStoriesStatus: string;
+    useCasesStatus: string;
+    testCasesStatus: string;
+  }>({
+    userStoriesStatus: "Draft",
+    useCasesStatus: "Draft",
+    testCasesStatus: "Draft",
+  });
 
   // Fetch case generator items for dashboard view
   useEffect(() => {
@@ -103,6 +112,11 @@ export const useCaseGenerator = (requirementId: string | null) => {
           setUserStories(caseGeneratorData.userStories || []);
           setUseCases(caseGeneratorData.useCases || []);
           setTestCases(caseGeneratorData.testCases || []);
+          
+          // Set status data
+          if (caseGeneratorData.statusData) {
+            setStatusData(caseGeneratorData.statusData);
+          }
         }
       } catch (error) {
         console.error(
@@ -139,6 +153,11 @@ export const useCaseGenerator = (requirementId: string | null) => {
         setUserStories(caseGeneratorData.userStories || []);
         setUseCases(caseGeneratorData.useCases || []);
         setTestCases(caseGeneratorData.testCases || []);
+        
+        // Update status data
+        if (caseGeneratorData.statusData) {
+          setStatusData(caseGeneratorData.statusData);
+        }
       }
     } catch (error) {
       console.error("Error generating case generator elements:", error);
@@ -158,5 +177,6 @@ export const useCaseGenerator = (requirementId: string | null) => {
     isGenerating,
     dataFetchAttempted,
     handleGenerate,
+    statusData,
   };
 };

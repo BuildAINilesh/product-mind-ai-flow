@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { UserStory, UseCase, TestCase } from "@/hooks/useCaseGenerator";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -12,9 +13,7 @@ import {
   CodeIcon,
   TestTubeIcon,
   RefreshIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-} from "@/components/icons";
+} from "lucide-react";
 import Loader from "@/components/shared/Loader";
 
 interface AICaseGeneratorDetailsProps {
@@ -25,12 +24,18 @@ interface AICaseGeneratorDetailsProps {
     industry: string;
     created: string;
     description: string;
+    req_id?: string;
   } | null;
   userStories: UserStory[];
   useCases: UseCase[];
   testCases: TestCase[];
   isRequirementLoading: boolean;
   isGenerating: boolean;
+  statusData: {
+    userStoriesStatus: string;
+    useCasesStatus: string;
+    testCasesStatus: string;
+  };
   handleGenerate: (
     type?: "userStories" | "useCases" | "testCases"
   ) => Promise<void>;
@@ -44,20 +49,21 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
   testCases,
   isRequirementLoading,
   isGenerating,
+  statusData,
   handleGenerate,
 }) => {
   const [activeTab, setActiveTab] = useState<string>("userStories");
 
   // Render status badge
   const renderStatusBadge = (status: string) => {
-    if (status === "completed") {
-      return <Badge variant="success">Completed</Badge>;
-    } else if (status === "in-progress") {
-      return <Badge variant="warning">In Progress</Badge>;
-    } else if (status === "failed") {
+    if (status === "completed" || status === "Completed") {
+      return <Badge variant="success" className="bg-green-500">Completed</Badge>;
+    } else if (status === "in-progress" || status === "In Progress") {
+      return <Badge variant="warning" className="bg-amber-500">In Progress</Badge>;
+    } else if (status === "failed" || status === "Failed") {
       return <Badge variant="destructive">Failed</Badge>;
     }
-    return <Badge variant="secondary">Pending</Badge>;
+    return <Badge variant="secondary">Draft</Badge>;
   };
 
   // Generate button handler
@@ -98,7 +104,6 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
   if (!requirement) {
     return (
       <Alert variant="destructive" className="mb-4">
-        <XCircleIcon className="h-5 w-5" />
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>
           Requirement not found. Please select a valid requirement.
@@ -145,7 +150,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-sm font-medium text-slate-500">ID</p>
-            <p className="text-slate-900">{requirement.id}</p>
+            <p className="text-slate-900">{requirement.req_id || requirement.id}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Project</p>
@@ -179,50 +184,70 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
             className="flex items-center space-x-2"
           >
             <BookIcon className="h-4 w-4" />
-            <span>User Stories ({userStories.length})</span>
+            <span>User Stories</span>
+            {statusData.userStoriesStatus !== "Draft" && (
+              <span className="ml-2 text-xs">
+                {renderStatusBadge(statusData.userStoriesStatus)}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="useCases" className="flex items-center space-x-2">
             <CodeIcon className="h-4 w-4" />
-            <span>Use Cases ({useCases.length})</span>
+            <span>Use Cases</span>
+            {statusData.useCasesStatus !== "Draft" && (
+              <span className="ml-2 text-xs">
+                {renderStatusBadge(statusData.useCasesStatus)}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="testCases"
             className="flex items-center space-x-2"
           >
             <TestTubeIcon className="h-4 w-4" />
-            <span>Test Cases ({testCases.length})</span>
+            <span>Test Cases</span>
+            {statusData.testCasesStatus !== "Draft" && (
+              <span className="ml-2 text-xs">
+                {renderStatusBadge(statusData.testCasesStatus)}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="userStories" className="mt-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">User Stories</h2>
-            <Button
-              variant="outline"
-              disabled={isGenerating}
-              onClick={() => handleGenerateClick("userStories")}
-              className="flex items-center space-x-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader size="small" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshIcon className="h-4 w-4" />
-                  <span>Regenerate</span>
-                </>
-              )}
-            </Button>
+            <div className="flex items-center">
+              {renderStatusBadge(statusData.userStoriesStatus)}
+              <Button
+                variant="outline"
+                disabled={isGenerating}
+                onClick={() => handleGenerateClick("userStories")}
+                className="ml-3 flex items-center space-x-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader size="small" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshIcon className="h-4 w-4" />
+                    <span>
+                      {statusData.userStoriesStatus === "Draft" || statusData.userStoriesStatus === "Failed"
+                        ? "Generate"
+                        : "Regenerate"}
+                    </span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
-          {userStories.length > 0 ? (
-            userStories.map((story, index) => renderItemCard(story, index))
-          ) : (
+          {statusData.userStoriesStatus === "Draft" ? (
             <div className="bg-slate-50 p-8 rounded-md text-center">
               <BookIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-              <h3 className="text-lg font-medium mb-2">No User Stories Yet</h3>
+              <h3 className="text-lg font-medium mb-2">Pending Generation</h3>
               <p className="text-slate-500 mb-4">
                 Generate user stories from the requirement to see them here.
               </p>
@@ -233,38 +258,61 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
                 {isGenerating ? "Generating..." : "Generate User Stories"}
               </Button>
             </div>
+          ) : userStories.length > 0 ? (
+            userStories.map((story, index) => renderItemCard(story, index))
+          ) : (
+            <div className="bg-slate-50 p-8 rounded-md text-center">
+              <BookIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+              <h3 className="text-lg font-medium mb-2">No User Stories Found</h3>
+              <p className="text-slate-500 mb-4">
+                {statusData.userStoriesStatus === "In Progress" || statusData.userStoriesStatus === "in-progress" 
+                  ? "Generation in progress, please wait..."
+                  : "No user stories found for this requirement."}
+              </p>
+              <Button
+                onClick={() => handleGenerateClick("userStories")}
+                disabled={isGenerating || statusData.userStoriesStatus === "In Progress" || statusData.userStoriesStatus === "in-progress"}
+              >
+                {isGenerating ? "Generating..." : "Generate User Stories"}
+              </Button>
+            </div>
           )}
         </TabsContent>
 
         <TabsContent value="useCases" className="mt-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Use Cases</h2>
-            <Button
-              variant="outline"
-              disabled={isGenerating}
-              onClick={() => handleGenerateClick("useCases")}
-              className="flex items-center space-x-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader size="small" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshIcon className="h-4 w-4" />
-                  <span>Regenerate</span>
-                </>
-              )}
-            </Button>
+            <div className="flex items-center">
+              {renderStatusBadge(statusData.useCasesStatus)}
+              <Button
+                variant="outline"
+                disabled={isGenerating}
+                onClick={() => handleGenerateClick("useCases")}
+                className="ml-3 flex items-center space-x-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader size="small" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshIcon className="h-4 w-4" />
+                    <span>
+                      {statusData.useCasesStatus === "Draft" || statusData.useCasesStatus === "Failed"
+                        ? "Generate"
+                        : "Regenerate"}
+                    </span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
-          {useCases.length > 0 ? (
-            useCases.map((useCase, index) => renderItemCard(useCase, index))
-          ) : (
+          {statusData.useCasesStatus === "Draft" ? (
             <div className="bg-slate-50 p-8 rounded-md text-center">
               <CodeIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-              <h3 className="text-lg font-medium mb-2">No Use Cases Yet</h3>
+              <h3 className="text-lg font-medium mb-2">Pending Generation</h3>
               <p className="text-slate-500 mb-4">
                 Generate use cases from the requirement to see them here.
               </p>
@@ -275,44 +323,85 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
                 {isGenerating ? "Generating..." : "Generate Use Cases"}
               </Button>
             </div>
+          ) : useCases.length > 0 ? (
+            useCases.map((useCase, index) => renderItemCard(useCase, index))
+          ) : (
+            <div className="bg-slate-50 p-8 rounded-md text-center">
+              <CodeIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+              <h3 className="text-lg font-medium mb-2">No Use Cases Found</h3>
+              <p className="text-slate-500 mb-4">
+                {statusData.useCasesStatus === "In Progress" || statusData.useCasesStatus === "in-progress"
+                  ? "Generation in progress, please wait..."
+                  : "No use cases found for this requirement."}
+              </p>
+              <Button
+                onClick={() => handleGenerateClick("useCases")}
+                disabled={isGenerating || statusData.useCasesStatus === "In Progress" || statusData.useCasesStatus === "in-progress"}
+              >
+                {isGenerating ? "Generating..." : "Generate Use Cases"}
+              </Button>
+            </div>
           )}
         </TabsContent>
 
         <TabsContent value="testCases" className="mt-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Test Cases</h2>
-            <Button
-              variant="outline"
-              disabled={isGenerating}
-              onClick={() => handleGenerateClick("testCases")}
-              className="flex items-center space-x-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader size="small" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshIcon className="h-4 w-4" />
-                  <span>Regenerate</span>
-                </>
-              )}
-            </Button>
+            <div className="flex items-center">
+              {renderStatusBadge(statusData.testCasesStatus)}
+              <Button
+                variant="outline"
+                disabled={isGenerating}
+                onClick={() => handleGenerateClick("testCases")}
+                className="ml-3 flex items-center space-x-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader size="small" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshIcon className="h-4 w-4" />
+                    <span>
+                      {statusData.testCasesStatus === "Draft" || statusData.testCasesStatus === "Failed"
+                        ? "Generate"
+                        : "Regenerate"}
+                    </span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
-          {testCases.length > 0 ? (
-            testCases.map((testCase, index) => renderItemCard(testCase, index))
-          ) : (
+          {statusData.testCasesStatus === "Draft" ? (
             <div className="bg-slate-50 p-8 rounded-md text-center">
               <TestTubeIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-              <h3 className="text-lg font-medium mb-2">No Test Cases Yet</h3>
+              <h3 className="text-lg font-medium mb-2">Pending Generation</h3>
               <p className="text-slate-500 mb-4">
                 Generate test cases from the requirement to see them here.
               </p>
               <Button
                 onClick={() => handleGenerateClick("testCases")}
                 disabled={isGenerating}
+              >
+                {isGenerating ? "Generating..." : "Generate Test Cases"}
+              </Button>
+            </div>
+          ) : testCases.length > 0 ? (
+            testCases.map((testCase, index) => renderItemCard(testCase, index))
+          ) : (
+            <div className="bg-slate-50 p-8 rounded-md text-center">
+              <TestTubeIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+              <h3 className="text-lg font-medium mb-2">No Test Cases Found</h3>
+              <p className="text-slate-500 mb-4">
+                {statusData.testCasesStatus === "In Progress" || statusData.testCasesStatus === "in-progress"
+                  ? "Generation in progress, please wait..."
+                  : "No test cases found for this requirement."}
+              </p>
+              <Button
+                onClick={() => handleGenerateClick("testCases")}
+                disabled={isGenerating || statusData.testCasesStatus === "In Progress" || statusData.testCasesStatus === "in-progress"}
               >
                 {isGenerating ? "Generating..." : "Generate Test Cases"}
               </Button>

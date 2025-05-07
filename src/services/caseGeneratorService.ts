@@ -60,6 +60,23 @@ export const getCaseGeneratorItems = async (): Promise<ForgeFlowItem[]> => {
 // Get case generator data for a specific requirement
 export const getCaseGeneratorData = async (requirementId: string) => {
   try {
+    // First fetch the case_generator status data
+    const { data: caseGeneratorStatus, error: statusError } = await supabase
+      .from("case_generator")
+      .select("user_stories_status, use_cases_status, test_cases_status")
+      .eq("requirement_id", requirementId)
+      .maybeSingle();
+
+    if (statusError) {
+      console.error("Error fetching case generator status:", statusError);
+    }
+
+    const statusData = caseGeneratorStatus || {
+      user_stories_status: "Draft",
+      use_cases_status: "Draft",
+      test_cases_status: "Draft",
+    };
+
     // Fetch real user stories from Supabase
     const { data: userStoriesData, error: userStoriesError } = await supabase
       .from("user_stories")
@@ -113,6 +130,11 @@ export const getCaseGeneratorData = async (requirementId: string) => {
       userStories,
       useCases,
       testCases,
+      statusData: {
+        userStoriesStatus: statusData.user_stories_status,
+        useCasesStatus: statusData.use_cases_status,
+        testCasesStatus: statusData.test_cases_status,
+      }
     };
   } catch (error) {
     console.error(
@@ -123,6 +145,11 @@ export const getCaseGeneratorData = async (requirementId: string) => {
       userStories: [],
       useCases: [],
       testCases: [],
+      statusData: {
+        userStoriesStatus: "Draft",
+        useCasesStatus: "Draft",
+        testCasesStatus: "Draft",
+      }
     };
   }
 };
