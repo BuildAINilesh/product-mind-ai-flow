@@ -1,5 +1,5 @@
 
-import { Button } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { FileCheck, Filter } from "lucide-react";
 import { BRDRequirement } from "@/types/smart-signoff";
 
