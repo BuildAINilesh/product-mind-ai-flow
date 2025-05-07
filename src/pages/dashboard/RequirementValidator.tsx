@@ -1,6 +1,6 @@
 
 import { useSearchParams } from "react-router-dom";
-import { useValidation } from "@/hooks/useValidation";
+import { useValidation } from "@/hooks/validation"; // Updated import path
 import ValidationDashboard from "@/components/validator/ValidationDashboard";
 import ValidationDetails from "@/components/validator/ValidationDetails";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
