@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -52,6 +53,7 @@ export function useValidation(requirementId: string | null) {
   const fetchValidations = async () => {
     setLoading(true);
     try {
+      console.log("Fetching all validations");
       const { data, error } = await supabase
         .from("requirement_validation")
         .select(
@@ -73,6 +75,7 @@ export function useValidation(requirementId: string | null) {
         throw error;
       }
 
+      console.log("Fetched validations:", data);
       if (data) {
         setValidations(data);
       }
@@ -90,6 +93,7 @@ export function useValidation(requirementId: string | null) {
 
     setIsRequirementLoading(true);
     try {
+      console.log("Fetching requirement with req_id:", requirementId);
       // Query the requirements table for the specified requirement
       const { data, error } = await supabase
         .from("requirements")
@@ -104,8 +108,8 @@ export function useValidation(requirementId: string | null) {
       }
 
       if (data) {
+        console.log("Found requirement:", data);
         setRequirement(data);
-        console.log("Loaded requirement:", data);
       }
       setDataFetchAttempted(true);
     } catch (error) {
@@ -133,6 +137,7 @@ export function useValidation(requirementId: string | null) {
       }
 
       if (reqData) {
+        console.log("Found requirement with ID:", reqData.id);
         const { data, error } = await supabase
           .from("requirement_analysis")
           .select("*")
@@ -145,8 +150,10 @@ export function useValidation(requirementId: string | null) {
         }
 
         if (data) {
+          console.log("Found requirement analysis:", data);
           setRequirementAnalysis(data);
-          console.log("Loaded requirement analysis:", data);
+        } else {
+          console.log("No requirement analysis found");
         }
       }
     } catch (error) {
@@ -156,6 +163,7 @@ export function useValidation(requirementId: string | null) {
 
   const fetchExistingValidation = async (reqId: string) => {
     try {
+      console.log("Checking for existing validation for req_id:", reqId);
       // First get the requirement ID (UUID) from the req_id
       const { data: reqData, error: reqError } = await supabase
         .from("requirements")
@@ -169,6 +177,7 @@ export function useValidation(requirementId: string | null) {
       }
 
       if (reqData) {
+        console.log("Found requirement ID:", reqData.id);
         // Now fetch the validation using the requirement UUID
         const { data, error } = await supabase
           .from("requirement_validation")
@@ -182,8 +191,10 @@ export function useValidation(requirementId: string | null) {
         }
 
         if (data) {
-          setValidationData(data);
           console.log("Found existing validation:", data);
+          setValidationData(data);
+        } else {
+          console.log("No validation record found");
         }
       }
     } catch (error) {
@@ -197,10 +208,16 @@ export function useValidation(requirementId: string | null) {
       return;
     }
 
+    if (!requirement) {
+      toast.error("Requirement data is missing");
+      return;
+    }
+
     setIsValidating(true);
 
     try {
       toast.info("Starting AI validation process...", { duration: 2000 });
+      console.log("Starting validation for requirement:", requirement.id);
 
       // Call the AI validator edge function
       const { data, error } = await supabase.functions.invoke("ai-validator", {
@@ -216,6 +233,8 @@ export function useValidation(requirementId: string | null) {
       if (!data.success) {
         throw new Error(data.message || "Validation process failed");
       }
+
+      console.log("Validation completed, received data:", data);
 
       // Update the local state with the validation results
       if (data.record && data.record[0]) {

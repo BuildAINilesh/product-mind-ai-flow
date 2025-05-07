@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -66,6 +67,7 @@ export const MarketAnalysisDetail = ({
       if (checkError) {
         console.error("Error checking for existing validation:", checkError);
         toast.error("Failed to check for existing validation");
+        setIsCreatingValidation(false);
         return;
       }
       
@@ -73,7 +75,6 @@ export const MarketAnalysisDetail = ({
       
       // If validation doesn't exist, create a new one
       if (!existingValidation) {
-        // Insert with admin role for now (in a production app, you would use appropriate RLS policies)
         const { data, error } = await supabase
           .from('requirement_validation')
           .insert([
@@ -90,22 +91,26 @@ export const MarketAnalysisDetail = ({
         if (error) {
           console.error("Error creating validation:", error);
           toast.error("Failed to create validation record");
+          setIsCreatingValidation(false);
           return;
         }
         
         validationId = data.id;
+        console.log("Created validation record with ID:", validationId);
         toast.success("Created validation record");
       } else {
         validationId = existingValidation.id;
+        console.log("Using existing validation with ID:", validationId);
         toast.info("Validation already exists for this requirement");
       }
       
       // Navigate to validator page with the requirement ID
+      // Use the req_id field instead of the UUID
+      setIsCreatingValidation(false);
       navigate(`/dashboard/validator?requirementId=${requirement.req_id}`);
     } catch (error) {
-      console.error("Error creating validation:", error);
+      console.error("Error in validation process:", error);
       toast.error("Failed to create validation record");
-    } finally {
       setIsCreatingValidation(false);
     }
   };

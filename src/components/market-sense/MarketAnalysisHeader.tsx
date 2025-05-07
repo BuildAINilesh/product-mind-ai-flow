@@ -19,6 +19,7 @@ export const MarketAnalysisHeader = ({
   
   const handleValidatorClick = () => {
     if (requirementId) {
+      console.log("Navigating to validator with requirementId:", requirementId);
       navigate(`/dashboard/validator?requirementId=${requirementId}`);
     }
   };
