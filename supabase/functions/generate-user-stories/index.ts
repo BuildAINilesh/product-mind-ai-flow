@@ -152,15 +152,27 @@ Output (Strict JSON Array):
       );
     }
     
-    // Parse the response
+    // Parse the response - FIX: Clean up potential markdown formatting
     const responseContent = openAIResponse.choices[0].message.content;
+    console.log("OpenAI response content:", responseContent);
+    
+    let cleanedContent = responseContent;
+    
+    // Remove markdown code blocks if present (```json and ```)
+    if (responseContent.includes("```json")) {
+      cleanedContent = responseContent.replace(/```json\s*|\s*```/g, "");
+    } else if (responseContent.includes("```")) {
+      cleanedContent = responseContent.replace(/```\s*|\s*```/g, "");
+    }
+    
     let userStoriesData;
     
     try {
-      userStoriesData = JSON.parse(responseContent);
+      userStoriesData = JSON.parse(cleanedContent);
     } catch (err) {
       console.error("Failed to parse OpenAI response:", err);
       console.log("Response content:", responseContent);
+      console.log("Cleaned content:", cleanedContent);
       
       // Update status to failed
       await supabase
