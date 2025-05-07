@@ -47,6 +47,7 @@ export const getCaseGeneratorItems = async (): Promise<ForgeFlowItem[]> => {
       userStoriesStatus: item.user_stories_status,
       useCasesStatus: item.use_cases_status,
       testCasesStatus: item.test_cases_status,
+      reqId: item.requirements?.req_id || "Unknown ID", // Add the formatted req_id
     }));
 
     return items;

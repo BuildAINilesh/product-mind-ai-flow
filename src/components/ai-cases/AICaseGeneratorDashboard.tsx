@@ -163,7 +163,7 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
                 <TableBody>
                   {caseGeneratorItems.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="whitespace-nowrap">{item.requirementId?.substring(0, 10)}</TableCell>
+                      <TableCell className="whitespace-nowrap">{item.reqId || "N/A"}</TableCell>
                       <TableCell className="max-w-[150px] truncate">{item.projectName}</TableCell>
                       <TableCell>{item.industry}</TableCell>
                       <TableCell className="whitespace-nowrap">{item.created}</TableCell>

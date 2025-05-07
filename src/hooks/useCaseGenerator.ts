@@ -16,6 +16,7 @@ export interface ForgeFlowItem {
   userStoriesStatus: string;
   useCasesStatus: string;
   testCasesStatus: string;
+  reqId: string; // Add the reqId field to match the format REQ-25-01
 }
 
 export interface UserStory {
@@ -43,6 +44,7 @@ interface Requirement {
   industry: string;
   created: string;
   description: string;
+  req_id?: string; // Add the req_id field
   [key: string]: any; // Allow additional properties
 }
 
