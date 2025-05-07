@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, EditIcon, BrainCircuit, AlertTriangle } from "lucide-react";
@@ -47,7 +46,11 @@ const ValidationDetails = ({
         </Button>
         {requirement && (
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-1" onClick={() => console.log("Edit button clicked")}>
+            <Button 
+              variant="outline" 
+              className="gap-1" 
+              onClick={() => console.log("Edit button clicked")}
+            >
               <EditIcon className="h-4 w-4" />
               Edit
             </Button>
@@ -60,8 +63,8 @@ const ValidationDetails = ({
               <BrainCircuit className="h-4 w-4" />
               {isValidating
                 ? "Validating..."
-                : validationData
-                ? "Create AI Case Generator"
+                : validationData && validationData.status === "Completed"
+                ? "Re-validate"
                 : "Analyze"}
             </Button>
           </div>

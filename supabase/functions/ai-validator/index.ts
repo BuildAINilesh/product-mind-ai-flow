@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
@@ -16,6 +17,7 @@ async function fetchFromSupabase(url: string, headers: any) {
 
   while (retries > 0) {
     try {
+      console.log(`Attempting to fetch from: ${url}`);
       const response = await fetch(url, { headers });
 
       if (!response.ok) {
@@ -26,7 +28,9 @@ async function fetchFromSupabase(url: string, headers: any) {
         throw new Error(`Fetch failed: ${response.status} - ${errorText}`);
       }
 
-      return await response.json();
+      const responseData = await response.json();
+      console.log(`Successfully fetched data, got ${responseData.length} items`);
+      return responseData;
     } catch (error) {
       lastError = error;
       console.error(`Fetch attempt failed (${retries} retries left):`, error);
@@ -56,7 +60,20 @@ async function fetchRequirement(
   console.log(`Decoded ID: ${decodedReqId}`);
 
   try {
-    // First try with internal UUID match
+    // First try with req_id exact match (most common case)
+    console.log(`Trying to fetch by req_id exact match: ${decodedReqId}`);
+    const requirementsByReqId = await fetchFromSupabase(
+      `${supabaseUrl}/rest/v1/requirements?req_id=eq.${decodedReqId}&select=*`,
+      headers
+    );
+
+    if (requirementsByReqId && requirementsByReqId.length > 0) {
+      console.log("Found requirement with req_id exact match");
+      return requirementsByReqId[0];
+    }
+
+    // If not found by req_id, try with internal UUID match
+    console.log("Not found by req_id, trying internal UUID...");
     const uuidRequirements = await fetchFromSupabase(
       `${supabaseUrl}/rest/v1/requirements?id=eq.${decodedReqId}&select=*`,
       headers
@@ -67,20 +84,8 @@ async function fetchRequirement(
       return uuidRequirements[0];
     }
 
-    // If not found by UUID, try with req_id exact match
-    console.log("Not found by internal UUID, trying req_id...");
-    const requirements = await fetchFromSupabase(
-      `${supabaseUrl}/rest/v1/requirements?req_id=eq.${decodedReqId}&select=*`,
-      headers
-    );
-
-    if (requirements && requirements.length > 0) {
-      console.log("Found requirement with req_id exact match");
-      return requirements[0];
-    }
-
-    // If exact match fails, try case-insensitive match
-    console.log("Exact matches failed, trying case-insensitive match");
+    // If exact matches fail, try case-insensitive match on req_id
+    console.log("Exact matches failed, trying case-insensitive match on req_id");
     const caseInsensitiveRequirements = await fetchFromSupabase(
       `${supabaseUrl}/rest/v1/requirements?req_id=ilike.${decodedReqId}&select=*`,
       headers
@@ -93,7 +98,7 @@ async function fetchRequirement(
       throw new Error(`Requirement not found with ID: ${decodedReqId}`);
     }
 
-    console.log("Found requirement with case-insensitive match");
+    console.log("Found requirement with case-insensitive match on req_id");
     return caseInsensitiveRequirements[0];
   } catch (error) {
     console.error("Error fetching requirement:", error);
@@ -107,7 +112,8 @@ async function fetchAnalysis(
   headers: any,
   requirementId: string
 ) {
-  const { data: analysis, error } = await fetchFromSupabase(
+  console.log(`Fetching analysis for requirement with internal ID: ${requirementId}`);
+  const analysis = await fetchFromSupabase(
     `${supabaseUrl}/rest/v1/requirement_analysis?requirement_id=eq.${requirementId}&select=*`,
     headers
   );
@@ -121,6 +127,7 @@ async function fetchMarketAnalysis(
   headers: any,
   requirementId: string
 ) {
+  console.log(`Fetching market analysis for requirement with internal ID: ${requirementId}`);
   const marketData = await fetchFromSupabase(
     `${supabaseUrl}/rest/v1/market_analysis?requirement_id=eq.${requirementId}&select=*`,
     headers
@@ -241,6 +248,7 @@ async function findOrCreateValidation(
   headers: any,
   requirement: any
 ) {
+  console.log(`Checking for existing validation for requirement internal ID: ${requirement.id}`);
   const validationRecords = await fetchFromSupabase(
     `${supabaseUrl}/rest/v1/requirement_validation?requirement_id=eq.${requirement.id}&select=id`,
     headers
@@ -295,6 +303,9 @@ async function saveValidation(
     body.created_at = timestamp;
   }
 
+  console.log(`Saving validation data to ${url} using ${method} method`);
+  console.log(`Validation data:`, JSON.stringify(body));
+
   const response = await fetch(url, {
     method: method,
     headers: {
@@ -327,6 +338,7 @@ serve(async (req) => {
     try {
       const body = await req.json();
       requirementId = body.requirementId;
+      console.log(`Received requirementId in request: ${requirementId}`);
     } catch (parseError) {
       console.error("Error parsing request body:", parseError);
       return new Response(
@@ -352,6 +364,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
     const supabaseAdmin = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
 
+    if (!supabaseUrl || !supabaseKey || !supabaseAdmin) {
+      throw new Error("Supabase credentials are missing");
+    }
+
     const headers = {
       "Content-Type": "application/json",
       apikey: supabaseKey,
@@ -364,18 +380,24 @@ serve(async (req) => {
       headers,
       requirementId
     );
+    
+    console.log("Found requirement:", requirement);
+    
     const analysis = await fetchAnalysis(supabaseUrl, headers, requirement.id);
+    console.log("Analysis data:", analysis ? "Found" : "Not found");
+    
     const marketAnalysis = await fetchMarketAnalysis(
       supabaseUrl,
       headers,
       requirement.id
     );
+    console.log("Market analysis data:", marketAnalysis ? "Found" : "Not found");
 
     // Generate and call OpenAI
     const prompt = generatePrompt(requirement, analysis, marketAnalysis);
     const validationContent = await callOpenAI(prompt);
 
-    console.log("Received validation response");
+    console.log("Received validation response from OpenAI");
 
     // Parse the JSON response
     const validationJson = parseOpenAIResponse(validationContent);

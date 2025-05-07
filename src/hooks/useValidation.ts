@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -97,22 +98,21 @@ export function useValidation(requirementId: string | null) {
       console.log("Fetching requirement with ID:", reqId);
       console.log("Decoded ID:", decodedReqId);
 
-      // First try to find the requirement by internal UUID (id)
+      // First try to find the requirement by req_id (REQ-XX-XX format)
       let { data, error } = await supabase
         .from("requirements")
         .select("*")
-        .eq("id", decodedReqId)
+        .eq("req_id", decodedReqId)
         .maybeSingle();
 
-      // If not found by internal UUID, try by req_id
+      // If not found by req_id, try by internal UUID (id)
       if (!data && !error) {
-        console.log("Not found by internal UUID, trying req_id...");
+        console.log("Not found by req_id, trying internal UUID...");
 
-        // Try exact match with req_id
         ({ data, error } = await supabase
           .from("requirements")
           .select("*")
-          .eq("req_id", decodedReqId)
+          .eq("id", decodedReqId)
           .maybeSingle());
       }
 
@@ -233,11 +233,6 @@ export function useValidation(requirementId: string | null) {
   };
 
   const handleValidate = async () => {
-    if (!requirementId) {
-      toast.error("Requirement ID is missing");
-      return;
-    }
-
     if (!requirement) {
       toast.error("Requirement data is missing");
       return;
@@ -247,12 +242,15 @@ export function useValidation(requirementId: string | null) {
 
     try {
       toast.info("Starting AI validation process...", { duration: 2000 });
-      console.log("Starting validation for requirement req_id:", requirementId);
-      console.log("Requirement object:", requirement);
+      console.log("Starting validation for requirement:", requirement);
+      
+      // Use req_id when available, fall back to internal UUID
+      const idForValidation = requirement.req_id || requirement.id;
+      console.log("Using ID for validation:", idForValidation);
 
-      // Call the AI validator edge function with the req_id
+      // Call the AI validator edge function
       const { data, error } = await supabase.functions.invoke("ai-validator", {
-        body: { requirementId: requirementId },
+        body: { requirementId: idForValidation },
       });
 
       if (error) {

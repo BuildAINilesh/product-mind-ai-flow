@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -53,7 +54,7 @@ export const MarketAnalysisDetail = ({
   }
 
   const handleValidatorClick = async () => {
-    if (!requirement.id || !requirement.req_id) {
+    if (!requirement.req_id) {
       toast.error("Requirement ID is missing");
       return;
     }
@@ -98,15 +99,14 @@ export const MarketAnalysisDetail = ({
       console.log("Created validation record with ID:", validationId);
       toast.success("Created validation record");
 
-      // Navigate to validator page
-      // Use internal UUID instead of req_id to match the expected format
+      // Navigate to validator page using the req_id (e.g., REQ-25-03) instead of internal UUID
       setIsCreatingValidation(false);
       console.log(
-        `Navigating to validator with internal UUID: ${requirement.id}`
+        `Navigating to validator with req_id: ${requirement.req_id}`
       );
       navigate(
         `/dashboard/validator?requirementId=${encodeURIComponent(
-          requirement.id
+          requirement.req_id
         )}`
       );
     } catch (error) {
