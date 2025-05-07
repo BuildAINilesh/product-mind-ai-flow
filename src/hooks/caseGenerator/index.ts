@@ -1,38 +1,67 @@
 
 import { useCaseGeneratorDashboard } from "./useCaseGeneratorDashboard";
 import { useCaseGeneratorDetails } from "./useCaseGeneratorDetails";
+import type {
+  ForgeFlowItem,
+  Requirement,
+  UserStory,
+  UseCase,
+  TestCase,
+  StatusData,
+} from "./types";
 
+// Main hook that combines dashboard and details functionality
 export const useCaseGenerator = (requirementId: string | null) => {
-  // If there's no requirementId, we're in the dashboard view
-  if (!requirementId) {
-    const dashboardData = useCaseGeneratorDashboard();
-    return {
-      ...dashboardData,
-      // Include null/empty values for the detail fields to maintain the same interface
-      requirement: null,
-      userStories: [],
-      useCases: [],
-      testCases: [],
-      isRequirementLoading: false,
-      isGenerating: false,
-      handleGenerate: () => Promise.resolve(),
-      statusData: {
-        userStoriesStatus: "Draft",
-        useCasesStatus: "Draft",
-        testCasesStatus: "Draft",
-      }
-    };
-  }
-  
-  // If there is a requirementId, we're in the details view
-  const detailsData = useCaseGeneratorDetails(requirementId);
+  // Dashboard data (always load this data)
+  const {
+    caseGeneratorItems,
+    loading,
+    dataFetchAttempted: dashboardDataFetched,
+  } = useCaseGeneratorDashboard();
+
+  // Details data (conditionally load based on requirementId)
+  const {
+    requirement,
+    userStories,
+    useCases,
+    testCases,
+    isRequirementLoading,
+    isGenerating,
+    dataFetchAttempted: detailsDataFetched,
+    handleGenerate,
+    statusData,
+  } = useCaseGeneratorDetails(requirementId);
+
   return {
-    // Include empty values for the dashboard fields to maintain the same interface
-    caseGeneratorItems: [],
-    loading: detailsData.isRequirementLoading,
-    ...detailsData
+    // Dashboard data
+    caseGeneratorItems,
+    loading,
+    
+    // Details data
+    requirement,
+    userStories,
+    useCases,
+    testCases,
+    isRequirementLoading,
+    isGenerating,
+    
+    // Combined data fetch status
+    dataFetchAttempted: requirementId ? detailsDataFetched : dashboardDataFetched,
+    
+    // Actions
+    handleGenerate,
+    statusData,
   };
 };
 
-// Export types
-export * from "./types";
+// Re-export types and other hooks for use elsewhere
+export type {
+  ForgeFlowItem,
+  Requirement,
+  UserStory,
+  UseCase,
+  TestCase,
+  StatusData,
+};
+
+export { useCaseGeneratorDashboard, useCaseGeneratorDetails };

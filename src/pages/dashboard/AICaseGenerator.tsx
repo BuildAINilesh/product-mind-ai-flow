@@ -13,11 +13,11 @@ const AICaseGenerator = () => {
   const [searchParams] = useSearchParams();
   const requirementId = searchParams.get("requirementId");
   const [error, setError] = useState<string | null>(null);
-  // Add a state to track whether auto-generation should happen
   const [shouldAutoGenerate, setShouldAutoGenerate] = useState<boolean>(false);
 
   console.log("AICaseGenerator - received requirementId:", requirementId);
 
+  // Always call the hook, regardless of whether requirementId exists
   const {
     caseGeneratorItems,
     loading,
@@ -35,9 +35,9 @@ const AICaseGenerator = () => {
   // Auto-generation should only happen when explicitly triggered, not on navigation
   useEffect(() => {
     const autoGenerateOnNav = async () => {
-      if (!shouldAutoGenerate) return;
+      if (!shouldAutoGenerate || !requirementId) return;
       
-      if (requirementId && dataFetchAttempted && !isRequirementLoading && 
+      if (dataFetchAttempted && !isRequirementLoading && 
           requirement && userStories.length === 0 && useCases.length === 0 && testCases.length === 0) {
         console.log("Auto-generating case data for requirement with auto-generate flag");
         handleGenerate();
@@ -49,17 +49,18 @@ const AICaseGenerator = () => {
     autoGenerateOnNav();
   }, [requirementId, dataFetchAttempted, isRequirementLoading, requirement, userStories.length, useCases.length, testCases.length, handleGenerate, shouldAutoGenerate]);
 
-  // If requirementId is provided, but we've tried to fetch and got an error or no data found
-  if (requirementId && dataFetchAttempted && !isRequirementLoading && !requirement) {
-    console.log("Requirement not found, showing NotFoundDisplay");
-    return (
-      <NotFoundDisplay requirementId={requirementId} />
-    );
-  }
-
-  // If requirementId is provided, show the details view for that requirement
+  // Render appropriate view based on requirementId
   if (requirementId) {
     console.log("Rendering AICaseGeneratorDetails");
+    
+    // Only show NotFoundDisplay if we've attempted to fetch data and found nothing
+    if (dataFetchAttempted && !isRequirementLoading && !requirement) {
+      console.log("Requirement not found, showing NotFoundDisplay");
+      return (
+        <NotFoundDisplay requirementId={requirementId} />
+      );
+    }
+
     return (
       <AICaseGeneratorDetails
         requirementId={requirementId}
@@ -75,17 +76,17 @@ const AICaseGenerator = () => {
         triggerAutoGenerate={() => setShouldAutoGenerate(true)}
       />
     );
+  } else {
+    // Show dashboard when no requirementId is provided
+    console.log("Rendering AICaseGeneratorDashboard");
+    return (
+      <AICaseGeneratorDashboard
+        caseGeneratorItems={caseGeneratorItems}
+        loading={loading}
+        dataFetchAttempted={dataFetchAttempted}
+      />
+    );
   }
-
-  // Show dashboard when no requirementId is provided
-  console.log("Rendering AICaseGeneratorDashboard");
-  return (
-    <AICaseGeneratorDashboard
-      caseGeneratorItems={caseGeneratorItems}
-      loading={loading}
-      dataFetchAttempted={dataFetchAttempted}
-    />
-  );
 };
 
 export default AICaseGenerator;
