@@ -20,7 +20,7 @@ serve(async (req) => {
   
   if (!openAIApiKey) {
     return new Response(
-      JSON.stringify({ error: "OpenAI API key not configured" }),
+      JSON.stringify({ success: false, error: "OpenAI API key not configured" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -32,7 +32,7 @@ serve(async (req) => {
     
     if (!requirementId) {
       return new Response(
-        JSON.stringify({ error: "Requirement ID is required" }),
+        JSON.stringify({ success: false, error: "Requirement ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -51,6 +51,7 @@ serve(async (req) => {
         caseGeneratorData.use_cases_status !== "Completed") {
       return new Response(
         JSON.stringify({ 
+          success: false, 
           error: "User stories and use cases must be generated first",
           status: {
             userStories: caseGeneratorData?.user_stories_status || "Not found",
@@ -62,17 +63,18 @@ serve(async (req) => {
     }
     
     // Update the status to "In Progress" in case_generator table
-    const { error: updateError } = await supabase
-      .from("case_generator")
-      .update({ test_cases_status: "In Progress" })
-      .eq("requirement_id", requirementId);
-    
-    if (updateError) {
-      console.error("Error updating status:", updateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to update generation status" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    try {
+      const { error: updateError } = await supabase
+        .from("case_generator")
+        .update({ test_cases_status: "In Progress" })
+        .eq("requirement_id", requirementId);
+      
+      if (updateError) {
+        console.error("Error updating status:", updateError);
+      }
+    } catch (err) {
+      console.error("Error updating status:", err);
+      // Continue with generation even if status update fails
     }
     
     // Get use cases
@@ -84,7 +86,7 @@ serve(async (req) => {
     if (useCasesError || !useCases || useCases.length === 0) {
       console.error("Error fetching use cases:", useCasesError);
       return new Response(
-        JSON.stringify({ error: "No use cases found for this requirement" }),
+        JSON.stringify({ success: false, error: "No use cases found for this requirement" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -100,7 +102,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -153,7 +155,7 @@ Output (Strict JSON):
         .eq("requirement_id", requirementId);
         
       return new Response(
-        JSON.stringify({ error: "Failed to generate test cases", openaiError: openAIResponse.error }),
+        JSON.stringify({ success: false, error: "Failed to generate test cases", openaiError: openAIResponse.error }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -175,7 +177,7 @@ Output (Strict JSON):
         .eq("requirement_id", requirementId);
         
       return new Response(
-        JSON.stringify({ error: "Failed to parse OpenAI response" }),
+        JSON.stringify({ success: false, error: "Failed to parse OpenAI response" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -190,7 +192,7 @@ Output (Strict JSON):
         .eq("requirement_id", requirementId);
         
       return new Response(
-        JSON.stringify({ error: "Invalid test cases format in response" }),
+        JSON.stringify({ success: false, error: "Invalid test cases format in response" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -239,7 +241,7 @@ Output (Strict JSON):
         .eq("requirement_id", requirementId);
         
       return new Response(
-        JSON.stringify({ error: "Failed to save test cases" }),
+        JSON.stringify({ success: false, error: "Failed to save test cases" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -280,7 +282,7 @@ Output (Strict JSON):
     }
     
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ success: false, error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
