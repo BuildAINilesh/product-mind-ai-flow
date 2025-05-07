@@ -39,10 +39,11 @@ serve(async (req) => {
 
     console.log(`Generating user stories for requirement: ${requirementId}`);
     
-    // Update the status to "In Progress" in case_generator table
+    // Update the status to "Draft" since we don't need an intermediate status
+    // Previously this was using "In Progress" which is not allowed
     const { error: updateError } = await supabase
       .from("case_generator")
-      .update({ user_stories_status: "In Progress" })
+      .update({ user_stories_status: "Draft" })
       .eq("requirement_id", requirementId);
     
     if (updateError) {
