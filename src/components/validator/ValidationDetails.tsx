@@ -61,61 +61,7 @@ const ValidationDetails = ({
       }
 
       console.log("Created AI Case Generator record:", data);
-      
-      // Create initial user story for the requirement
-      const { error: userStoryError } = await supabase
-        .from("user_stories")
-        .insert([
-          {
-            requirement_id: requirement.id,
-            story: `As a user of ${requirement.project_name || requirement.projectName || "the system"}, I want to use the core functionality to achieve my goals.`,
-            actor: "User"
-          }
-        ]);
-      
-      if (userStoryError) {
-        console.error("Error creating initial user story:", userStoryError);
-        toast.error("Failed to create initial user story");
-      }
-      
-      // Create initial use case for the requirement
-      const { error: useCaseError } = await supabase
-        .from("use_cases")
-        .insert([
-          {
-            requirement_id: requirement.id,
-            title: `Use ${requirement.project_name || requirement.projectName || "the system"}`,
-            main_flow: "User interacts with the system to complete their primary task.",
-            actor: "User",
-            preconditions: "User has access to the system.",
-            outcome: "User successfully completes their task."
-          }
-        ]);
-      
-      if (useCaseError) {
-        console.error("Error creating initial use case:", useCaseError);
-        toast.error("Failed to create initial use case");
-      }
-      
-      // Create initial test case for the requirement
-      const { error: testCaseError } = await supabase
-        .from("test_cases")
-        .insert([
-          {
-            requirement_id: requirement.id,
-            test_title: "Verify basic functionality",
-            steps: "1. Open the application\n2. Navigate to the main feature\n3. Test the core functionality",
-            expected_result: "Core functionality works as expected",
-            type: "functional"
-          }
-        ]);
-      
-      if (testCaseError) {
-        console.error("Error creating initial test case:", testCaseError);
-        toast.error("Failed to create initial test case");
-      }
-      
-      toast.success("AI Case Generator record and initial data created");
+      toast.success("AI Case Generator record created");
 
       // Navigate to the AI Case Generator page for this requirement
       navigate(`/dashboard/ai-cases?requirementId=${encodeURIComponent(requirementId)}`);
