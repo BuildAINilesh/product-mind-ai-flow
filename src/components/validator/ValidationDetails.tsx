@@ -6,6 +6,8 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import ValidationResultSummary from "./ValidationResultSummary";
 import ValidationRisksRecommendations from "./ValidationRisksRecommendations";
 import ValidationEmptyState from "./ValidationEmptyState";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ValidationDetailsProps {
   requirementId: string | null;
@@ -32,6 +34,43 @@ const ValidationDetails = ({
     return null;
   }
 
+  const handleAICaseGenerator = async () => {
+    if (!requirement || !requirement.id) {
+      toast.error("Requirement ID is missing");
+      return;
+    }
+
+    try {
+      // Create a new record in the case_generator table
+      const { data, error: insertError } = await supabase
+        .from("case_generator")
+        .insert([
+          {
+            requirement_id: requirement.id,
+            user_stories_status: "Draft",
+            use_cases_status: "Draft",
+            test_cases_status: "Draft",
+          }
+        ])
+        .select();
+
+      if (insertError) {
+        console.error("Error creating AI Case Generator record:", insertError);
+        toast.error("Failed to create AI Case Generator record");
+        return;
+      }
+
+      console.log("Created AI Case Generator record:", data);
+      toast.success("AI Case Generator record created");
+
+      // Navigate to the AI Case Generator page for this requirement
+      navigate(`/dashboard/ai-cases?requirementId=${encodeURIComponent(requirementId)}`);
+    } catch (error) {
+      console.error("Error in AI Case Generator process:", error);
+      toast.error("Failed to create AI Case Generator record");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -57,14 +96,14 @@ const ValidationDetails = ({
             <Button
               variant="validator"
               className="gap-1"
-              onClick={handleValidate}
+              onClick={validationData && validationData.status === "Completed" ? handleAICaseGenerator : handleValidate}
               disabled={isValidating}
             >
               <BrainCircuit className="h-4 w-4" />
               {isValidating
                 ? "Validating..."
                 : validationData && validationData.status === "Completed"
-                ? "Re-validate"
+                ? "AI Case Generator"
                 : "Analyze"}
             </Button>
           </div>
