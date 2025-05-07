@@ -8,8 +8,12 @@ interface StatusBadgeProps {
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, showForItemType = "all" }) => {
-  // Don't render badge for user stories when specifically set
-  if (showForItemType === "userStories") {
+  // Don't render badge for user stories, use cases, and test cases when specifically set
+  if (
+    (showForItemType === "userStories") || 
+    (showForItemType === "useCases") || 
+    (showForItemType === "testCases")
+  ) {
     return null;
   }
 

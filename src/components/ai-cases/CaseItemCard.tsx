@@ -34,6 +34,7 @@ const CaseItemCard: React.FC<CaseItemCardProps> = ({ item, index, type }) => {
     <Card key={item.id} className="p-4 mb-4">
       <div className="flex justify-between items-start mb-2">
         <h3 className="text-sm font-medium">{getItemTitle()}</h3>
+        {/* Pass the type to StatusBadge to control visibility */}
         <StatusBadge status={item.status || "Draft"} showForItemType={type} />
       </div>
       
