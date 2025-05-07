@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,10 +21,10 @@ const ValidationDetails = ({
   validationData,
   isRequirementLoading,
   isValidating,
-  handleValidate
+  handleValidate,
 }: ValidationDetailsProps) => {
   const navigate = useNavigate();
-  
+
   if (!requirementId) {
     return null;
   }
@@ -47,14 +46,18 @@ const ValidationDetails = ({
             <EditIcon className="h-4 w-4" />
             Edit
           </Button>
-          <Button 
-            variant="validator" 
+          <Button
+            variant="validator"
             className="gap-1"
             onClick={handleValidate}
             disabled={isValidating}
           >
             <BrainCircuit className="h-4 w-4" />
-            {isValidating ? "Validating..." : validationData ? "Create ForgeFlow AI" : "Analyze"}
+            {isValidating
+              ? "Validating..."
+              : validationData
+              ? "Create AI Case Generator"
+              : "Analyze"}
           </Button>
         </div>
       </div>
@@ -68,22 +71,22 @@ const ValidationDetails = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left column - Summary and scores */}
           <div className="md:col-span-2">
-            <ValidationResultSummary 
-              validationData={validationData} 
-              requirement={requirement} 
+            <ValidationResultSummary
+              validationData={validationData}
+              requirement={requirement}
             />
           </div>
 
           {/* Right column - Risks and Recommendations */}
           <div>
-            <ValidationRisksRecommendations 
+            <ValidationRisksRecommendations
               validationData={validationData}
               requirement={requirement}
             />
           </div>
         </div>
       ) : (
-        <ValidationEmptyState 
+        <ValidationEmptyState
           handleValidate={handleValidate}
           isValidating={isValidating}
         />

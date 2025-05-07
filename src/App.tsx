@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,8 +30,7 @@ import NewRequirement from "./pages/requirements/NewRequirement";
 import EditRequirement from "./pages/requirements/EditRequirement";
 import MarketSense from "./pages/dashboard/MarketSense";
 import RequirementValidator from "./pages/dashboard/RequirementValidator";
-import ForgeFlowAI from "./pages/dashboard/ForgeFlowAI";
-import BugShield from "./pages/dashboard/BugShield";
+import AICaseGenerator from "./pages/dashboard/AICaseGenerator";
 import SmartSignoff from "./pages/dashboard/SmartSignoff";
 import Profile from "./pages/dashboard/Profile";
 
@@ -77,8 +75,7 @@ const App = () => (
                 />
                 <Route path="market-sense" element={<MarketSense />} />
                 <Route path="validator" element={<RequirementValidator />} />
-                <Route path="forgeflow" element={<ForgeFlowAI />} />
-                <Route path="bug-shield" element={<BugShield />} />
+                <Route path="ai-cases" element={<AICaseGenerator />} />
                 <Route path="signoff" element={<SmartSignoff />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="support" element={<Support />} />

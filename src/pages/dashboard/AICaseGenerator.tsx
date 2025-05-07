@@ -1,10 +1,10 @@
 import { useSearchParams } from "react-router-dom";
-import { useForgeFlow } from "@/hooks/useForgeFlow";
-import ForgeFlowDashboard from "@/components/forgeflow/ForgeFlowDashboard";
-import ForgeFlowDetails from "@/components/forgeflow/ForgeFlowDetails";
+import { useCaseGenerator } from "@/hooks/useCaseGenerator";
+import AICaseGeneratorDashboard from "@/components/ai-cases/AICaseGeneratorDashboard";
+import AICaseGeneratorDetails from "@/components/ai-cases/AICaseGeneratorDetails";
 
-const ForgeFlowAI = () => {
-  console.log("ForgeFlowAI component rendering");
+const AICaseGenerator = () => {
+  console.log("AICaseGenerator component rendering");
 
   const [searchParams] = useSearchParams();
   const requirementId = searchParams.get("requirementId");
@@ -12,7 +12,7 @@ const ForgeFlowAI = () => {
   console.log("requirementId:", requirementId);
 
   const {
-    forgeflowItems,
+    caseGeneratorItems,
     loading,
     requirement,
     userStories,
@@ -22,10 +22,10 @@ const ForgeFlowAI = () => {
     isGenerating,
     dataFetchAttempted,
     handleGenerate,
-  } = useForgeFlow(requirementId);
+  } = useCaseGenerator(requirementId);
 
-  console.log("ForgeFlowAI hook data:", {
-    itemsCount: forgeflowItems.length,
+  console.log("AICaseGenerator hook data:", {
+    itemsCount: caseGeneratorItems.length,
     loading,
     requirement,
     userStoriesCount: userStories.length,
@@ -38,9 +38,9 @@ const ForgeFlowAI = () => {
 
   // If requirementId is provided, show the details view for that requirement
   if (requirementId) {
-    console.log("Rendering ForgeFlowDetails");
+    console.log("Rendering AICaseGeneratorDetails");
     return (
-      <ForgeFlowDetails
+      <AICaseGeneratorDetails
         requirementId={requirementId}
         requirement={requirement}
         userStories={userStories}
@@ -53,15 +53,15 @@ const ForgeFlowAI = () => {
     );
   }
 
-  // Show forgeflow dashboard when no requirementId is provided
-  console.log("Rendering ForgeFlowDashboard");
+  // Show dashboard when no requirementId is provided
+  console.log("Rendering AICaseGeneratorDashboard");
   return (
-    <ForgeFlowDashboard
-      forgeflowItems={forgeflowItems}
+    <AICaseGeneratorDashboard
+      caseGeneratorItems={caseGeneratorItems}
       loading={loading}
       dataFetchAttempted={dataFetchAttempted}
     />
   );
 };
 
-export default ForgeFlowAI;
+export default AICaseGenerator;

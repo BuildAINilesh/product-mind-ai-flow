@@ -10,7 +10,7 @@ import axios from "axios";
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 // Mock data for testing
-const mockForgeFlowItems: ForgeFlowItem[] = [
+const mockCaseGeneratorItems: ForgeFlowItem[] = [
   {
     id: "FF-001",
     requirementId: "REQ-25-01",
@@ -78,26 +78,26 @@ const mockTestCases: TestCase[] = [
   },
 ];
 
-// Get all forgeflow items for the dashboard view
-export const getForgeFlowItems = async (): Promise<ForgeFlowItem[]> => {
+// Get all case generator items for the dashboard view
+export const getCaseGeneratorItems = async (): Promise<ForgeFlowItem[]> => {
   try {
     // For real API, uncomment this
-    // const response = await axios.get(`${API_URL}/forgeflow`);
+    // const response = await axios.get(`${API_URL}/case-generator`);
     // return response.data;
 
     // For testing, return mock data
-    return Promise.resolve(mockForgeFlowItems);
+    return Promise.resolve(mockCaseGeneratorItems);
   } catch (error) {
-    console.error("Error fetching forgeflow items:", error);
-    return mockForgeFlowItems; // Return mock data on error
+    console.error("Error fetching case generator items:", error);
+    return mockCaseGeneratorItems; // Return mock data on error
   }
 };
 
-// Get forgeflow data for a specific requirement
-export const getForgeFlowData = async (requirementId: string) => {
+// Get case generator data for a specific requirement
+export const getCaseGeneratorData = async (requirementId: string) => {
   try {
     // For real API, uncomment this
-    // const response = await axios.get(`${API_URL}/forgeflow/${requirementId}`);
+    // const response = await axios.get(`${API_URL}/case-generator/${requirementId}`);
     // return response.data;
 
     // For testing, return mock data
@@ -108,7 +108,7 @@ export const getForgeFlowData = async (requirementId: string) => {
     });
   } catch (error) {
     console.error(
-      `Error fetching forgeflow data for requirement ${requirementId}:`,
+      `Error fetching case generator data for requirement ${requirementId}:`,
       error
     );
     // Return mock data on error
@@ -120,14 +120,14 @@ export const getForgeFlowData = async (requirementId: string) => {
   }
 };
 
-// Generate or regenerate forgeflow elements
-export const generateForgeFlowElements = async (
+// Generate or regenerate case generator elements
+export const generateCaseGeneratorElements = async (
   requirementId: string,
   type?: "userStories" | "useCases" | "testCases"
 ) => {
   try {
     // For real API, uncomment this
-    // const response = await axios.post(`${API_URL}/forgeflow/generate`, {
+    // const response = await axios.post(`${API_URL}/case-generator/generate`, {
     //   requirementId,
     //   type,
     // });
@@ -141,7 +141,7 @@ export const generateForgeFlowElements = async (
     });
   } catch (error) {
     console.error(
-      `Error generating forgeflow elements for requirement ${requirementId}:`,
+      `Error generating case generator elements for requirement ${requirementId}:`,
       error
     );
     throw error;

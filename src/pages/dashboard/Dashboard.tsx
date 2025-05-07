@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -272,37 +271,18 @@ const Dashboard = () => {
           </AICard>
 
           <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/test-gen" className="block h-full">
+            <Link to="/dashboard/ai-cases" className="block h-full">
               <div className="flex items-start gap-4">
                 <div className="p-2 rounded-lg bg-secondary/10">
                   <Network className="h-5 w-5 text-secondary" />
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-1">ForgeFlow AI</h4>
+                  <h4 className="font-semibold mb-1">AI Case Generator</h4>
                   <p className="text-sm text-muted-foreground mb-3">
                     Generate comprehensive test cases using advanced AI models.
                   </p>
                   <span className="text-primary text-sm font-medium">
                     Generate Tests
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </AICard>
-
-          <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/bug-shield" className="block h-full">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Layers className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">BugShield ML</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Predict potential defects using predictive AI modeling.
-                  </p>
-                  <span className="text-primary text-sm font-medium">
-                    Predict Defects
                   </span>
                 </div>
               </div>

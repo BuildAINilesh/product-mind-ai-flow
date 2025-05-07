@@ -1,14 +1,32 @@
-
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input"; 
+import { Input } from "@/components/ui/input";
 import { ClipboardCheck, FileText, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import { TestCases, generateTestCasesFromRequirements, TestCase } from "@/utils/test-generation";
+import {
+  TestCases,
+  generateTestCasesFromRequirements,
+  TestCase,
+} from "@/utils/test-generation";
 import TestResultPanel from "@/components/test-gen/TestResultPanel";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+// Type for the requirements array to fix the "any" type
+type Requirement = {
+  id: string;
+  req_id: string;
+  project_name: string;
+};
 
 const TestGen = () => {
   const [requirementText, setRequirementText] = useState("");
@@ -16,7 +34,7 @@ const TestGen = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [testCases, setTestCases] = useState<TestCases | null>(null);
-  const [requirements, setRequirements] = useState<any[]>([]);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [isLoadingRequirements, setIsLoadingRequirements] = useState(false);
 
   // Fetch requirements on component mount
@@ -31,11 +49,11 @@ const TestGen = () => {
         .from("requirements")
         .select("id, req_id, project_name")
         .order("created_at", { ascending: false });
-      
+
       if (error) {
         throw error;
       }
-      
+
       setRequirements(data || []);
     } catch (error) {
       console.error("Error fetching requirements:", error);
@@ -52,7 +70,7 @@ const TestGen = () => {
     }
 
     setIsGenerating(true);
-    
+
     // Generate test cases based on input requirements
     setTimeout(() => {
       const generatedTests = generateTestCasesFromRequirements(requirementText);
@@ -74,48 +92,49 @@ const TestGen = () => {
       // Fix: type needs to be explicitly cast to the expected enum values
       // Save test cases to the database
       const allTestCases = [
-        ...testCases.functional.map(tc => ({ 
+        ...testCases.functional.map((tc) => ({
           requirement_id: requirementId,
           test_title: tc.title,
           steps: JSON.stringify(tc.steps),
           expected_result: tc.expectedResult,
-          type: 'functional' as const  // Type assertion to const
+          type: "functional" as const, // Type assertion to const
         })),
-        ...testCases.integration.map(tc => ({ 
+        ...testCases.integration.map((tc) => ({
           requirement_id: requirementId,
           test_title: tc.title,
           steps: JSON.stringify(tc.steps),
           expected_result: tc.expectedResult,
-          type: 'integration' as const  // Type assertion to const
+          type: "integration" as const, // Type assertion to const
         })),
-        ...testCases.user.map(tc => ({ 
+        ...testCases.user.map((tc) => ({
           requirement_id: requirementId,
           test_title: tc.title,
           steps: JSON.stringify(tc.steps),
           expected_result: tc.expectedResult,
-          type: 'functional' as const  // Type assertion to const
-        }))
+          type: "functional" as const, // Type assertion to const
+        })),
       ];
-      
+
       // Insert each test case individually to avoid array type mismatch
       for (const testCase of allTestCases) {
-        const { error } = await supabase
-          .from('test_cases')
-          .insert(testCase);
-        
+        const { error } = await supabase.from("test_cases").insert(testCase);
+
         if (error) throw error;
       }
-      
-      // Update forgeflow table status
+
+      // Update case_generator table status
       await supabase
-        .from('forgeflow')
-        .upsert({ 
-          requirement_id: requirementId,
-          test_cases_status: 'Completed'
-        }, { 
-          onConflict: 'requirement_id' 
-        });
-      
+        .from("case_generator" as keyof Database["public"]["Tables"])
+        .upsert(
+          {
+            requirement_id: requirementId,
+            test_cases_status: "Completed",
+          },
+          {
+            onConflict: "requirement_id",
+          }
+        );
+
       toast.success("Test cases saved to database successfully");
     } catch (error) {
       console.error("Error saving test cases:", error);
@@ -134,7 +153,7 @@ const TestGen = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">ForgeFlow AI</h1>
+        <h1 className="text-2xl font-bold">AI Case Generator</h1>
         <p className="text-muted-foreground">
           Generate comprehensive test cases from requirements
         </p>
@@ -152,7 +171,10 @@ const TestGen = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label htmlFor="requirement-select" className="block text-sm font-medium mb-1">
+              <label
+                htmlFor="requirement-select"
+                className="block text-sm font-medium mb-1"
+              >
                 Select Requirement (Optional)
               </label>
               <select
@@ -170,8 +192,8 @@ const TestGen = () => {
                 ))}
               </select>
             </div>
-            
-            <Textarea 
+
+            <Textarea
               placeholder="Enter your requirements here..."
               className="min-h-[200px]"
               value={requirementText}
@@ -179,11 +201,13 @@ const TestGen = () => {
             />
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={handleClear}>Clear</Button>
+            <Button variant="outline" onClick={handleClear}>
+              Clear
+            </Button>
             <div className="space-x-2">
               {testCases && requirementId && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleSaveTestCases}
                   disabled={isSaving}
                   className="gap-2"
@@ -198,8 +222,8 @@ const TestGen = () => {
                   )}
                 </Button>
               )}
-              <Button 
-                disabled={isGenerating} 
+              <Button
+                disabled={isGenerating}
                 onClick={handleGenerateTests}
                 className="gap-2"
               >
@@ -219,9 +243,7 @@ const TestGen = () => {
           </CardFooter>
         </Card>
 
-        <TestResultPanel 
-          testCases={testCases} 
-        />
+        <TestResultPanel testCases={testCases} />
       </div>
     </div>
   );

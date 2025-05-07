@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { UserStory, UseCase, TestCase } from "@/hooks/useForgeFlow";
+import { UserStory, UseCase, TestCase } from "@/hooks/useCaseGenerator";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -17,7 +17,7 @@ import {
 } from "@/components/icons";
 import Loader from "@/components/shared/Loader";
 
-interface ForgeFlowDetailsProps {
+interface AICaseGeneratorDetailsProps {
   requirementId: string;
   requirement: {
     id: string;
@@ -36,7 +36,7 @@ interface ForgeFlowDetailsProps {
   ) => Promise<void>;
 }
 
-const ForgeFlowDetails: React.FC<ForgeFlowDetailsProps> = ({
+const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
   requirementId,
   requirement,
   userStories,
@@ -112,12 +112,12 @@ const ForgeFlowDetails: React.FC<ForgeFlowDetailsProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Link
-            to="/dashboard/forgeflow"
+            to="/dashboard/ai-cases"
             className="text-slate-500 hover:text-slate-700"
           >
             <ArrowLeftIcon className="h-5 w-5" />
           </Link>
-          <h1 className="text-2xl font-bold">ForgeFlow Analysis</h1>
+          <h1 className="text-2xl font-bold">AI Case Analysis</h1>
         </div>
         <Button
           variant="default"
@@ -198,45 +198,39 @@ const ForgeFlowDetails: React.FC<ForgeFlowDetailsProps> = ({
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">User Stories</h2>
             <Button
-              variant="default"
+              variant="outline"
               disabled={isGenerating}
               onClick={() => handleGenerateClick("userStories")}
               className="flex items-center space-x-2"
             >
               {isGenerating ? (
-                <Loader size="small" />
+                <>
+                  <Loader size="small" />
+                  <span>Generating...</span>
+                </>
               ) : (
-                <RefreshIcon className="h-4 w-4" />
+                <>
+                  <RefreshIcon className="h-4 w-4" />
+                  <span>Regenerate</span>
+                </>
               )}
-              <span>
-                {isGenerating ? "Generating..." : "Generate User Stories"}
-              </span>
             </Button>
           </div>
 
           {userStories.length > 0 ? (
             userStories.map((story, index) => renderItemCard(story, index))
           ) : (
-            <div className="text-center p-8 bg-slate-50 rounded-md">
-              <BookIcon className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+            <div className="bg-slate-50 p-8 rounded-md text-center">
+              <BookIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
               <h3 className="text-lg font-medium mb-2">No User Stories Yet</h3>
               <p className="text-slate-500 mb-4">
-                Generate user stories based on this requirement.
+                Generate user stories from the requirement to see them here.
               </p>
               <Button
-                variant="default"
-                disabled={isGenerating}
                 onClick={() => handleGenerateClick("userStories")}
-                className="flex items-center space-x-2 mx-auto"
+                disabled={isGenerating}
               >
-                {isGenerating ? (
-                  <Loader size="small" />
-                ) : (
-                  <RefreshIcon className="h-4 w-4" />
-                )}
-                <span>
-                  {isGenerating ? "Generating..." : "Generate User Stories"}
-                </span>
+                {isGenerating ? "Generating..." : "Generate User Stories"}
               </Button>
             </div>
           )}
@@ -246,45 +240,39 @@ const ForgeFlowDetails: React.FC<ForgeFlowDetailsProps> = ({
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Use Cases</h2>
             <Button
-              variant="default"
+              variant="outline"
               disabled={isGenerating}
               onClick={() => handleGenerateClick("useCases")}
               className="flex items-center space-x-2"
             >
               {isGenerating ? (
-                <Loader size="small" />
+                <>
+                  <Loader size="small" />
+                  <span>Generating...</span>
+                </>
               ) : (
-                <RefreshIcon className="h-4 w-4" />
+                <>
+                  <RefreshIcon className="h-4 w-4" />
+                  <span>Regenerate</span>
+                </>
               )}
-              <span>
-                {isGenerating ? "Generating..." : "Generate Use Cases"}
-              </span>
             </Button>
           </div>
 
           {useCases.length > 0 ? (
             useCases.map((useCase, index) => renderItemCard(useCase, index))
           ) : (
-            <div className="text-center p-8 bg-slate-50 rounded-md">
-              <CodeIcon className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+            <div className="bg-slate-50 p-8 rounded-md text-center">
+              <CodeIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
               <h3 className="text-lg font-medium mb-2">No Use Cases Yet</h3>
               <p className="text-slate-500 mb-4">
-                Generate use cases based on this requirement.
+                Generate use cases from the requirement to see them here.
               </p>
               <Button
-                variant="default"
-                disabled={isGenerating}
                 onClick={() => handleGenerateClick("useCases")}
-                className="flex items-center space-x-2 mx-auto"
+                disabled={isGenerating}
               >
-                {isGenerating ? (
-                  <Loader size="small" />
-                ) : (
-                  <RefreshIcon className="h-4 w-4" />
-                )}
-                <span>
-                  {isGenerating ? "Generating..." : "Generate Use Cases"}
-                </span>
+                {isGenerating ? "Generating..." : "Generate Use Cases"}
               </Button>
             </div>
           )}
@@ -294,45 +282,39 @@ const ForgeFlowDetails: React.FC<ForgeFlowDetailsProps> = ({
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Test Cases</h2>
             <Button
-              variant="default"
+              variant="outline"
               disabled={isGenerating}
               onClick={() => handleGenerateClick("testCases")}
               className="flex items-center space-x-2"
             >
               {isGenerating ? (
-                <Loader size="small" />
+                <>
+                  <Loader size="small" />
+                  <span>Generating...</span>
+                </>
               ) : (
-                <RefreshIcon className="h-4 w-4" />
+                <>
+                  <RefreshIcon className="h-4 w-4" />
+                  <span>Regenerate</span>
+                </>
               )}
-              <span>
-                {isGenerating ? "Generating..." : "Generate Test Cases"}
-              </span>
             </Button>
           </div>
 
           {testCases.length > 0 ? (
             testCases.map((testCase, index) => renderItemCard(testCase, index))
           ) : (
-            <div className="text-center p-8 bg-slate-50 rounded-md">
-              <TestTubeIcon className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+            <div className="bg-slate-50 p-8 rounded-md text-center">
+              <TestTubeIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
               <h3 className="text-lg font-medium mb-2">No Test Cases Yet</h3>
               <p className="text-slate-500 mb-4">
-                Generate test cases based on this requirement.
+                Generate test cases from the requirement to see them here.
               </p>
               <Button
-                variant="default"
-                disabled={isGenerating}
                 onClick={() => handleGenerateClick("testCases")}
-                className="flex items-center space-x-2 mx-auto"
+                disabled={isGenerating}
               >
-                {isGenerating ? (
-                  <Loader size="small" />
-                ) : (
-                  <RefreshIcon className="h-4 w-4" />
-                )}
-                <span>
-                  {isGenerating ? "Generating..." : "Generate Test Cases"}
-                </span>
+                {isGenerating ? "Generating..." : "Generate Test Cases"}
               </Button>
             </div>
           )}
@@ -342,4 +324,4 @@ const ForgeFlowDetails: React.FC<ForgeFlowDetailsProps> = ({
   );
 };
 
-export default ForgeFlowDetails;
+export default AICaseGeneratorDetails;

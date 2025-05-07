@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ForgeFlowItem } from "@/hooks/useForgeFlow";
+import { ForgeFlowItem } from "@/hooks/useCaseGenerator";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -20,35 +20,35 @@ import {
 import Loader from "@/components/shared/Loader";
 import EmptyState from "@/components/shared/EmptyState";
 
-interface ForgeFlowDashboardProps {
-  forgeflowItems: ForgeFlowItem[];
+interface AICaseGeneratorDashboardProps {
+  caseGeneratorItems: ForgeFlowItem[];
   loading: boolean;
   dataFetchAttempted: boolean;
 }
 
-const ForgeFlowDashboard: React.FC<ForgeFlowDashboardProps> = ({
-  forgeflowItems,
+const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
+  caseGeneratorItems,
   loading,
   dataFetchAttempted,
 }) => {
-  console.log("ForgeFlowDashboard rendering with props:", {
-    itemsCount: forgeflowItems.length,
+  console.log("AICaseGeneratorDashboard rendering with props:", {
+    itemsCount: caseGeneratorItems.length,
     loading,
     dataFetchAttempted,
   });
 
   // Calculate summary statistics
-  const totalItems = forgeflowItems.length;
+  const totalItems = caseGeneratorItems.length;
 
-  const completedUserStories = forgeflowItems.filter(
+  const completedUserStories = caseGeneratorItems.filter(
     (item) => item.userStoriesStatus === "completed"
   ).length;
 
-  const completedUseCases = forgeflowItems.filter(
+  const completedUseCases = caseGeneratorItems.filter(
     (item) => item.useCasesStatus === "completed"
   ).length;
 
-  const completedTestCases = forgeflowItems.filter(
+  const completedTestCases = caseGeneratorItems.filter(
     (item) => item.testCasesStatus === "completed"
   ).length;
 
@@ -67,7 +67,7 @@ const ForgeFlowDashboard: React.FC<ForgeFlowDashboardProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">ForgeFlow AI</h1>
+        <h1 className="text-2xl font-bold">AI Case Generator</h1>
         <p className="text-slate-500">
           AI-powered generation of user stories, use cases, and test cases for
           your requirements
@@ -111,7 +111,9 @@ const ForgeFlowDashboard: React.FC<ForgeFlowDashboardProps> = ({
 
       <div className="bg-white rounded-lg shadow">
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-2">ForgeFlow Analyses</h2>
+          <h2 className="text-xl font-semibold mb-2">
+            Case Generator Analyses
+          </h2>
           <p className="text-slate-500 mb-4">
             View and manage your AI-powered requirement analyses
           </p>
@@ -131,9 +133,9 @@ const ForgeFlowDashboard: React.FC<ForgeFlowDashboardProps> = ({
             <div className="flex justify-center py-8">
               <Loader size="large" />
             </div>
-          ) : dataFetchAttempted && forgeflowItems.length === 0 ? (
+          ) : dataFetchAttempted && caseGeneratorItems.length === 0 ? (
             <EmptyState
-              title="No ForgeFlow analyses yet"
+              title="No case analyses yet"
               description="Select a requirement to generate user stories, use cases, and test cases."
               icon={<CodeIcon className="h-12 w-12" />}
             />
@@ -152,7 +154,7 @@ const ForgeFlowDashboard: React.FC<ForgeFlowDashboardProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {forgeflowItems.map((item) => (
+                {caseGeneratorItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{item.id}</TableCell>
                     <TableCell>{item.projectName}</TableCell>
@@ -169,7 +171,7 @@ const ForgeFlowDashboard: React.FC<ForgeFlowDashboardProps> = ({
                     </TableCell>
                     <TableCell>
                       <Link
-                        to={`/dashboard/forgeflow?requirementId=${item.requirementId}`}
+                        to={`/dashboard/ai-cases?requirementId=${item.requirementId}`}
                         className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
                       >
                         View Details
@@ -186,4 +188,4 @@ const ForgeFlowDashboard: React.FC<ForgeFlowDashboardProps> = ({
   );
 };
 
-export default ForgeFlowDashboard;
+export default AICaseGeneratorDashboard;

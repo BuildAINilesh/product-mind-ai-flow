@@ -13,9 +13,8 @@ const DashboardLayout = () => {
     if (path.includes("/requirements")) return "Requirements";
     if (path.includes("/market-sense")) return "MarketSense";
     if (path.includes("/validator")) return "Requirement Validator";
-    if (path.includes("/forgeflow")) return "ForgeFlow AI";
+    if (path.includes("/ai-cases")) return "AI Case Generator";
     if (path.includes("/test-gen")) return "Test Generator";
-    if (path.includes("/bug-shield")) return "BugShield";
     if (path.includes("/signoff")) return "SmartSignoff";
     if (path.includes("/settings")) return "Settings";
     if (path.includes("/support")) return "Help & Support";

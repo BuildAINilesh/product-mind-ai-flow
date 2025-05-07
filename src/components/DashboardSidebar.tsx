@@ -76,13 +76,8 @@ const DashboardSidebar = () => {
     },
     {
       icon: <Network size={18} />,
-      label: "ForgeFlow AI",
-      href: "/dashboard/forgeflow",
-    },
-    {
-      icon: <Layers size={18} />,
-      label: "BugShield ML",
-      href: "/dashboard/bug-shield",
+      label: "AI Case Generator",
+      href: "/dashboard/ai-cases",
     },
     {
       icon: <CircuitBoard size={18} />,

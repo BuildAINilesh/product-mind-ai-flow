@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { getRequirement } from "@/services/requirementService";
 import {
-  getForgeFlowItems,
-  getForgeFlowData,
-} from "@/services/forgeFlowService";
+  getCaseGeneratorItems,
+  getCaseGeneratorData,
+  generateCaseGeneratorElements,
+} from "@/services/caseGeneratorService";
 
 export interface ForgeFlowItem {
   id: string;
@@ -34,14 +35,26 @@ export interface TestCase {
   status: string;
 }
 
-export const useForgeFlow = (requirementId: string | null) => {
+// Add a type definition for Requirement
+interface Requirement {
+  id: string;
+  projectName: string;
+  industry: string;
+  created: string;
+  description: string;
+  [key: string]: any; // Allow additional properties
+}
+
+export const useCaseGenerator = (requirementId: string | null) => {
   // States for dashboard view
-  const [forgeflowItems, setForgeFlowItems] = useState<ForgeFlowItem[]>([]);
+  const [caseGeneratorItems, setCaseGeneratorItems] = useState<ForgeFlowItem[]>(
+    []
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [dataFetchAttempted, setDataFetchAttempted] = useState<boolean>(false);
 
   // States for detail view
-  const [requirement, setRequirement] = useState<any>(null);
+  const [requirement, setRequirement] = useState<Requirement | null>(null);
   const [userStories, setUserStories] = useState<UserStory[]>([]);
   const [useCases, setUseCases] = useState<UseCase[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
@@ -49,29 +62,29 @@ export const useForgeFlow = (requirementId: string | null) => {
     useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
-  // Fetch forgeflow items for dashboard view
+  // Fetch case generator items for dashboard view
   useEffect(() => {
-    const fetchForgeFlowItems = async () => {
+    const fetchCaseGeneratorItems = async () => {
       if (requirementId) return;
 
       setLoading(true);
       try {
-        const data = await getForgeFlowItems();
-        setForgeFlowItems(data);
+        const data = await getCaseGeneratorItems();
+        setCaseGeneratorItems(data);
       } catch (error) {
-        console.error("Error fetching forgeflow items:", error);
+        console.error("Error fetching case generator items:", error);
       } finally {
         setLoading(false);
         setDataFetchAttempted(true);
       }
     };
 
-    fetchForgeFlowItems();
+    fetchCaseGeneratorItems();
   }, [requirementId]);
 
-  // Fetch requirement and forgeflow data for detail view
+  // Fetch requirement and case generator data for detail view
   useEffect(() => {
-    const fetchRequirementAndForgeFlowData = async () => {
+    const fetchRequirementAndCaseGeneratorData = async () => {
       if (!requirementId) return;
 
       setIsRequirementLoading(true);
@@ -80,25 +93,28 @@ export const useForgeFlow = (requirementId: string | null) => {
         const reqData = await getRequirement(requirementId);
         setRequirement(reqData);
 
-        // Fetch forgeflow data for this requirement
-        const forgeFlowData = await getForgeFlowData(requirementId);
+        // Fetch case generator data for this requirement
+        const caseGeneratorData = await getCaseGeneratorData(requirementId);
 
-        if (forgeFlowData) {
-          setUserStories(forgeFlowData.userStories || []);
-          setUseCases(forgeFlowData.useCases || []);
-          setTestCases(forgeFlowData.testCases || []);
+        if (caseGeneratorData) {
+          setUserStories(caseGeneratorData.userStories || []);
+          setUseCases(caseGeneratorData.useCases || []);
+          setTestCases(caseGeneratorData.testCases || []);
         }
       } catch (error) {
-        console.error("Error fetching requirement or forgeflow data:", error);
+        console.error(
+          "Error fetching requirement or case generator data:",
+          error
+        );
       } finally {
         setIsRequirementLoading(false);
       }
     };
 
-    fetchRequirementAndForgeFlowData();
+    fetchRequirementAndCaseGeneratorData();
   }, [requirementId]);
 
-  // Function to generate/regenerate forgeflow elements
+  // Function to generate/regenerate case generator elements
   const handleGenerate = async (
     type?: "userStories" | "useCases" | "testCases"
   ) => {
@@ -106,30 +122,29 @@ export const useForgeFlow = (requirementId: string | null) => {
 
     setIsGenerating(true);
     try {
-      // Here you would call your API to generate the requested elements
-      // For example, calling an endpoint like /api/forgeflow/generate
-      // with the requirementId and type parameters
-
-      // Example API call (replace with actual implementation):
-      // const generatedData = await generateForgeFlowElements(requirementId, type);
+      // Call the API to generate the requested elements
+      const generatedData = await generateCaseGeneratorElements(
+        requirementId,
+        type
+      );
 
       // After successful generation, refresh the data
-      const forgeFlowData = await getForgeFlowData(requirementId);
+      const caseGeneratorData = await getCaseGeneratorData(requirementId);
 
-      if (forgeFlowData) {
-        setUserStories(forgeFlowData.userStories || []);
-        setUseCases(forgeFlowData.useCases || []);
-        setTestCases(forgeFlowData.testCases || []);
+      if (caseGeneratorData) {
+        setUserStories(caseGeneratorData.userStories || []);
+        setUseCases(caseGeneratorData.useCases || []);
+        setTestCases(caseGeneratorData.testCases || []);
       }
     } catch (error) {
-      console.error("Error generating forgeflow elements:", error);
+      console.error("Error generating case generator elements:", error);
     } finally {
       setIsGenerating(false);
     }
   };
 
   return {
-    forgeflowItems,
+    caseGeneratorItems,
     loading,
     requirement,
     userStories,
