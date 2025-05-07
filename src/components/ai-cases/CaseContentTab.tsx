@@ -12,7 +12,7 @@ interface CaseContentTabProps {
   title: string;
   icon: LucideIcon;
   status: string;
-  items: Array<{ id: string; content: string; status: string }>;
+  items: Array<{ id: string; content: string; status: string; actor?: string }>;
   type: "userStories" | "useCases" | "testCases";
   isGenerating: boolean;
   onGenerate: () => void;
@@ -35,7 +35,8 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="flex items-center">
-          <StatusBadge status={status} />
+          {/* Only show status badge for useCases and testCases at the header level */}
+          {type !== "userStories" && <StatusBadge status={status} />}
           <Button
             variant="outline"
             disabled={isGenerating}

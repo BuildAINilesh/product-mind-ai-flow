@@ -5,7 +5,7 @@ import CaseContentTab from "../CaseContentTab";
 import { BookIcon, CodeIcon, TestTubeIcon } from "lucide-react";
 
 interface AICaseTabContentProps {
-  userStories: Array<{ id: string; content: string; status: string }>;
+  userStories: Array<{ id: string; content: string; status: string; actor?: string }>;
   useCases: Array<{ id: string; content: string; status: string }>;
   testCases: Array<{ id: string; content: string; status: string }>;
   statusData: {

@@ -4,9 +4,15 @@ import { Badge } from "@/components/ui/badge";
 
 interface StatusBadgeProps {
   status: string;
+  showForItemType?: "userStories" | "useCases" | "testCases" | "all";
 }
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+const StatusBadge: React.FC<StatusBadgeProps> = ({ status, showForItemType = "all" }) => {
+  // Don't render badge for user stories when specifically set
+  if (showForItemType === "userStories") {
+    return null;
+  }
+
   const normalizedStatus = status?.toLowerCase() || "";
 
   if (normalizedStatus.includes("complet")) {

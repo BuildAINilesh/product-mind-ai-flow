@@ -19,6 +19,7 @@ export interface UserStory {
   id: string;
   content: string;
   status: string;
+  actor?: string;
 }
 
 export interface UseCase {
