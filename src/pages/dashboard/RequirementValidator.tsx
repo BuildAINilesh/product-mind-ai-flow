@@ -13,6 +13,8 @@ const RequirementValidator = () => {
   const [searchParams] = useSearchParams();
   const requirementId = searchParams.get("requirementId");
 
+  console.log("RequirementValidator - received requirementId:", requirementId);
+
   const {
     validations,
     loading,

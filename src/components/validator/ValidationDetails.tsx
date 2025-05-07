@@ -47,7 +47,7 @@ const ValidationDetails = ({
         </Button>
         {requirement && (
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-1">
+            <Button variant="outline" className="gap-1" onClick={() => console.log("Edit button clicked")}>
               <EditIcon className="h-4 w-4" />
               Edit
             </Button>

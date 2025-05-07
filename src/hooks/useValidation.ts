@@ -210,7 +210,7 @@ export function useValidation(requirementId: string | null) {
 
       // Call the AI validator edge function with the req_id
       const { data, error } = await supabase.functions.invoke("ai-validator", {
-        body: { requirementId },
+        body: { requirementId: requirementId },
       });
 
       if (error) {
