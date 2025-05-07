@@ -4,7 +4,7 @@ import {
   UserStory,
   UseCase,
   TestCase,
-} from "@/hooks/useCaseGenerator";
+} from "@/hooks/caseGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 

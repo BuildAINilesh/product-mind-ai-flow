@@ -4,7 +4,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Tabs } from "@/components/ui/tabs";
 import Loader from "@/components/shared/Loader";
 import RequirementDetails from "./RequirementDetails";
-import { UserStory, UseCase, TestCase } from "@/hooks/useCaseGenerator";
+import { UserStory, UseCase, TestCase } from "@/hooks/caseGenerator";
 import AICaseGeneratorHeader from "./header/AICaseGeneratorHeader";
 import AICaseTabNavigation from "./tabs/AICaseTabNavigation";
 import AICaseTabContent from "./tabs/AICaseTabContent";
