@@ -49,6 +49,34 @@ export interface Requirement {
   [key: string]: any; // Allow additional properties
 }
 
+// Type for the database requirement object which might have different field names
+interface DatabaseRequirement {
+  id: string;
+  project_name?: string;
+  projectName?: string;
+  industry_type?: string;
+  industry?: string;
+  created_at?: string;
+  created?: string;
+  description?: string;
+  document_summary?: string;
+  req_id?: string;
+  [key: string]: any;
+}
+
+// Helper function to format a database requirement to our Requirement interface
+const formatRequirement = (data: DatabaseRequirement): Requirement => {
+  return {
+    id: data.id,
+    projectName: data.projectName || data.project_name || "Unknown Project",
+    industry: data.industry || data.industry_type || "Unknown Industry",
+    created: data.created || 
+      (data.created_at ? new Date(data.created_at).toLocaleDateString() : "Unknown Date"),
+    description: data.description || data.document_summary || "No description available",
+    req_id: data.req_id,
+  };
+};
+
 export const useCaseGenerator = (requirementId: string | null) => {
   // States for dashboard view
   const [caseGeneratorItems, setCaseGeneratorItems] = useState<ForgeFlowItem[]>(
@@ -107,17 +135,8 @@ export const useCaseGenerator = (requirementId: string | null) => {
         
         if (reqData) {
           console.log("Successfully found requirement:", reqData);
-          // Make sure to transform the data to match our Requirement interface
-          const formattedRequirement: Requirement = {
-            id: reqData.id,
-            projectName: reqData.projectName || reqData.project_name || "Unknown Project",
-            industry: reqData.industry || reqData.industry_type || "Unknown Industry",
-            created: reqData.created || 
-              (reqData.created_at ? new Date(reqData.created_at).toLocaleDateString() : "Unknown Date"),
-            description: reqData.description || "No description available",
-            req_id: reqData.req_id
-          };
-          setRequirement(formattedRequirement);
+          // Use our helper function to format the requirement
+          setRequirement(formatRequirement(reqData));
         } else {
           console.log("Could not find requirement directly, trying to find via case_generator table");
           
@@ -133,6 +152,7 @@ export const useCaseGenerator = (requirementId: string | null) => {
                   industry_type, 
                   created_at,
                   description,
+                  document_summary,
                   req_id
                 )
               `)
@@ -144,29 +164,13 @@ export const useCaseGenerator = (requirementId: string | null) => {
             } else if (caseGenData && caseGenData.requirements) {
               console.log("Found requirement via case_generator join:", caseGenData.requirements);
               
-              // Safely access properties with type checking
-              const requirementsData = caseGenData.requirements as {
-                id?: string;
-                project_name?: string;
-                industry_type?: string;
-                created_at?: string;
-                description?: string;
-                req_id?: string;
+              // Create a standardized requirement object from the join result using our helper function
+              const reqData = {
+                id: requirementId,
+                ...caseGenData.requirements
               };
               
-              // Create a standardized requirement object from the join result
-              const formattedRequirement: Requirement = {
-                id: requirementsData.id || requirementId,
-                projectName: requirementsData.project_name || "Unknown Project",
-                industry: requirementsData.industry_type || "Unknown Industry",
-                created: requirementsData.created_at 
-                  ? new Date(requirementsData.created_at).toLocaleDateString() 
-                  : "Unknown Date",
-                description: requirementsData.description || "",
-                req_id: requirementsData.req_id
-              };
-              
-              setRequirement(formattedRequirement);
+              setRequirement(formatRequirement(reqData));
             }
           }
         }
