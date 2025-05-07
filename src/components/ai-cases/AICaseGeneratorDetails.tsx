@@ -1,16 +1,14 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { UserStory, UseCase, TestCase } from "@/hooks/useCaseGenerator";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeftIcon, BookIcon, CodeIcon, TestTubeIcon, RefreshCw } from "lucide-react";
+import { Tabs } from "@/components/ui/tabs";
 import Loader from "@/components/shared/Loader";
 import RequirementDetails from "./RequirementDetails";
-import CaseContentTab from "./CaseContentTab";
-import StatusBadge from "./StatusBadge";
-import { toast } from "sonner";
+import { UserStory, UseCase, TestCase } from "@/hooks/useCaseGenerator";
+import AICaseGeneratorHeader from "./header/AICaseGeneratorHeader";
+import AICaseTabNavigation from "./tabs/AICaseTabNavigation";
+import AICaseTabContent from "./tabs/AICaseTabContent";
+import { validateGenerationDependencies } from "./utils/generationValidation";
 
 interface AICaseGeneratorDetailsProps {
   requirementId: string;
@@ -35,7 +33,6 @@ interface AICaseGeneratorDetailsProps {
   handleGenerate: (
     type?: "userStories" | "useCases" | "testCases"
   ) => Promise<void>;
-  // Add the new prop for triggering auto-generation
   triggerAutoGenerate?: () => void;
 }
 
@@ -57,15 +54,8 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
   const handleGenerateClick = (
     type?: "userStories" | "useCases" | "testCases"
   ) => {
-    // Check for dependencies
-    if (type === "useCases" && statusData.userStoriesStatus !== "Completed") {
-      toast.error("User stories must be generated first before generating use cases");
-      return;
-    }
-    
-    if (type === "testCases" && 
-        (statusData.userStoriesStatus !== "Completed" || statusData.useCasesStatus !== "Completed")) {
-      toast.error("User stories and use cases must be generated first before generating test cases");
+    // Check for dependencies using our utility function
+    if (!validateGenerationDependencies(type, statusData)) {
       return;
     }
     
@@ -74,7 +64,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
 
   // Handle "Generate All" button
   const handleGenerateAll = () => {
-    // Instead of directly calling handleGenerate, we now trigger auto-generation
+    // Use triggerAutoGenerate if provided, otherwise fall back to handleGenerate
     if (triggerAutoGenerate) {
       triggerAutoGenerate();
     } else {
@@ -103,112 +93,31 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Link
-            to="/dashboard/ai-cases"
-            className="text-slate-500 hover:text-slate-700"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Link>
-          <h1 className="text-2xl font-bold">AI Case Analysis</h1>
-        </div>
-        <Button
-          variant="default"
-          disabled={isGenerating}
-          onClick={handleGenerateAll}
-          className="flex items-center space-x-2"
-        >
-          {isGenerating ? (
-            <>
-              <Loader size="small" />
-              <span>Generating...</span>
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              <span>Generate All</span>
-            </>
-          )}
-        </Button>
-      </div>
+      <AICaseGeneratorHeader 
+        isGenerating={isGenerating} 
+        handleGenerateAll={handleGenerateAll} 
+      />
 
       {/* Requirement Info */}
       <RequirementDetails requirement={requirement} />
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger
-            value="userStories"
-            className="flex items-center space-x-2"
-          >
-            <BookIcon className="h-4 w-4" />
-            <span>User Stories</span>
-            {statusData.userStoriesStatus !== "Draft" && (
-              <span className="ml-2 text-xs">
-                <StatusBadge status={statusData.userStoriesStatus} />
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="useCases" className="flex items-center space-x-2">
-            <CodeIcon className="h-4 w-4" />
-            <span>Use Cases</span>
-            {statusData.useCasesStatus !== "Draft" && (
-              <span className="ml-2 text-xs">
-                <StatusBadge status={statusData.useCasesStatus} />
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger
-            value="testCases"
-            className="flex items-center space-x-2"
-          >
-            <TestTubeIcon className="h-4 w-4" />
-            <span>Test Cases</span>
-            {statusData.testCasesStatus !== "Draft" && (
-              <span className="ml-2 text-xs">
-                <StatusBadge status={statusData.testCasesStatus} />
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
+        <AICaseTabNavigation 
+          activeTab={activeTab}
+          userStoriesStatus={statusData.userStoriesStatus}
+          useCasesStatus={statusData.useCasesStatus}
+          testCasesStatus={statusData.testCasesStatus}
+        />
 
-        <TabsContent value="userStories" className="mt-4">
-          <CaseContentTab
-            title="User Stories"
-            icon={BookIcon}
-            status={statusData.userStoriesStatus}
-            items={userStories}
-            type="userStories"
-            isGenerating={isGenerating}
-            onGenerate={() => handleGenerateClick("userStories")}
-          />
-        </TabsContent>
-
-        <TabsContent value="useCases" className="mt-4">
-          <CaseContentTab
-            title="Use Cases"
-            icon={CodeIcon}
-            status={statusData.useCasesStatus}
-            items={useCases}
-            type="useCases"
-            isGenerating={isGenerating && statusData.userStoriesStatus === "Completed"}
-            onGenerate={() => handleGenerateClick("useCases")}
-          />
-        </TabsContent>
-
-        <TabsContent value="testCases" className="mt-4">
-          <CaseContentTab
-            title="Test Cases"
-            icon={TestTubeIcon}
-            status={statusData.testCasesStatus}
-            items={testCases}
-            type="testCases"
-            isGenerating={isGenerating && statusData.useCasesStatus === "Completed"}
-            onGenerate={() => handleGenerateClick("testCases")}
-          />
-        </TabsContent>
+        <AICaseTabContent 
+          userStories={userStories}
+          useCases={useCases}
+          testCases={testCases}
+          statusData={statusData}
+          isGenerating={isGenerating}
+          handleGenerateClick={handleGenerateClick}
+        />
       </Tabs>
     </div>
   );
