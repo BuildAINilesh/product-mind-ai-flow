@@ -47,13 +47,14 @@ const SmartSignoff = () => {
       setLoading(true);
       try {
         // Fetch requirements with their associated BRD documents
+        // Note: We updated the fields to match what's actually in the database
         const { data, error } = await supabase
           .from('requirements')
           .select(`
             id, 
             req_id,
             project_name,
-            description,
+            project_idea,
             updated_at,
             requirement_brd (
               id,
@@ -93,7 +94,8 @@ const SmartSignoff = () => {
               id: req.id,
               req_id: req.req_id || `REQ-${Math.floor(Math.random() * 1000)}`,
               title: req.project_name,
-              description: req.description || "No description available",
+              // Use project_idea instead of description as it exists in the database
+              description: req.project_idea || "No description available",
               status: status,
               stakeholders: generateMockStakeholders(status),
               qualityScore: qualityScore,
