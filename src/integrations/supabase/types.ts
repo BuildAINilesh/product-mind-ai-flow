@@ -299,6 +299,50 @@ export type Database = {
           },
         ]
       }
+      requirement_brd: {
+        Row: {
+          approver_comment: string | null
+          approver_name: string | null
+          brd_document: Json
+          created_at: string | null
+          id: string
+          requirement_id: string | null
+          signed_off_at: string | null
+          status: Database["public"]["Enums"]["brd_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          approver_comment?: string | null
+          approver_name?: string | null
+          brd_document: Json
+          created_at?: string | null
+          id?: string
+          requirement_id?: string | null
+          signed_off_at?: string | null
+          status?: Database["public"]["Enums"]["brd_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          approver_comment?: string | null
+          approver_name?: string | null
+          brd_document?: Json
+          created_at?: string | null
+          id?: string
+          requirement_id?: string | null
+          signed_off_at?: string | null
+          status?: Database["public"]["Enums"]["brd_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requirement_brd_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: true
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requirement_validation: {
         Row: {
           created_at: string | null
@@ -362,6 +406,7 @@ export type Database = {
           project_name: string
           req_id: string | null
           status: Database["public"]["Enums"]["requirement_status_enum"] | null
+          structured_document: Json | null
           updated_at: string | null
           user_id: string | null
         }
@@ -377,6 +422,7 @@ export type Database = {
           project_name: string
           req_id?: string | null
           status?: Database["public"]["Enums"]["requirement_status_enum"] | null
+          structured_document?: Json | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -392,6 +438,7 @@ export type Database = {
           project_name?: string
           req_id?: string | null
           status?: Database["public"]["Enums"]["requirement_status_enum"] | null
+          structured_document?: Json | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -580,6 +627,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      brd_status: "draft" | "ready" | "signed_off" | "rejected" | "error"
       firecrawl_query_status: "pending" | "searched" | "error"
       industry_enum:
         | "technology"
@@ -713,6 +761,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      brd_status: ["draft", "ready", "signed_off", "rejected", "error"],
       firecrawl_query_status: ["pending", "searched", "error"],
       industry_enum: [
         "technology",
