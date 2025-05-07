@@ -6,6 +6,7 @@ import AICaseGeneratorDetails from "@/components/ai-cases/AICaseGeneratorDetails
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { NotFoundDisplay } from "@/components/market-sense/NotFoundDisplay";
 
 const AICaseGenerator = () => {
   const [searchParams] = useSearchParams();
@@ -44,13 +45,7 @@ const AICaseGenerator = () => {
   // If requirementId is provided, but we've tried to fetch and got an error or no data found
   if (requirementId && dataFetchAttempted && !isRequirementLoading && !requirement) {
     return (
-      <Alert variant="destructive" className="my-6">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Requirement Not Found</AlertTitle>
-        <AlertDescription>
-          The requested requirement could not be found. It might have been deleted or you may not have access to it.
-        </AlertDescription>
-      </Alert>
+      <NotFoundDisplay requirementId={requirementId} />
     );
   }
 

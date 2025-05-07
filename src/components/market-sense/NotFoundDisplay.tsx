@@ -13,7 +13,16 @@ export const NotFoundDisplay = ({ requirementId }: NotFoundDisplayProps) => {
   
   return (
     <div className="space-y-6">
-      <MarketAnalysisHeader />
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">AI Case Generator</h1>
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/dashboard/ai-cases')}
+          className="gap-1"
+        >
+          Back to AI Case Generator
+        </Button>
+      </div>
       
       <Card className="border-destructive/50">
         <CardHeader>
@@ -28,9 +37,9 @@ export const NotFoundDisplay = ({ requirementId }: NotFoundDisplayProps) => {
         <CardFooter>
           <Button 
             variant="outline" 
-            onClick={() => navigate('/dashboard/market-sense')}
+            onClick={() => navigate('/dashboard/ai-cases')}
           >
-            Back to Market Analyses
+            Back to Case Analyses
           </Button>
         </CardFooter>
       </Card>

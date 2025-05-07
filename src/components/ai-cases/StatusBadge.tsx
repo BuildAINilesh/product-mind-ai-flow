@@ -7,11 +7,13 @@ interface StatusBadgeProps {
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  if (status === "completed" || status === "Completed") {
+  const normalizedStatus = status?.toLowerCase() || "";
+
+  if (normalizedStatus.includes("complet")) {
     return <Badge variant="success" className="bg-green-500">Completed</Badge>;
-  } else if (status === "in-progress" || status === "In Progress") {
+  } else if (normalizedStatus.includes("progress") || normalizedStatus.includes("in progress")) {
     return <Badge variant="warning" className="bg-amber-500">In Progress</Badge>;
-  } else if (status === "failed" || status === "Failed") {
+  } else if (normalizedStatus.includes("fail")) {
     return <Badge variant="destructive">Failed</Badge>;
   }
   return <Badge variant="secondary">Draft</Badge>;
