@@ -1,39 +1,13 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FileCheck, Check, X, User, Calendar, MessageSquare, Clock, AlertCircle, FileText } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FileCheck } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-
-// Define the BRD requirement type based on our database schema
-interface BRDRequirement {
-  id: string;
-  req_id: string;
-  title: string;
-  description: string;
-  status: "draft" | "ready" | "signed_off" | "rejected";
-  stakeholders: {
-    id: number;
-    name: string;
-    role: string;
-    approved: boolean;
-    avatar: string;
-  }[];
-  qualityScore: number;
-  lastUpdated: string;
-  comments: {
-    id: number;
-    user: string;
-    message: string;
-    date: string;
-  }[];
-  brd_document?: any;
-}
+import { BRDRequirement } from "@/types/smart-signoff";
+import { RequirementsList } from "@/components/smart-signoff/RequirementsList";
+import { RequirementDetails } from "@/components/smart-signoff/RequirementDetails";
+import { EmptyRequirementState } from "@/components/smart-signoff/EmptyRequirementState";
 
 const SmartSignoff = () => {
   const [requirements, setRequirements] = useState<BRDRequirement[]>([]);
@@ -75,7 +49,7 @@ const SmartSignoff = () => {
 
         if (!data || data.length === 0) {
           // If no data from database, use mock data for demonstration
-          setRequirements(mockRequirements as BRDRequirement[]);
+          setRequirements(mockRequirements);
         } else {
           // Transform the data to match our component's expected format
           const transformedData = data.map((req) => {
@@ -105,13 +79,13 @@ const SmartSignoff = () => {
             };
           });
           
-          setRequirements(transformedData as BRDRequirement[]);
+          setRequirements(transformedData);
         }
       } catch (error) {
         console.error("Error fetching requirements:", error);
         toast.error("Failed to load requirements");
         // Fall back to mock data
-        setRequirements(mockRequirements as BRDRequirement[]);
+        setRequirements(mockRequirements);
       } finally {
         setLoading(false);
       }
@@ -295,237 +269,23 @@ const SmartSignoff = () => {
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Requirements</CardTitle>
-              <CardDescription>
-                Requirements pending approval
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {requirements.map((req) => (
-                  <div 
-                    key={req.id}
-                    className={`p-3 border rounded-md cursor-pointer transition-colors ${
-                      selectedRequirement?.id === req.id 
-                        ? "bg-primary/5 border-primary/30" 
-                        : "hover:bg-muted"
-                    }`}
-                    onClick={() => handleSelectRequirement(req)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-sm">{req.title}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <code className="text-xs bg-muted px-1 py-0.5 rounded">{req.req_id}</code>
-                          <Badge variant={
-                            req.status === "signed_off" ? "default" :
-                            req.status === "rejected" ? "destructive" :
-                            req.status === "ready" ? "outline" : "secondary"
-                          }>
-                            {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-2 flex items-center gap-1">
-                      <div className="flex -space-x-2">
-                        {req.stakeholders.slice(0, 3).map((stakeholder) => (
-                          <Avatar key={stakeholder.id} className="h-6 w-6 border-2 border-background">
-                            <AvatarImage src={stakeholder.avatar} />
-                            <AvatarFallback className="text-xs">
-                              {stakeholder.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                        ))}
-                        {req.stakeholders.length > 3 && (
-                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
-                            +{req.stakeholders.length - 3}
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground ml-1">
-                        {req.stakeholders.filter(s => s.approved).length}/{req.stakeholders.length} approved
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <RequirementsList 
+            requirements={requirements}
+            selectedRequirement={selectedRequirement}
+            onSelectRequirement={handleSelectRequirement}
+          />
         </div>
 
         <div className="md:col-span-2">
           {selectedRequirement ? (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <CardTitle>{selectedRequirement.title}</CardTitle>
-                      <Badge variant={
-                        selectedRequirement.status === "signed_off" ? "success" :
-                        selectedRequirement.status === "rejected" ? "destructive" :
-                        selectedRequirement.status === "ready" ? "outline" : "secondary"
-                      }>
-                        {selectedRequirement.status.charAt(0).toUpperCase() + selectedRequirement.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <CardDescription className="mt-1">
-                      {selectedRequirement.req_id}
-                    </CardDescription>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1"
-                      onClick={() => handleViewBRD(selectedRequirement.id)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      View BRD
-                    </Button>
-
-                    {selectedRequirement.status === "ready" && (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="flex items-center gap-1"
-                          onClick={() => handleReject(selectedRequirement.id)}
-                        >
-                          <X className="h-4 w-4" />
-                          Reject
-                        </Button>
-                        <Button 
-                          size="sm"
-                          className="flex items-center gap-1"
-                          onClick={() => handleApprove(selectedRequirement.id)}
-                        >
-                          <Check className="h-4 w-4" />
-                          Approve
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Description</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedRequirement.description}
-                  </p>
-                </div>
-                
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium">Quality Score</h3>
-                    <span className="text-sm font-medium">
-                      {selectedRequirement.qualityScore}/100
-                    </span>
-                  </div>
-                  <Progress 
-                    value={selectedRequirement.qualityScore} 
-                    className="h-2"
-                    indicatorClassName={`${
-                      selectedRequirement.qualityScore >= 90 ? "bg-green-500" :
-                      selectedRequirement.qualityScore >= 70 ? "bg-yellow-500" :
-                      "bg-red-500"
-                    }`}
-                  />
-                  
-                  {selectedRequirement.status === "draft" && (
-                    <div className="mt-2 flex items-center gap-1 text-xs bg-amber-50 text-amber-700 p-2 rounded border border-amber-200">
-                      <AlertCircle className="h-3 w-3" />
-                      <span>BRD is in draft state. Consider finalizing before submitting for approval.</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Stakeholder Approval</h3>
-                  <div className="space-y-3">
-                    {selectedRequirement.stakeholders.map((stakeholder) => (
-                      <div key={stakeholder.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={stakeholder.avatar} />
-                            <AvatarFallback>
-                              {stakeholder.name.split(' ').map((n) => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">{stakeholder.name}</p>
-                            <p className="text-xs text-muted-foreground">{stakeholder.role}</p>
-                          </div>
-                        </div>
-                        <div>
-                          {stakeholder.approved ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200">
-                              <Check className="mr-1 h-3 w-3" /> Approved
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-muted text-muted-foreground">
-                              Pending
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex items-center mb-2">
-                    <MessageSquare className="h-4 w-4 mr-1" />
-                    <h3 className="text-sm font-medium">Comments</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {selectedRequirement.comments.map((comment) => (
-                      <div key={comment.id} className="bg-muted/50 rounded-md p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium">{comment.user}</p>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {comment.date}
-                          </div>
-                        </div>
-                        <p className="text-sm">{comment.message}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
-                  <div className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Last updated: {selectedRequirement.lastUpdated}
-                  </div>
-                  {selectedRequirement.status === "signed_off" && (
-                    <div className="flex items-center">
-                      <Check className="h-3 w-3 mr-1 text-green-500" />
-                      Approved
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <RequirementDetails
+              requirement={selectedRequirement}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              onViewBRD={handleViewBRD}
+            />
           ) : (
-            <Card>
-              <CardContent className="p-8 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                  <FileCheck className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Select a Requirement</h3>
-                <p className="text-muted-foreground max-w-md">
-                  Choose a requirement from the list to view details and approve or reject it.
-                </p>
-              </CardContent>
-            </Card>
+            <EmptyRequirementState />
           )}
         </div>
       </div>
@@ -534,13 +294,13 @@ const SmartSignoff = () => {
 };
 
 // Mock data for fallback
-const mockRequirements = [
+const mockRequirements: BRDRequirement[] = [
   {
     id: "REQ-001",
     req_id: "REQ-25-01",
     title: "User Authentication System",
     description: "Implement secure user authentication with OAuth 2.0 and JWT",
-    status: "ready" as const,
+    status: "ready",
     stakeholders: [
       { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
       { id: 2, name: "Robert Fox", role: "Security Lead", approved: true, avatar: "/placeholder.svg" },
@@ -559,7 +319,7 @@ const mockRequirements = [
     req_id: "REQ-25-02",
     title: "Dashboard Analytics Module",
     description: "Real-time analytics dashboard with user activity tracking",
-    status: "draft" as const,
+    status: "draft",
     stakeholders: [
       { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
       { id: 5, name: "Sarah Miller", role: "Data Scientist", approved: false, avatar: "/placeholder.svg" },
@@ -577,7 +337,7 @@ const mockRequirements = [
     req_id: "REQ-25-03",
     title: "Payment Processing Integration",
     description: "Implement secure payment processing with Stripe and PayPal",
-    status: "signed_off" as const,
+    status: "signed_off",
     stakeholders: [
       { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
       { id: 2, name: "Robert Fox", role: "Security Lead", approved: true, avatar: "/placeholder.svg" },
