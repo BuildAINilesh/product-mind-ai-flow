@@ -6,6 +6,7 @@ import {
   getCaseGeneratorData,
   generateCaseGeneratorElements,
 } from "@/services/caseGeneratorService";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ForgeFlowItem {
   id: string;
@@ -103,7 +104,48 @@ export const useCaseGenerator = (requirementId: string | null) => {
       try {
         // Fetch requirement details
         const reqData = await getRequirement(requirementId);
-        setRequirement(reqData);
+        
+        if (reqData) {
+          console.log("Successfully found requirement:", reqData);
+          setRequirement(reqData);
+        } else {
+          console.log("Could not find requirement directly, trying to find via case_generator table");
+          
+          // If we couldn't find the requirement directly, try to find information from case_generator table
+          if (supabase) {
+            const { data: caseGenData, error: caseGenError } = await supabase
+              .from("case_generator")
+              .select(`
+                *,
+                requirements:requirement_id (
+                  id, 
+                  project_name,
+                  industry_type, 
+                  created_at,
+                  description,
+                  req_id
+                )
+              `)
+              .eq("requirement_id", requirementId)
+              .maybeSingle();
+              
+            if (caseGenError) {
+              console.error("Error fetching from case_generator:", caseGenError);
+            } else if (caseGenData?.requirements) {
+              console.log("Found requirement via case_generator join:", caseGenData.requirements);
+              
+              // Create a standardized requirement object from the join result
+              setRequirement({
+                id: caseGenData.requirements.id,
+                projectName: caseGenData.requirements.project_name || "Unknown Project",
+                industry: caseGenData.requirements.industry_type || "Unknown Industry",
+                created: new Date(caseGenData.requirements.created_at).toLocaleDateString(),
+                description: caseGenData.requirements.description || "",
+                req_id: caseGenData.requirements.req_id
+              });
+            }
+          }
+        }
 
         // Fetch case generator data for this requirement
         const caseGeneratorData = await getCaseGeneratorData(requirementId);

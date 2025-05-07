@@ -6,6 +6,7 @@ import {
   TestCase,
 } from "@/hooks/useCaseGenerator";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Base API URL - replace with your actual API URL
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -37,6 +38,8 @@ export const getCaseGeneratorItems = async (): Promise<ForgeFlowItem[]> => {
       throw error;
     }
 
+    console.log("Fetched case generator items:", caseGeneratorData);
+    
     // Transform the data to match the ForgeFlowItem structure
     const items: ForgeFlowItem[] = caseGeneratorData.map(item => ({
       id: item.id,
@@ -47,7 +50,7 @@ export const getCaseGeneratorItems = async (): Promise<ForgeFlowItem[]> => {
       userStoriesStatus: item.user_stories_status,
       useCasesStatus: item.use_cases_status,
       testCasesStatus: item.test_cases_status,
-      reqId: item.requirements?.req_id || "Unknown ID", // Add the formatted req_id
+      reqId: item.requirements?.req_id || item.requirement_id.substring(0, 8), // Use req_id or first part of UUID
     }));
 
     return items;
@@ -60,6 +63,8 @@ export const getCaseGeneratorItems = async (): Promise<ForgeFlowItem[]> => {
 // Get case generator data for a specific requirement
 export const getCaseGeneratorData = async (requirementId: string) => {
   try {
+    console.log(`Fetching case generator data for requirement: ${requirementId}`);
+    
     // First fetch the case_generator status data
     const { data: caseGeneratorStatus, error: statusError } = await supabase
       .from("case_generator")
@@ -71,6 +76,8 @@ export const getCaseGeneratorData = async (requirementId: string) => {
       console.error("Error fetching case generator status:", statusError);
     }
 
+    console.log("Case generator status:", caseGeneratorStatus);
+    
     const statusData = caseGeneratorStatus || {
       user_stories_status: "Draft",
       use_cases_status: "Draft",
@@ -87,6 +94,8 @@ export const getCaseGeneratorData = async (requirementId: string) => {
       console.error("Error fetching user stories:", userStoriesError);
     }
 
+    console.log("User stories data:", userStoriesData);
+
     // Fetch real use cases from Supabase
     const { data: useCasesData, error: useCasesError } = await supabase
       .from("use_cases")
@@ -97,6 +106,8 @@ export const getCaseGeneratorData = async (requirementId: string) => {
       console.error("Error fetching use cases:", useCasesError);
     }
 
+    console.log("Use cases data:", useCasesData);
+
     // Fetch real test cases from Supabase
     const { data: testCasesData, error: testCasesError } = await supabase
       .from("test_cases")
@@ -105,6 +116,35 @@ export const getCaseGeneratorData = async (requirementId: string) => {
 
     if (testCasesError) {
       console.error("Error fetching test cases:", testCasesError);
+    }
+
+    console.log("Test cases data:", testCasesData);
+
+    // If no data found for any of the entities, try to initialize a case_generator entry if it doesn't exist
+    if (!caseGeneratorStatus && (!userStoriesData?.length || !useCasesData?.length || !testCasesData?.length)) {
+      const { data: existingEntry, error: checkError } = await supabase
+        .from("case_generator")
+        .select("id")
+        .eq("requirement_id", requirementId)
+        .maybeSingle();
+        
+      if (!existingEntry && !checkError) {
+        console.log("Creating new case_generator entry for this requirement");
+        const { error: createError } = await supabase
+          .from("case_generator")
+          .insert({
+            requirement_id: requirementId,
+            user_stories_status: "Draft",
+            use_cases_status: "Draft",
+            test_cases_status: "Draft"
+          });
+          
+        if (createError) {
+          console.error("Error creating case_generator entry:", createError);
+        } else {
+          console.log("Successfully created case_generator entry");
+        }
+      }
     }
 
     // Transform the data to match our expected structures
@@ -160,6 +200,8 @@ export const generateCaseGeneratorElements = async (
   type?: "userStories" | "useCases" | "testCases"
 ) => {
   try {
+    console.log(`Generating case elements for requirement ${requirementId}, type: ${type || 'all'}`);
+    
     // In a real implementation, this would call your AI service
     // For now, we'll update the status in the database to simulate generation
     
@@ -174,17 +216,48 @@ export const generateCaseGeneratorElements = async (
       updates.test_cases_status = "in-progress";
     }
 
-    // Update the case generator record to show in-progress status
-    const { error: updateError } = await supabase
+    // First check if the case_generator entry exists
+    const { data: existingEntry, error: checkError } = await supabase
       .from("case_generator")
-      .update(updates)
-      .eq("requirement_id", requirementId);
-
-    if (updateError) {
-      console.error("Error updating case generator status:", updateError);
-      throw updateError;
+      .select("id")
+      .eq("requirement_id", requirementId)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error("Error checking for case_generator entry:", checkError);
+      throw checkError;
+    }
+    
+    if (!existingEntry) {
+      // If no entry exists, create one
+      console.log("Creating new case_generator entry");
+      const { error: createError } = await supabase
+        .from("case_generator")
+        .insert({
+          requirement_id: requirementId,
+          ...updates
+        });
+        
+      if (createError) {
+        console.error("Error creating case_generator entry:", createError);
+        throw createError;
+      }
+    } else {
+      // Update the case generator record to show in-progress status
+      console.log("Updating existing case_generator entry");
+      const { error: updateError } = await supabase
+        .from("case_generator")
+        .update(updates)
+        .eq("requirement_id", requirementId);
+  
+      if (updateError) {
+        console.error("Error updating case generator status:", updateError);
+        throw updateError;
+      }
     }
 
+    toast.success(`Started generating ${type || 'all'} elements`);
+    
     // For now, we'll just return the current data
     return await getCaseGeneratorData(requirementId);
   } catch (error) {
@@ -192,6 +265,7 @@ export const generateCaseGeneratorElements = async (
       `Error generating case generator elements for requirement ${requirementId}:`,
       error
     );
+    toast.error("Failed to generate case elements");
     throw error;
   }
 };

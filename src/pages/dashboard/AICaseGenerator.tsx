@@ -7,6 +7,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { NotFoundDisplay } from "@/components/market-sense/NotFoundDisplay";
+import { toast } from "sonner";
 
 const AICaseGenerator = () => {
   const [searchParams] = useSearchParams();
@@ -44,6 +45,7 @@ const AICaseGenerator = () => {
 
   // If requirementId is provided, but we've tried to fetch and got an error or no data found
   if (requirementId && dataFetchAttempted && !isRequirementLoading && !requirement) {
+    console.log("Requirement not found, showing NotFoundDisplay");
     return (
       <NotFoundDisplay requirementId={requirementId} />
     );
