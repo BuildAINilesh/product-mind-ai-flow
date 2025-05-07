@@ -41,27 +41,40 @@ const ValidationDetails = ({
     }
 
     try {
-      // Create a new record in the case_generator table
-      const { data, error: insertError } = await supabase
+      // Check if a case generator record already exists
+      const { data: existingData, error: checkError } = await supabase
         .from("case_generator")
-        .insert([
-          {
-            requirement_id: requirement.id,
-            user_stories_status: "Draft",
-            use_cases_status: "Draft",
-            test_cases_status: "Draft",
-          }
-        ])
-        .select();
+        .select("id")
+        .eq("requirement_id", requirement.id)
+        .maybeSingle();
 
-      if (insertError) {
-        console.error("Error creating AI Case Generator record:", insertError);
-        toast.error("Failed to create AI Case Generator record");
-        return;
+      // If no record exists, create one
+      if (!existingData && !checkError) {
+        const { data, error: insertError } = await supabase
+          .from("case_generator")
+          .insert([
+            {
+              requirement_id: requirement.id,
+              user_stories_status: "Draft",
+              use_cases_status: "Draft",
+              test_cases_status: "Draft",
+            }
+          ])
+          .select();
+
+        if (insertError) {
+          console.error("Error creating AI Case Generator record:", insertError);
+          toast.error("Failed to create AI Case Generator record");
+          return;
+        }
+
+        console.log("Created AI Case Generator record:", data);
+        toast.success("AI Case Generator record created");
+      } else if (checkError) {
+        console.error("Error checking for existing record:", checkError);
+      } else {
+        console.log("AI Case Generator record already exists");
       }
-
-      console.log("Created AI Case Generator record:", data);
-      toast.success("AI Case Generator record created");
 
       // Navigate to the AI Case Generator page for this requirement
       navigate(`/dashboard/ai-cases?requirementId=${encodeURIComponent(requirementId)}`);

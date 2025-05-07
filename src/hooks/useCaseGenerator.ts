@@ -79,9 +79,7 @@ const formatRequirement = (data: DatabaseRequirement): Requirement => {
 
 export const useCaseGenerator = (requirementId: string | null) => {
   // States for dashboard view
-  const [caseGeneratorItems, setCaseGeneratorItems] = useState<ForgeFlowItem[]>(
-    []
-  );
+  const [caseGeneratorItems, setCaseGeneratorItems] = useState<ForgeFlowItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [dataFetchAttempted, setDataFetchAttempted] = useState<boolean>(false);
 
@@ -90,8 +88,7 @@ export const useCaseGenerator = (requirementId: string | null) => {
   const [userStories, setUserStories] = useState<UserStory[]>([]);
   const [useCases, setUseCases] = useState<UseCase[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
-  const [isRequirementLoading, setIsRequirementLoading] =
-    useState<boolean>(false);
+  const [isRequirementLoading, setIsRequirementLoading] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [statusData, setStatusData] = useState<{
     userStoriesStatus: string;

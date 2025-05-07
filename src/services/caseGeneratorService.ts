@@ -143,19 +143,6 @@ export const getCaseGeneratorData = async (requirementId: string) => {
           console.error("Error creating case_generator entry:", createError);
         } else {
           console.log("Successfully created case_generator entry");
-          
-          // Create default entries for user stories, use cases, and test cases if they don't exist
-          if (!userStoriesData?.length) {
-            await createDefaultUserStory(requirementId);
-          }
-          
-          if (!useCasesData?.length) {
-            await createDefaultUseCase(requirementId);
-          }
-          
-          if (!testCasesData?.length) {
-            await createDefaultTestCase(requirementId);
-          }
         }
       }
     }
@@ -207,93 +194,87 @@ export const getCaseGeneratorData = async (requirementId: string) => {
   }
 };
 
-// Create a default user story for a requirement
-const createDefaultUserStory = async (requirementId: string) => {
+// Generate user stories for a requirement
+export const generateUserStories = async (requirementId: string) => {
   try {
-    const { data: reqData } = await supabase
-      .from("requirements")
-      .select("project_name")
-      .eq("id", requirementId)
-      .maybeSingle();
+    console.log(`Generating user stories for requirement ${requirementId}`);
     
-    const projectName = reqData?.project_name || "the system";
+    const { data, error } = await supabase.functions.invoke("generate-user-stories", {
+      body: { requirementId }
+    });
     
-    const { error } = await supabase
-      .from("user_stories")
-      .insert([{
-        requirement_id: requirementId,
-        story: `As a user of ${projectName}, I want to use the core functionality to achieve my goals.`,
-        actor: "User"
-      }]);
-      
     if (error) {
-      console.error("Error creating default user story:", error);
-      return false;
+      console.error("Error generating user stories:", error);
+      toast.error("Failed to generate user stories");
+      throw error;
     }
     
-    return true;
+    if (!data.success) {
+      throw new Error(data.error || "Failed to generate user stories");
+    }
+    
+    toast.success("User stories generated successfully");
+    return data;
   } catch (error) {
-    console.error("Error in createDefaultUserStory:", error);
-    return false;
+    console.error(`Error generating user stories for requirement ${requirementId}:`, error);
+    toast.error("Failed to generate user stories");
+    throw error;
   }
 };
 
-// Create a default use case for a requirement
-const createDefaultUseCase = async (requirementId: string) => {
+// Generate use cases for a requirement
+export const generateUseCases = async (requirementId: string) => {
   try {
-    const { data: reqData } = await supabase
-      .from("requirements")
-      .select("project_name")
-      .eq("id", requirementId)
-      .maybeSingle();
+    console.log(`Generating use cases for requirement ${requirementId}`);
     
-    const projectName = reqData?.project_name || "the system";
+    const { data, error } = await supabase.functions.invoke("generate-use-cases", {
+      body: { requirementId }
+    });
     
-    const { error } = await supabase
-      .from("use_cases")
-      .insert([{
-        requirement_id: requirementId,
-        title: `Use ${projectName}`,
-        main_flow: "User interacts with the system to complete their primary task.",
-        actor: "User",
-        preconditions: "User has access to the system.",
-        outcome: "User successfully completes their task."
-      }]);
-      
     if (error) {
-      console.error("Error creating default use case:", error);
-      return false;
+      console.error("Error generating use cases:", error);
+      toast.error("Failed to generate use cases");
+      throw error;
     }
     
-    return true;
+    if (!data.success) {
+      throw new Error(data.error || "Failed to generate use cases");
+    }
+    
+    toast.success("Use cases generated successfully");
+    return data;
   } catch (error) {
-    console.error("Error in createDefaultUseCase:", error);
-    return false;
+    console.error(`Error generating use cases for requirement ${requirementId}:`, error);
+    toast.error("Failed to generate use cases");
+    throw error;
   }
 };
 
-// Create a default test case for a requirement
-const createDefaultTestCase = async (requirementId: string) => {
+// Generate test cases for a requirement
+export const generateTestCases = async (requirementId: string) => {
   try {
-    const { error } = await supabase
-      .from("test_cases")
-      .insert([{
-        requirement_id: requirementId,
-        test_title: "Verify basic functionality",
-        steps: "1. Open the application\n2. Navigate to the main feature\n3. Test the core functionality",
-        expected_result: "Core functionality works as expected",
-        type: "functional"
-      }]);
-      
+    console.log(`Generating test cases for requirement ${requirementId}`);
+    
+    const { data, error } = await supabase.functions.invoke("generate-test-cases", {
+      body: { requirementId }
+    });
+    
     if (error) {
-      console.error("Error creating default test case:", error);
-      return false;
+      console.error("Error generating test cases:", error);
+      toast.error("Failed to generate test cases");
+      throw error;
     }
     
-    return true;
+    if (!data.success) {
+      throw new Error(data.error || "Failed to generate test cases");
+    }
+    
+    toast.success("Test cases generated successfully");
+    return data;
   } catch (error) {
-    console.error("Error in createDefaultTestCase:", error);
-    return false;
+    console.error(`Error generating test cases for requirement ${requirementId}:`, error);
+    toast.error("Failed to generate test cases");
+    throw error;
   }
 };
 
@@ -305,92 +286,70 @@ export const generateCaseGeneratorElements = async (
   try {
     console.log(`Generating case elements for requirement ${requirementId}, type: ${type || 'all'}`);
     
-    // In a real implementation, this would call your AI service
-    // For now, we'll update the status in the database to simulate generation
-    
-    const updates: Record<string, string> = {};
-    if (!type || type === "userStories") {
-      updates.user_stories_status = "Completed";
-    }
-    if (!type || type === "useCases") {
-      updates.use_cases_status = "Completed";
-    }
-    if (!type || type === "testCases") {
-      updates.test_cases_status = "Completed";
-    }
-
-    // First check if the case_generator entry exists
-    const { data: existingEntry, error: checkError } = await supabase
+    // Check the current status to ensure we respect dependencies
+    const { data: statusData, error: statusError } = await supabase
       .from("case_generator")
-      .select("id")
+      .select("user_stories_status, use_cases_status, test_cases_status")
       .eq("requirement_id", requirementId)
       .maybeSingle();
       
-    if (checkError) {
-      console.error("Error checking for case_generator entry:", checkError);
-      throw checkError;
+    if (statusError) {
+      console.error("Error fetching status data:", statusError);
+      throw statusError;
     }
     
-    if (!existingEntry) {
-      // If no entry exists, create one
-      console.log("Creating new case_generator entry");
+    // Create default status data if none exists
+    if (!statusData) {
       const { error: createError } = await supabase
         .from("case_generator")
         .insert({
           requirement_id: requirementId,
-          ...updates
+          user_stories_status: "Draft",
+          use_cases_status: "Draft",
+          test_cases_status: "Draft"
         });
         
       if (createError) {
         console.error("Error creating case_generator entry:", createError);
         throw createError;
       }
-      
-      // Also create initial entries in the related tables if they don't exist
-      const { data: userStoriesData } = await supabase
-        .from("user_stories")
-        .select("id")
-        .eq("requirement_id", requirementId);
-        
-      if (!userStoriesData?.length) {
-        await createDefaultUserStory(requirementId);
-      }
-      
-      const { data: useCasesData } = await supabase
-        .from("use_cases")
-        .select("id")
-        .eq("requirement_id", requirementId);
-        
-      if (!useCasesData?.length) {
-        await createDefaultUseCase(requirementId);
-      }
-      
-      const { data: testCasesData } = await supabase
-        .from("test_cases")
-        .select("id")
-        .eq("requirement_id", requirementId);
-        
-      if (!testCasesData?.length) {
-        await createDefaultTestCase(requirementId);
-      }
-    } else {
-      // Update the case generator record to show completed status instead of in-progress
-      console.log("Updating existing case_generator entry");
-      const { error: updateError } = await supabase
-        .from("case_generator")
-        .update(updates)
-        .eq("requirement_id", requirementId);
-  
-      if (updateError) {
-        console.error("Error updating case generator status:", updateError);
-        throw updateError;
-      }
     }
-
-    toast.success(`Successfully generated ${type || 'all'} elements`);
     
-    // For now, we'll just return the current data
-    return await getCaseGeneratorData(requirementId);
+    // Handle specific type generation or generate all based on dependencies
+    if (type === "userStories" || !type) {
+      await generateUserStories(requirementId);
+    }
+    
+    // Re-fetch status after user stories generation
+    const { data: updatedStatus1 } = await supabase
+      .from("case_generator")
+      .select("user_stories_status")
+      .eq("requirement_id", requirementId)
+      .single();
+      
+    if ((type === "useCases" || !type) && updatedStatus1.user_stories_status === "Completed") {
+      await generateUseCases(requirementId);
+    } else if (type === "useCases") {
+      toast.error("User stories must be generated successfully first");
+    }
+    
+    // Re-fetch status after use cases generation
+    const { data: updatedStatus2 } = await supabase
+      .from("case_generator")
+      .select("user_stories_status, use_cases_status")
+      .eq("requirement_id", requirementId)
+      .single();
+      
+    if ((type === "testCases" || !type) && 
+        updatedStatus2.user_stories_status === "Completed" && 
+        updatedStatus2.use_cases_status === "Completed") {
+      await generateTestCases(requirementId);
+    } else if (type === "testCases") {
+      toast.error("User stories and use cases must be generated successfully first");
+    }
+    
+    // Return the updated data
+    return getCaseGeneratorData(requirementId);
   } catch (error) {
     console.error(
       `Error generating case generator elements for requirement ${requirementId}:`,

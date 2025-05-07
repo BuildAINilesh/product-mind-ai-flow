@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { UserStory, UseCase, TestCase } from "@/hooks/useCaseGenerator";
@@ -9,6 +10,7 @@ import Loader from "@/components/shared/Loader";
 import RequirementDetails from "./RequirementDetails";
 import CaseContentTab from "./CaseContentTab";
 import StatusBadge from "./StatusBadge";
+import { toast } from "sonner";
 
 interface AICaseGeneratorDetailsProps {
   requirementId: string;
@@ -52,7 +54,24 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
   const handleGenerateClick = (
     type?: "userStories" | "useCases" | "testCases"
   ) => {
+    // Check for dependencies
+    if (type === "useCases" && statusData.userStoriesStatus !== "Completed") {
+      toast.error("User stories must be generated first before generating use cases");
+      return;
+    }
+    
+    if (type === "testCases" && 
+        (statusData.userStoriesStatus !== "Completed" || statusData.useCasesStatus !== "Completed")) {
+      toast.error("User stories and use cases must be generated first before generating test cases");
+      return;
+    }
+    
     handleGenerate(type);
+  };
+
+  // Handle "Generate All" button
+  const handleGenerateAll = () => {
+    handleGenerate();
   };
 
   if (isRequirementLoading) {
@@ -89,7 +108,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
         <Button
           variant="default"
           disabled={isGenerating}
-          onClick={() => handleGenerateClick()}
+          onClick={handleGenerateAll}
           className="flex items-center space-x-2"
         >
           {isGenerating ? (
@@ -166,7 +185,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
             status={statusData.useCasesStatus}
             items={useCases}
             type="useCases"
-            isGenerating={isGenerating}
+            isGenerating={isGenerating && statusData.userStoriesStatus === "Completed"}
             onGenerate={() => handleGenerateClick("useCases")}
           />
         </TabsContent>
@@ -178,7 +197,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
             status={statusData.testCasesStatus}
             items={testCases}
             type="testCases"
-            isGenerating={isGenerating}
+            isGenerating={isGenerating && statusData.useCasesStatus === "Completed"}
             onGenerate={() => handleGenerateClick("testCases")}
           />
         </TabsContent>
