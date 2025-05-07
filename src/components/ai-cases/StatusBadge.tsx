@@ -11,8 +11,6 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 
   if (normalizedStatus.includes("complet")) {
     return <Badge variant="success" className="bg-green-500">Completed</Badge>;
-  } else if (normalizedStatus.includes("progress") || normalizedStatus.includes("in progress")) {
-    return <Badge variant="warning" className="bg-amber-500">In Progress</Badge>;
   } else if (normalizedStatus.includes("fail")) {
     return <Badge variant="destructive">Failed</Badge>;
   }

@@ -35,9 +35,9 @@ export interface TestCase {
 
 // Type for the status data
 export interface StatusData {
-  userStoriesStatus: string;
-  useCasesStatus: string;
-  testCasesStatus: string;
+  userStoriesStatus: string; // Values should be "Draft" or "Completed"
+  useCasesStatus: string;    // Values should be "Draft" or "Completed"
+  testCasesStatus: string;   // Values should be "Draft" or "Completed"
 }
 
 // Type for requirement data

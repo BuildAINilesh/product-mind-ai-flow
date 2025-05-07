@@ -28,7 +28,7 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
   onGenerate,
 }) => {
   const isDraft = status === "Draft";
-  const isInProgress = status === "In Progress" || status === "in-progress";
+  const isGeneratingStatus = isGenerating;
 
   return (
     <>
@@ -82,7 +82,6 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
           icon={Icon}
           title={title}
           isGenerating={isGenerating}
-          inProgress={isInProgress}
           onGenerate={onGenerate}
         />
       )}
