@@ -46,8 +46,6 @@ export function useValidation(requirementId: string | null) {
     if (requirementId) {
       console.log("Fetching data for requirementId:", requirementId);
       fetchRequirement(requirementId);
-      // We'll fetch the requirement analysis after we have the requirement
-      // Check if validation already exists for this requirement is also dependent on requirement
     }
   }, [requirementId]);
 
@@ -108,6 +106,7 @@ export function useValidation(requirementId: string | null) {
         console.error("Error fetching requirement:", error);
         toast.error("Failed to load requirement details");
         setError("Failed to load requirement details");
+        setDataFetchAttempted(true);
         return;
       }
 
@@ -115,6 +114,7 @@ export function useValidation(requirementId: string | null) {
         console.error("Requirement not found with req_id:", reqId);
         toast.error(`Requirement with ID ${reqId} not found`);
         setError(`Requirement with ID ${reqId} not found`);
+        setDataFetchAttempted(true);
         return;
       }
 
@@ -130,6 +130,7 @@ export function useValidation(requirementId: string | null) {
       console.error("Error fetching requirement:", error);
       toast.error("Failed to load requirement details");
       setError(error.message || "Failed to load requirement details");
+      setDataFetchAttempted(true);
     } finally {
       setIsRequirementLoading(false);
     }
@@ -255,6 +256,7 @@ export function useValidation(requirementId: string | null) {
     } catch (error: any) {
       console.error("Error validating requirement:", error);
       toast.error(error.message || "Validation failed. Please try again.");
+      setError(error.message || "Validation failed. Please try again.");
     } finally {
       setIsValidating(false);
     }

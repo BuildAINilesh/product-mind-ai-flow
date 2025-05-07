@@ -45,25 +45,27 @@ const ValidationDetails = ({
           <ChevronLeft className="h-4 w-4" />
           Back to Market Sense
         </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-1">
-            <EditIcon className="h-4 w-4" />
-            Edit
-          </Button>
-          <Button
-            variant="validator"
-            className="gap-1"
-            onClick={handleValidate}
-            disabled={isValidating}
-          >
-            <BrainCircuit className="h-4 w-4" />
-            {isValidating
-              ? "Validating..."
-              : validationData
-              ? "Create AI Case Generator"
-              : "Analyze"}
-          </Button>
-        </div>
+        {requirement && (
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-1">
+              <EditIcon className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button
+              variant="validator"
+              className="gap-1"
+              onClick={handleValidate}
+              disabled={isValidating}
+            >
+              <BrainCircuit className="h-4 w-4" />
+              {isValidating
+                ? "Validating..."
+                : validationData
+                ? "Create AI Case Generator"
+                : "Analyze"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {isRequirementLoading ? (
@@ -76,6 +78,14 @@ const ValidationDetails = ({
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : !requirement ? (
+        <Alert variant="destructive" className="my-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Requirement Not Found</AlertTitle>
+          <AlertDescription>
+            The requested requirement could not be found. It might have been deleted or you may not have access to it.
+          </AlertDescription>
         </Alert>
       ) : validationData && validationData.status === "Completed" ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

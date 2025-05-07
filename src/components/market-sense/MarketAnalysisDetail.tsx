@@ -106,10 +106,11 @@ export const MarketAnalysisDetail = ({
         toast.info("Validation already exists for this requirement");
       }
       
-      // Navigate to validator page with the requirement ID
-      // Use the req_id field for navigation
+      // Navigate to validator page with the req_id from the requirement object
+      // IMPORTANT: Use req_id (e.g. REQ-25-01) not the internal UUID
       setIsCreatingValidation(false);
-      navigate(`/dashboard/validator?requirementId=${requirement.req_id}`);
+      console.log(`Navigating to validator with req_id: ${requirement.req_id}`);
+      navigate(`/dashboard/validator?requirementId=${encodeURIComponent(requirement.req_id)}`);
     } catch (error) {
       console.error("Error in validation process:", error);
       toast.error("Failed to create validation record");
