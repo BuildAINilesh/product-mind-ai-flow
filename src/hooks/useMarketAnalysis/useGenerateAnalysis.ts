@@ -1,192 +1,246 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ANALYSIS_STATUS_KEY, ANALYSIS_STEPS_KEY, ANALYSIS_CURRENT_STEP_KEY } from "./types";
+import { 
+  RequirementData, 
+  RequirementAnalysisData,
+  MarketAnalysisData,
+  ANALYSIS_STATUS_KEY,
+  ANALYSIS_CURRENT_STEP_KEY,
+  ANALYSIS_STEPS_KEY
+} from "./types";
+import { ProcessStep } from "@/components/market-sense/MarketAnalysisProgress";
 
 export const useGenerateAnalysis = (
   requirementId: string | null,
-  requirement: any, 
-  requirementAnalysis: any,
-  updateStepStatus: any,
-  setCurrentStep: any,
-  setAnalysisInProgress: any,
-  progressSteps: any
+  requirement: RequirementData | null,
+  requirementAnalysis: RequirementAnalysisData | null,
+  updateStepStatus: (index: number, status: "pending" | "processing" | "completed" | "failed", current?: number | null, total?: number | null) => void,
+  setCurrentStep: (step: number) => void,
+  setAnalysisInProgress: (inProgress: boolean) => void,
+  progressSteps: ProcessStep[]
 ) => {
-  
-  // Summarize additional content
-  const summarizeAdditionalContent = async (reqId: string, processedCount: number, totalCount: number) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('summarize-research-content', {
-        body: { requirementId: reqId }
-      });
-      
-      if (error) throw error;
-      if (!data.success) throw new Error(data.message || "Failed to summarize additional content");
-      
-      // Update progress
-      if (data.remaining && data.remaining > 0) {
-        const newProcessedCount = totalCount - data.remaining;
-        updateStepStatus(3, "processing", newProcessedCount, totalCount);
-        
-        // Continue recursively if there's still more to summarize
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
-        await summarizeAdditionalContent(reqId, newProcessedCount, totalCount);
-      } else {
-        // All done
-        updateStepStatus(3, "processing", totalCount, totalCount);
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Error summarizing additional content:', error);
-      throw error;
-    }
-  };
+  const [generating, setGenerating] = useState(false);
 
-  // Generate analysis
-  const generateAnalysis = async () => {
-    if (!requirementId) {
-      toast.error("No requirement selected for analysis");
-      return;
+  // Function to generate market analysis
+  const generateAnalysis = async (): Promise<MarketAnalysisData | null> => {
+    if (!requirementId || !requirement || !requirementAnalysis) {
+      toast.error("Missing requirement data. Cannot generate analysis.");
+      return null;
+    }
+    
+    if (generating) {
+      toast.error("Analysis generation already in progress. Please wait.");
+      return null;
     }
     
     try {
-      // Reset progress state and show progress UI
-      updateStepStatus(0, "pending");
-      updateStepStatus(1, "pending");
-      updateStepStatus(2, "pending");
-      updateStepStatus(3, "pending");
-      updateStepStatus(4, "pending");
-      setCurrentStep(0);
+      setGenerating(true);
       setAnalysisInProgress(true);
       
-      // Set localStorage flags to indicate analysis is in progress
+      // Save analysis in progress status to localStorage
       localStorage.setItem(ANALYSIS_STATUS_KEY + requirementId, 'true');
       localStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(progressSteps));
       localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '0');
       
-      // Step 1: Generate search queries
+      console.log("Starting market analysis generation for:", requirementId);
+      
+      // STEP 1: Generate search queries
+      setCurrentStep(0);
       updateStepStatus(0, "processing");
+      
       const { data: queriesData, error: queriesError } = await supabase.functions.invoke('generate-market-queries', {
-        body: { 
-          requirementId: requirementId,
-          industryType: requirement?.industry_type,
-          problemStatement: requirementAnalysis?.problem_statement || null,
-          proposedSolution: requirementAnalysis?.proposed_solution || null,
-          keyFeatures: requirementAnalysis?.key_features || null
+        body: {
+          requirementId,
+          projectName: requirement.project_name,
+          industry: requirement.industry_type,
+          problemStatement: requirementAnalysis.problem_statement,
+          proposedSolution: requirementAnalysis.proposed_solution,
+          keyFeatures: requirementAnalysis.key_features
         }
       });
       
-      if (queriesError) throw queriesError;
-      if (!queriesData.success) throw new Error(queriesData.message || "Failed to generate search queries");
-      
-      // Get the total number of queries - Updated to use the correct table name
-      const { data: queriesCount, error: countError } = await supabase
-        .from("firecrawl_queries")
-        .select("id", { count: "exact" })
-        .eq("requirement_id", requirementId);
-        
-      const totalQueries = queriesCount?.length || 5;
-      updateStepStatus(1, "pending", 0, totalQueries); // Update the total for search queries
-      
-      updateStepStatus(0, "completed");
-      setCurrentStep(1);
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '1');
-      
-      // Step 2: Process search queries
-      updateStepStatus(1, "processing");
-      const { data: processData, error: processError } = await supabase.functions.invoke('process-market-queries', {
-        body: { requirementId: requirementId }
-      });
-      
-      if (processError) throw processError;
-      if (!processData.success) throw new Error(processData.message || "Failed to process search queries");
-      
-      // Get count of market research sources
-      const { data: sourcesCount, error: sourcesError } = await supabase
-        .from("market_research_sources")
-        .select("id", { count: "exact" })
-        .eq("requirement_id", requirementId);
-        
-      const totalSources = sourcesCount?.length || 9;
-      updateStepStatus(2, "pending", 0, totalSources); // Update the total for scraping
-      updateStepStatus(3, "pending", 0, totalSources); // Update the total for summarizing
-      
-      updateStepStatus(1, "completed", totalQueries, totalQueries);
-      setCurrentStep(2);
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '2');
-      
-      // Step 3: Scrape research sources
-      updateStepStatus(2, "processing");
-      const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke('scrape-research-urls', {
-        body: { requirementId: requirementId }
-      });
-      
-      if (scrapeError) throw scrapeError;
-      if (!scrapeData.success) throw new Error(scrapeData.message || "Failed to scrape research sources");
-      
-      updateStepStatus(2, "completed", totalSources, totalSources);
-      setCurrentStep(3);
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '3');
-      
-      // Step 4: Summarize research content
-      updateStepStatus(3, "processing");
-      const { data: summaryData, error: summaryError } = await supabase.functions.invoke('summarize-research-content', {
-        body: { requirementId: requirementId }
-      });
-      
-      if (summaryError) throw summaryError;
-      if (!summaryData.success) throw new Error(summaryData.message || "Failed to summarize research content");
-      
-      // Check if there's more content to summarize
-      if (summaryData.remaining && summaryData.remaining > 0) {
-        // Continue summarizing if needed - update progress
-        const processedCount = totalSources - summaryData.remaining;
-        updateStepStatus(3, "processing", processedCount, totalSources);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay
-        await summarizeAdditionalContent(requirementId, processedCount, totalSources);
+      if (queriesError) {
+        console.error("Error generating search queries:", queriesError);
+        updateStepStatus(0, "failed");
+        throw queriesError;
       }
       
-      updateStepStatus(3, "completed", totalSources, totalSources);
-      setCurrentStep(4);
-      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '4');
+      console.log("Search queries generated:", queriesData);
+      updateStepStatus(0, "completed");
       
-      // Step 5: Generate market analysis
+      // STEP 2: Process search queries to get URLs
+      setCurrentStep(1);
+      updateStepStatus(1, "processing");
+      
+      let current = 0;
+      let urls: string[] = [];
+      
+      // Process each search query to get URLs
+      for (const query of queriesData.queries) {
+        current++;
+        updateStepStatus(1, "processing", current, queriesData.queries.length);
+        
+        const { data: urlsData, error: urlsError } = await supabase.functions.invoke('process-market-queries', {
+          body: {
+            requirementId,
+            query
+          }
+        });
+        
+        if (urlsError) {
+          console.error("Error processing search query:", urlsError);
+          continue;
+        }
+        
+        if (urlsData && urlsData.urls) {
+          urls = [...urls, ...urlsData.urls];
+        }
+      }
+      
+      if (urls.length === 0) {
+        updateStepStatus(1, "failed");
+        throw new Error("Failed to find any relevant URLs for research");
+      }
+      
+      updateStepStatus(1, "completed");
+      console.log("Found URLs for research:", urls);
+      
+      // STEP 3: Scrape content from URLs
+      setCurrentStep(2);
+      updateStepStatus(2, "processing");
+      
+      current = 0;
+      let scrapedCount = 0;
+      
+      // Limit to first 9 URLs to avoid overloading
+      const urlsToScrape = urls.slice(0, 9);
+      
+      for (const url of urlsToScrape) {
+        current++;
+        updateStepStatus(2, "processing", current, urlsToScrape.length);
+        
+        const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke('scrape-research-urls', {
+          body: {
+            requirementId,
+            url
+          }
+        });
+        
+        if (scrapeError) {
+          console.error("Error scraping URL:", scrapeError);
+          continue;
+        }
+        
+        if (scrapeData && scrapeData.success) {
+          scrapedCount++;
+        }
+      }
+      
+      if (scrapedCount === 0) {
+        updateStepStatus(2, "failed");
+        throw new Error("Failed to scrape any content from URLs");
+      }
+      
+      updateStepStatus(2, "completed");
+      console.log("Scraped content from URLs");
+      
+      // STEP 4: Summarize research content
+      setCurrentStep(3);
+      updateStepStatus(3, "processing");
+      
+      const { data: sourcesData, error: sourcesError } = await supabase
+        .from('market_research_sources')
+        .select('id, status')
+        .eq('requirement_id', requirementId)
+        .eq('status', 'scraped');
+        
+      if (sourcesError) {
+        console.error("Error getting research sources:", sourcesError);
+        updateStepStatus(3, "failed");
+        throw sourcesError;
+      }
+      
+      current = 0;
+      let summarizedCount = 0;
+      
+      for (const source of sourcesData) {
+        current++;
+        updateStepStatus(3, "processing", current, sourcesData.length);
+        
+        const { data: summaryData, error: summaryError } = await supabase.functions.invoke('summarize-research-content', {
+          body: {
+            sourceId: source.id
+          }
+        });
+        
+        if (summaryError) {
+          console.error("Error summarizing content:", summaryError);
+          continue;
+        }
+        
+        if (summaryData && summaryData.success) {
+          summarizedCount++;
+        }
+      }
+      
+      if (summarizedCount === 0 && sourcesData.length > 0) {
+        updateStepStatus(3, "failed");
+        throw new Error("Failed to summarize any research content");
+      }
+      
+      updateStepStatus(3, "completed");
+      console.log("Summarized research content");
+      
+      // STEP 5: Create market analysis
+      setCurrentStep(4);
       updateStepStatus(4, "processing");
+      
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-market', {
-        body: { requirementId: requirementId }
+        body: {
+          requirementId,
+          projectName: requirement.project_name,
+          industry: requirement.industry_type,
+          problemStatement: requirementAnalysis.problem_statement,
+          proposedSolution: requirementAnalysis.proposed_solution
+        }
       });
       
-      if (analysisError) throw analysisError;
+      if (analysisError) {
+        console.error("Error creating market analysis:", analysisError);
+        updateStepStatus(4, "failed");
+        throw analysisError;
+      }
+      
+      console.log("Market analysis created:", analysisData);
       updateStepStatus(4, "completed");
       
-      // Refresh the market analysis data
-      const { data: updatedMarketData } = await supabase
+      // Update steps in localStorage with completed state
+      const completedSteps = progressSteps.map(step => ({ ...step, status: "completed" }));
+      localStorage.setItem(ANALYSIS_STEPS_KEY + requirementId, JSON.stringify(completedSteps));
+      localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + requirementId, '5'); 
+      
+      // Fetch and return the newly created market analysis
+      const { data: marketAnalysis, error: fetchError } = await supabase
         .from('market_analysis')
         .select('*')
         .eq('requirement_id', requirementId)
-        .maybeSingle();
+        .single();
+        
+      if (fetchError) {
+        console.error("Error fetching market analysis:", fetchError);
+        throw fetchError;
+      }
       
-      // Clear localStorage flags since process is complete
-      localStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
-      localStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
-      localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+      return marketAnalysis;
       
-      // Reset analysis in progress state after a short delay
-      setTimeout(() => {
-        setAnalysisInProgress(false);
-      }, 2000);
-      
-      return updatedMarketData;
     } catch (error: any) {
-      console.error('Error in market analysis process:', error);
-      // Mark current step as failed
-      updateStepStatus(currentStep, "failed");
-      
-      toast.error(error.message || "Failed to complete market analysis");
-      
-      // Keep localStorage flags so user can see the failed state
+      console.error("Error generating market analysis:", error);
+      toast.error("Failed to generate market analysis: " + (error.message || "Unknown error"));
       return null;
+    } finally {
+      setGenerating(false);
     }
   };
 

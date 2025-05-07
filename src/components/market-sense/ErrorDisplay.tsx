@@ -12,23 +12,25 @@ export const ErrorDisplay = ({ message = "Failed to load market analysis data." 
   const navigate = useNavigate();
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <MarketAnalysisHeader />
       
       <Card className="border-destructive/50">
         <CardHeader>
-          <CardTitle className="text-destructive">Error Loading Data</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-destructive text-base md:text-lg">Error Loading Data</CardTitle>
+          <CardDescription className="text-sm">
             We encountered a problem while loading the market analysis.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="text-sm md:text-base">
           <p>{message}</p>
         </CardContent>
         <CardFooter>
           <Button 
             variant="outline" 
             onClick={() => navigate('/dashboard/market-sense')}
+            size="sm"
+            className="w-full md:w-auto"
           >
             Back to Market Analyses
           </Button>

@@ -4,6 +4,7 @@ import { CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lightbulb } from "lucide-react";
 import { RequirementData, MarketAnalysisData } from "@/hooks/useMarketAnalysis";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MarketAnalysisCardHeaderProps {
   requirement: RequirementData;
@@ -20,11 +21,13 @@ export const MarketAnalysisCardHeader = ({
   onGenerateAnalysis,
   requirementAnalysis,
 }: MarketAnalysisCardHeaderProps) => {
+  const isMobile = useIsMobile();
+
   return (
-    <div className="flex justify-between items-start">
-      <div>
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          {requirement?.req_id} - {requirement?.project_name}
+    <div className="flex justify-between items-start flex-wrap gap-3">
+      <div className="flex-1 min-w-0">
+        <CardTitle className="text-base md:text-lg font-semibold flex items-center gap-2 flex-wrap">
+          <span className="truncate">{requirement?.req_id} - {requirement?.project_name}</span>
           {marketAnalysis?.status && (
             <Badge
               variant={
@@ -45,9 +48,10 @@ export const MarketAnalysisCardHeader = ({
           onClick={onGenerateAnalysis}
           disabled={!requirementAnalysis}
           className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+          size={isMobile ? "sm" : "default"}
         >
           <Lightbulb className="mr-2 h-4 w-4" />
-          Generate Market Analysis
+          {isMobile ? "Generate" : "Generate Market Analysis"}
         </Button>
       )}
     </div>

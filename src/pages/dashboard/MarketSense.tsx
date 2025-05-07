@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useMarketAnalysis } from "@/hooks/useMarketAnalysis";
+import { useIsMobile } from "@/hooks/use-mobile";
 import MarketAnalysisHeader from "@/components/market-sense/MarketAnalysisHeader";
 import MarketAnalysisList from "@/components/market-sense/MarketAnalysisList";
 import MarketAnalysisDetail from "@/components/market-sense/MarketAnalysisDetail";
@@ -13,6 +14,7 @@ import NotFoundDisplay from "@/components/market-sense/NotFoundDisplay";
 const MarketSense = () => {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
+  const isMobile = useIsMobile();
   
   // Get requirementId from URL params
   const requirementId = searchParams.get('requirementId');
@@ -52,7 +54,7 @@ const MarketSense = () => {
   // If no requirementId is provided, show a list of all market analyses
   if (!requirementId) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <MarketAnalysisHeader showBackButton={false} />
         <MarketAnalysisList 
           loading={loading} 
@@ -72,7 +74,7 @@ const MarketSense = () => {
   
   // Main view for a specific requirement with its market analysis
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <MarketAnalysisHeader 
         projectName={requirement?.project_name} 
         requirementId={requirementId}

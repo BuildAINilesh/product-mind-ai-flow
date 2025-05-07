@@ -6,7 +6,8 @@ import {
   Bell, 
   CircleUser,
   Search,
-  Plus
+  Plus,
+  Menu
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,9 +18,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const DashboardHeader = ({ title }: { title: string }) => {
+interface DashboardHeaderProps {
+  title: string;
+  onMenuClick?: () => void;
+}
+
+const DashboardHeader = ({ title, onMenuClick }: DashboardHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const isMobile = useIsMobile();
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +36,17 @@ const DashboardHeader = ({ title }: { title: string }) => {
   };
   
   return (
-    <header className="h-16 border-b border-border flex items-center justify-between px-6">
-      <h1 className="text-xl font-semibold">{title}</h1>
+    <header className="h-14 md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6">
+      <div className="flex items-center gap-3">
+        {isMobile && (
+          <Button variant="ghost" size="icon" onClick={onMenuClick} className="md:hidden">
+            <Menu size={20} />
+          </Button>
+        )}
+        <h1 className="text-lg md:text-xl font-semibold">{title}</h1>
+      </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         <form onSubmit={handleSearch} className="hidden md:flex relative">
           <Input
             type="search"
@@ -60,19 +75,19 @@ const DashboardHeader = ({ title }: { title: string }) => {
               <span className="w-2 h-2 bg-red-500 rounded-full absolute top-2 right-2"></span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-72 md:w-80">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <div className="flex flex-col w-full">
-                <span className="font-medium">New requirement needs review</span>
-                <span className="text-sm text-muted-foreground">E-commerce checkout flow - 2 hours ago</span>
+                <span className="font-medium text-sm">New requirement needs review</span>
+                <span className="text-xs md:text-sm text-muted-foreground">E-commerce checkout flow - 2 hours ago</span>
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <div className="flex flex-col w-full">
-                <span className="font-medium">Test cases generated</span>
-                <span className="text-sm text-muted-foreground">Mobile app login - 5 hours ago</span>
+                <span className="font-medium text-sm">Test cases generated</span>
+                <span className="text-xs md:text-sm text-muted-foreground">Mobile app login - 5 hours ago</span>
               </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

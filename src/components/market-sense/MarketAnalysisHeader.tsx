@@ -1,43 +1,69 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { AIGradientText } from "@/components/ui/ai-elements";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-interface MarketAnalysisHeaderProps {
-  showBackButton?: boolean;
+export interface MarketAnalysisHeaderProps {
   projectName?: string;
   requirementId?: string;
+  showBackButton?: boolean;
 }
 
-export const MarketAnalysisHeader = ({
-  showBackButton = true,
-  projectName,
+export const MarketAnalysisHeader = ({ 
+  projectName, 
   requirementId,
+  showBackButton = true
 }: MarketAnalysisHeaderProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  
+  const getHeaderText = () => {
+    if (projectName && requirementId) {
+      return isMobile ? projectName : `${projectName} (${requirementId})`;
+    }
+    return "MarketSense AI";
+  };
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        {showBackButton && (
-          <Button
-            onClick={() => navigate("/dashboard/market-sense")}
-            variant="outline"
-            size="sm"
-            className="gap-1"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Market Analyses
-          </Button>
-        )}
-        {projectName && requirementId && (
-          <div>
-            <h1 className="text-2xl font-bold">
-              {projectName} <span className="text-muted-foreground">({requirementId})</span>
-            </h1>
-          </div>
+    <div className="flex justify-between items-center flex-wrap gap-4 relative z-10">
+      <div className="flex-1 min-w-0">
+        <h2 className={`text-xl md:text-2xl font-bold ${projectName ? '' : 'flex items-center gap-2'}`}>
+          {projectName ? (
+            <>
+              {getHeaderText()}
+            </>
+          ) : (
+            <>
+              MarketSense <AIGradientText>AI</AIGradientText>
+            </>
+          )}
+        </h2>
+        {projectName ? (
+          <p className="text-muted-foreground mt-1 text-sm md:text-base truncate">
+            Market analysis for {requirementId}
+          </p>
+        ) : (
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
+            AI-powered market analysis for your product requirements
+          </p>
         )}
       </div>
+      
+      {showBackButton && (
+        <div>
+          <Button 
+            onClick={() => navigate('/dashboard/market-sense')}
+            variant="outline"
+            size={isMobile ? "sm" : "default"}
+            className="flex items-center gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {isMobile ? "Back" : "Back to All Analyses"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

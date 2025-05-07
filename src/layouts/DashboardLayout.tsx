@@ -1,11 +1,23 @@
+
 import { Outlet } from "react-router-dom";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { useLocation } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState, useEffect } from "react";
 
 const DashboardLayout = () => {
   const location = useLocation();
   const path = location.pathname;
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [path, isMobile]);
 
   // Generate title based on current path
   const getTitle = () => {
@@ -24,10 +36,16 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col ml-64">
-        <DashboardHeader title={getTitle()} />
-        <main className="flex-1 p-6 overflow-auto">
+      <DashboardSidebar 
+        isOpen={isMobile ? sidebarOpen : true} 
+        onToggle={() => setSidebarOpen(!sidebarOpen)} 
+      />
+      <div className={`flex-1 flex flex-col ${isMobile ? 'ml-0' : 'ml-0 md:ml-64'}`}>
+        <DashboardHeader 
+          title={getTitle()} 
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        />
+        <main className="flex-1 p-3 md:p-6 overflow-auto">
           <Outlet />
         </main>
       </div>
