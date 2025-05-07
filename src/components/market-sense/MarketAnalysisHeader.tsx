@@ -1,68 +1,57 @@
 
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AIBackground, AIGradientText } from "@/components/ui/ai-elements";
-import { useNavigate } from "react-router-dom";
+import { Lightbulb } from "lucide-react";
+import { RequirementData, MarketAnalysisData } from "@/hooks/useMarketAnalysis";
 
 interface MarketAnalysisHeaderProps {
-  projectName?: string;
-  showBackButton?: boolean;
-  requirementId?: string | null;
+  requirement: RequirementData;
+  marketAnalysis: MarketAnalysisData | null;
+  analysisInProgress: boolean;
+  onGenerateAnalysis: () => Promise<void>;
+  requirementAnalysis: any;
 }
 
-export const MarketAnalysisHeader = ({ 
-  projectName, 
-  showBackButton = true,
-  requirementId
+export const MarketAnalysisCardHeader = ({
+  requirement,
+  marketAnalysis,
+  analysisInProgress,
+  onGenerateAnalysis,
+  requirementAnalysis,
 }: MarketAnalysisHeaderProps) => {
-  const navigate = useNavigate();
-  
-  const handleValidatorClick = () => {
-    if (requirementId) {
-      console.log("Navigating to validator with requirementId:", requirementId);
-      navigate(`/dashboard/validator?requirementId=${requirementId}`);
-    }
-  };
-  
   return (
-    <AIBackground variant="neural" intensity="medium" className="rounded-lg mb-6 p-6">
-      <div className="flex justify-between items-center relative z-10">
-        <div>
-          <h2 className="text-2xl font-bold">MarketSense <AIGradientText>AI</AIGradientText></h2>
-          <p className="text-muted-foreground mt-1">
-            {projectName 
-              ? `AI-powered market analysis for ${projectName}` 
-              : "AI-powered market analysis"
-            }
-          </p>
-        </div>
-        
-        <div className="flex gap-3">
-          {showBackButton && (
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard/market-sense')}
-              className="flex items-center gap-2"
+    <div className="flex justify-between items-start">
+      <div>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          {requirement?.req_id} - {requirement?.project_name}
+          {marketAnalysis?.status && (
+            <Badge
+              variant={
+                marketAnalysis.status === "Completed" ? "default" : "outline"
+              }
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Market Analyses
-            </Button>
+              {marketAnalysis.status}
+            </Badge>
           )}
-          
-          {requirementId && (
-            <Button 
-              onClick={handleValidatorClick}
-              variant="default"
-              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 flex items-center gap-2"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              AI Validator
-            </Button>
-          )}
-        </div>
+        </CardTitle>
+        <CardDescription>
+          Industry: {requirement?.industry_type}
+        </CardDescription>
       </div>
-    </AIBackground>
+
+      {!marketAnalysis?.market_trends && !analysisInProgress && (
+        <Button
+          onClick={onGenerateAnalysis}
+          disabled={!requirementAnalysis}
+          className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+        >
+          <Lightbulb className="mr-2 h-4 w-4" />
+          Generate Market Analysis
+        </Button>
+      )}
+    </div>
   );
 };
 
-export default MarketAnalysisHeader;
+export default MarketAnalysisCardHeader;
