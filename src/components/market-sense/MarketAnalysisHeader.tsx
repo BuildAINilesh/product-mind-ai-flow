@@ -1,57 +1,45 @@
 
-import { Badge } from "@/components/ui/badge";
-import { CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lightbulb } from "lucide-react";
-import { RequirementData, MarketAnalysisData } from "@/hooks/useMarketAnalysis";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface MarketAnalysisHeaderProps {
-  requirement: RequirementData;
-  marketAnalysis: MarketAnalysisData | null;
-  analysisInProgress: boolean;
-  onGenerateAnalysis: () => Promise<void>;
-  requirementAnalysis: any;
+  showBackButton?: boolean;
+  projectName?: string;
+  requirementId?: string;
 }
 
-export const MarketAnalysisCardHeader = ({
-  requirement,
-  marketAnalysis,
-  analysisInProgress,
-  onGenerateAnalysis,
-  requirementAnalysis,
+export const MarketAnalysisHeader = ({
+  showBackButton = true,
+  projectName,
+  requirementId,
 }: MarketAnalysisHeaderProps) => {
-  return (
-    <div className="flex justify-between items-start">
-      <div>
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          {requirement?.req_id} - {requirement?.project_name}
-          {marketAnalysis?.status && (
-            <Badge
-              variant={
-                marketAnalysis.status === "Completed" ? "default" : "outline"
-              }
-            >
-              {marketAnalysis.status}
-            </Badge>
-          )}
-        </CardTitle>
-        <CardDescription>
-          Industry: {requirement?.industry_type}
-        </CardDescription>
-      </div>
+  const navigate = useNavigate();
 
-      {!marketAnalysis?.market_trends && !analysisInProgress && (
-        <Button
-          onClick={onGenerateAnalysis}
-          disabled={!requirementAnalysis}
-          className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-        >
-          <Lightbulb className="mr-2 h-4 w-4" />
-          Generate Market Analysis
-        </Button>
-      )}
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        {showBackButton && (
+          <Button
+            onClick={() => navigate("/dashboard/market-sense")}
+            variant="outline"
+            size="sm"
+            className="gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Market Analyses
+          </Button>
+        )}
+        {projectName && requirementId && (
+          <div>
+            <h1 className="text-2xl font-bold">
+              {projectName} <span className="text-muted-foreground">({requirementId})</span>
+            </h1>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export default MarketAnalysisCardHeader;
+export default MarketAnalysisHeader;
