@@ -9,76 +9,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+// Function to fetch data from Supabase
+async function fetchFromSupabase(url: string, headers: any) {
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new Error(`Fetch failed: ${response.status}`);
   }
+  return await response.json();
+}
 
-  try {
-    const { requirementId } = await req.json()
+// Function to fetch a requirement by its ID
+async function fetchRequirement(supabaseUrl: string, headers: any, requirementId: string) {
+  console.log(`Fetching requirement with ID: ${requirementId}`);
+  const requirements = await fetchFromSupabase(
+    `${supabaseUrl}/rest/v1/requirements?req_id=eq.${requirementId}&select=*`, 
+    headers
+  );
+  
+  if (!requirements || requirements.length === 0) {
+    throw new Error("Requirement not found");
+  }
+  
+  return requirements[0];
+}
 
-    if (!requirementId) {
-      throw new Error("Requirement ID is required")
-    }
+// Function to fetch requirement analysis
+async function fetchAnalysis(supabaseUrl: string, headers: any, requirementId: string) {
+  const { data: analysis, error } = await fetchFromSupabase(
+    `${supabaseUrl}/rest/v1/requirement_analysis?requirement_id=eq.${requirementId}&select=*`,
+    headers
+  );
+  
+  return analysis && analysis.length > 0 ? analysis[0] : null;
+}
 
-    console.log(`Processing validation for requirement ID: ${requirementId}`)
+// Function to fetch market analysis
+async function fetchMarketAnalysis(supabaseUrl: string, headers: any, requirementId: string) {
+  const marketData = await fetchFromSupabase(
+    `${supabaseUrl}/rest/v1/market_analysis?requirement_id=eq.${requirementId}&select=*`,
+    headers
+  );
+  
+  return marketData && marketData.length > 0 ? marketData[0] : null;
+}
 
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") as string
-    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string
-    const supabaseAdmin = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseAdmin}`,
-    }
-
-    // Fetch requirement data
-    const fetchRequirement = await fetch(`${supabaseUrl}/rest/v1/requirements?req_id=eq.${requirementId}&select=*`, {
-      headers,
-    })
-    
-    if (!fetchRequirement.ok) {
-      throw new Error(`Failed to fetch requirement: ${fetchRequirement.status}`)
-    }
-    
-    const requirements = await fetchRequirement.json()
-    if (!requirements || requirements.length === 0) {
-      throw new Error("Requirement not found")
-    }
-    
-    const requirement = requirements[0]
-    
-    // Fetch requirement analysis
-    const fetchAnalysis = await fetch(
-      `${supabaseUrl}/rest/v1/requirement_analysis?requirement_id=eq.${requirement.id}&select=*`, 
-      { headers }
-    )
-    
-    if (!fetchAnalysis.ok) {
-      throw new Error(`Failed to fetch requirement analysis: ${fetchAnalysis.status}`)
-    }
-    
-    const analysisData = await fetchAnalysis.json()
-    const analysis = analysisData && analysisData.length > 0 ? analysisData[0] : null
-    
-    // Fetch market analysis
-    const fetchMarket = await fetch(
-      `${supabaseUrl}/rest/v1/market_analysis?requirement_id=eq.${requirement.id}&select=*`, 
-      { headers }
-    )
-    
-    if (!fetchMarket.ok) {
-      throw new Error(`Failed to fetch market analysis: ${fetchMarket.status}`)
-    }
-    
-    const marketData = await fetchMarket.json()
-    const marketAnalysis = marketData && marketData.length > 0 ? marketData[0] : null
-
-    // Prepare the prompt for OpenAI
-    const prompt = `
+// Function to generate the prompt for OpenAI
+function generatePrompt(requirement: any, analysis: any, marketAnalysis: any) {
+  return `
     You are a senior product strategist and market analyst.
     Based on the provided product requirement and market research data, your task is to evaluate the product idea's market readiness, strengths, risks, and next steps.
 
@@ -127,103 +104,152 @@ serve(async (req) => {
       "validation_verdict": "validated" | "needs_refinement" | "high_risk"
     }
     Respond with only the JSON — no explanation.
-    `
+    `;
+}
 
-    // Call OpenAI API
-    console.log("Calling OpenAI API")
-    const openAiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${openAiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500
-      })
+// Function to call the OpenAI API
+async function callOpenAI(prompt: string) {
+  console.log("Calling OpenAI API");
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${openAiKey}`
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1500
     })
+  });
 
-    if (!openAiResponse.ok) {
-      const errorText = await openAiResponse.text()
-      console.error("OpenAI API error:", errorText)
-      throw new Error(`OpenAI API error: ${openAiResponse.status} - ${errorText}`)
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("OpenAI API error:", errorText);
+    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// Function to parse OpenAI response
+function parseOpenAIResponse(content: string) {
+  try {
+    return JSON.parse(content.trim());
+  } catch (e) {
+    console.error("Failed to parse OpenAI response:", content);
+    throw new Error(`Failed to parse OpenAI response: ${e.message}`);
+  }
+}
+
+// Function to find or create validation record
+async function findOrCreateValidation(supabaseUrl: string, headers: any, requirement: any) {
+  const validationRecords = await fetchFromSupabase(
+    `${supabaseUrl}/rest/v1/requirement_validation?requirement_id=eq.${requirement.id}&select=id`,
+    headers
+  );
+  
+  return validationRecords && validationRecords.length > 0 ? validationRecords[0] : null;
+}
+
+// Function to save validation data
+async function saveValidation(supabaseUrl: string, headers: any, existingValidation: any, validationData: any, requirementId: string) {
+  const method = existingValidation ? "PATCH" : "POST";
+  const url = existingValidation 
+    ? `${supabaseUrl}/rest/v1/requirement_validation?id=eq.${existingValidation.id}`
+    : `${supabaseUrl}/rest/v1/requirement_validation`;
+  
+  const timestamp = new Date().toISOString();
+  
+  const body = {
+    requirement_id: requirementId,
+    validation_summary: validationData.validation_summary,
+    strengths: validationData.strengths,
+    risks: validationData.risks,
+    recommendations: validationData.recommendations,
+    readiness_score: validationData.readiness_score,
+    validation_verdict: validationData.validation_verdict,
+    status: "Completed",
+    updated_at: timestamp
+  };
+  
+  if (!existingValidation) {
+    body.created_at = timestamp;
+  }
+  
+  const response = await fetch(url, {
+    method: method,
+    headers: {
+      ...headers,
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify(body)
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Failed to save validation:", errorText);
+    throw new Error(`Failed to save validation: ${response.status} - ${errorText}`);
+  }
+  
+  return await response.json();
+}
+
+// Main handler function
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { requirementId } = await req.json();
+
+    if (!requirementId) {
+      throw new Error("Requirement ID is required");
     }
 
-    const openAiData = await openAiResponse.json()
-    const validationContent = openAiData.choices[0].message.content
+    console.log(`Processing validation for requirement ID: ${requirementId}`);
+
+    // Setup Supabase credentials
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") as string;
+    const supabaseAdmin = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseAdmin}`,
+    };
+
+    // Fetch requirement, analysis and market data
+    const requirement = await fetchRequirement(supabaseUrl, headers, requirementId);
+    const analysis = await fetchAnalysis(supabaseUrl, headers, requirement.id);
+    const marketAnalysis = await fetchMarketAnalysis(supabaseUrl, headers, requirement.id);
+
+    // Generate and call OpenAI
+    const prompt = generatePrompt(requirement, analysis, marketAnalysis);
+    const validationContent = await callOpenAI(prompt);
     
-    console.log("Received validation response")
+    console.log("Received validation response");
     
     // Parse the JSON response
-    let validationJson
-    try {
-      validationJson = JSON.parse(validationContent.trim())
-    } catch (e) {
-      console.error("Failed to parse OpenAI response:", validationContent)
-      throw new Error(`Failed to parse OpenAI response: ${e.message}`)
-    }
+    const validationJson = parseOpenAIResponse(validationContent);
 
     // Find existing validation record or create a new one
-    const fetchValidation = await fetch(
-      `${supabaseUrl}/rest/v1/requirement_validation?requirement_id=eq.${requirement.id}&select=id`, 
-      { headers }
-    )
-    
-    if (!fetchValidation.ok) {
-      throw new Error(`Failed to fetch validation record: ${fetchValidation.status}`)
-    }
-    
-    const validationRecords = await fetchValidation.json()
-    const existingValidation = validationRecords && validationRecords.length > 0 ? validationRecords[0] : null
+    const existingValidation = await findOrCreateValidation(supabaseUrl, headers, requirement);
     
     // Update or insert validation record
-    const validationMethod = existingValidation ? "PATCH" : "POST"
-    const validationUrl = existingValidation 
-      ? `${supabaseUrl}/rest/v1/requirement_validation?id=eq.${existingValidation.id}`
-      : `${supabaseUrl}/rest/v1/requirement_validation`
+    const savedData = await saveValidation(supabaseUrl, headers, existingValidation, validationJson, requirement.id);
     
-    const validationData = {
-      requirement_id: requirement.id,
-      validation_summary: validationJson.validation_summary,
-      strengths: validationJson.strengths,
-      risks: validationJson.risks,
-      recommendations: validationJson.recommendations,
-      readiness_score: validationJson.readiness_score,
-      validation_verdict: validationJson.validation_verdict,
-      status: "Completed"
-    }
-    
-    if (!existingValidation) {
-      validationData.created_at = new Date().toISOString()
-    }
-    
-    validationData.updated_at = new Date().toISOString()
-    
-    const saveValidation = await fetch(validationUrl, {
-      method: validationMethod,
-      headers: {
-        ...headers,
-        "Prefer": existingValidation ? "return=representation" : "return=representation"
-      },
-      body: JSON.stringify(validationData)
-    })
-    
-    if (!saveValidation.ok) {
-      const errorText = await saveValidation.text()
-      console.error("Failed to save validation:", errorText)
-      throw new Error(`Failed to save validation: ${saveValidation.status} - ${errorText}`)
-    }
-    
-    const savedData = await saveValidation.json()
-    
-    console.log("Validation saved successfully")
+    console.log("Validation saved successfully");
     
     return new Response(
       JSON.stringify({ 
@@ -235,9 +261,9 @@ serve(async (req) => {
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
-    )
+    );
   } catch (error) {
-    console.error("Error in validation process:", error)
+    console.error("Error in validation process:", error);
     
     return new Response(
       JSON.stringify({ 
@@ -248,6 +274,6 @@ serve(async (req) => {
         status: 400, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
-    )
+    );
   }
-})
+});
