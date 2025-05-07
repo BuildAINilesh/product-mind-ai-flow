@@ -49,7 +49,7 @@ export const MarketAnalysisDetail = ({
   }
   
   const handleValidatorClick = async () => {
-    if (!requirement.id) {
+    if (!requirement.id || !requirement.req_id) {
       toast.error("Requirement ID is missing");
       return;
     }
@@ -57,6 +57,8 @@ export const MarketAnalysisDetail = ({
     setIsCreatingValidation(true);
     
     try {
+      console.log("Creating/checking validation for requirement:", requirement.id, "req_id:", requirement.req_id);
+      
       // Check if validation already exists for this requirement
       const { data: existingValidation, error: checkError } = await supabase
         .from('requirement_validation')
@@ -105,7 +107,7 @@ export const MarketAnalysisDetail = ({
       }
       
       // Navigate to validator page with the requirement ID
-      // Use the req_id field instead of the UUID
+      // Use the req_id field for navigation
       setIsCreatingValidation(false);
       navigate(`/dashboard/validator?requirementId=${requirement.req_id}`);
     } catch (error) {

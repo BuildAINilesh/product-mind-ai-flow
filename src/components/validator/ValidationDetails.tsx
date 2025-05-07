@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, EditIcon, BrainCircuit } from "lucide-react";
+import { ChevronLeft, EditIcon, BrainCircuit, AlertTriangle } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import ValidationResultSummary from "./ValidationResultSummary";
 import ValidationRisksRecommendations from "./ValidationRisksRecommendations";
 import ValidationEmptyState from "./ValidationEmptyState";
@@ -12,6 +14,7 @@ interface ValidationDetailsProps {
   validationData: any;
   isRequirementLoading: boolean;
   isValidating: boolean;
+  error?: string | null;
   handleValidate: () => void;
 }
 
@@ -21,6 +24,7 @@ const ValidationDetails = ({
   validationData,
   isRequirementLoading,
   isValidating,
+  error,
   handleValidate,
 }: ValidationDetailsProps) => {
   const navigate = useNavigate();
@@ -67,6 +71,12 @@ const ValidationDetails = ({
           <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
           <p className="ml-2">Loading requirement...</p>
         </div>
+      ) : error ? (
+        <Alert variant="destructive" className="my-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : validationData && validationData.status === "Completed" ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left column - Summary and scores */}

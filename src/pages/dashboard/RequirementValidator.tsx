@@ -17,6 +17,7 @@ const RequirementValidator = () => {
     isRequirementLoading,
     isValidating,
     dataFetchAttempted,
+    error,
     handleValidate,
   } = useValidation(requirementId);
 
@@ -29,6 +30,7 @@ const RequirementValidator = () => {
         validationData={validationData}
         isRequirementLoading={isRequirementLoading}
         isValidating={isValidating}
+        error={error}
         handleValidate={handleValidate}
       />
     );

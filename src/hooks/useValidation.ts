@@ -32,6 +32,7 @@ export function useValidation(requirementId: string | null) {
   const [isRequirementLoading, setIsRequirementLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch validation list when component loads (no requirementId is provided)
   useEffect(() => {
@@ -43,10 +44,10 @@ export function useValidation(requirementId: string | null) {
   // Fetch requirement details if requirementId is provided
   useEffect(() => {
     if (requirementId) {
-      fetchRequirement();
-      fetchRequirementAnalysis();
-      // Check if validation already exists for this requirement
-      fetchExistingValidation(requirementId);
+      console.log("Fetching data for requirementId:", requirementId);
+      fetchRequirement(requirementId);
+      // We'll fetch the requirement analysis after we have the requirement
+      // Check if validation already exists for this requirement is also dependent on requirement
     }
   }, [requirementId]);
 
@@ -83,119 +84,105 @@ export function useValidation(requirementId: string | null) {
     } catch (error) {
       console.error("Error fetching validations:", error);
       toast.error("Failed to load validations");
+      setError("Failed to load validations");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchRequirement = async () => {
-    if (!requirementId) return;
-
+  const fetchRequirement = async (reqId: string) => {
     setIsRequirementLoading(true);
+    setError(null);
+    
     try {
-      console.log("Fetching requirement with req_id:", requirementId);
-      // Query the requirements table for the specified requirement
+      console.log("Fetching requirement with req_id:", reqId);
+      
+      // Query the requirements table for the specified requirement using req_id
       const { data, error } = await supabase
         .from("requirements")
         .select("*")
-        .eq("req_id", requirementId)
-        .single();
+        .eq("req_id", reqId)
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching requirement:", error);
         toast.error("Failed to load requirement details");
-        throw error;
+        setError("Failed to load requirement details");
+        return;
       }
 
-      if (data) {
-        console.log("Found requirement:", data);
-        setRequirement(data);
+      if (!data) {
+        console.error("Requirement not found with req_id:", reqId);
+        toast.error(`Requirement with ID ${reqId} not found`);
+        setError(`Requirement with ID ${reqId} not found`);
+        return;
       }
+
+      console.log("Found requirement:", data);
+      setRequirement(data);
+      
+      // Now that we have the requirement, fetch the analysis and validation
+      fetchRequirementAnalysis(data.id);
+      fetchExistingValidation(data.id);
+      
       setDataFetchAttempted(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching requirement:", error);
       toast.error("Failed to load requirement details");
+      setError(error.message || "Failed to load requirement details");
     } finally {
       setIsRequirementLoading(false);
     }
   };
 
-  const fetchRequirementAnalysis = async () => {
-    if (!requirementId) return;
-
+  const fetchRequirementAnalysis = async (requirementInternalId: string) => {
     try {
-      // Query the requirement_analysis table for the specified requirement
-      const { data: reqData, error: reqError } = await supabase
-        .from("requirements")
-        .select("id")
-        .eq("req_id", requirementId)
-        .single();
+      console.log("Fetching analysis for requirement ID:", requirementInternalId);
+      
+      const { data, error } = await supabase
+        .from("requirement_analysis")
+        .select("*")
+        .eq("requirement_id", requirementInternalId)
+        .maybeSingle();
 
-      if (reqError) {
-        console.error("Error fetching requirement ID:", reqError);
+      if (error) {
+        console.error("Error fetching analysis:", error);
         return;
       }
 
-      if (reqData) {
-        console.log("Found requirement with ID:", reqData.id);
-        const { data, error } = await supabase
-          .from("requirement_analysis")
-          .select("*")
-          .eq("requirement_id", reqData.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching analysis:", error);
-          return;
-        }
-
-        if (data) {
-          console.log("Found requirement analysis:", data);
-          setRequirementAnalysis(data);
-        } else {
-          console.log("No requirement analysis found");
-        }
+      if (data) {
+        console.log("Found requirement analysis:", data);
+        setRequirementAnalysis(data);
+      } else {
+        console.log("No requirement analysis found");
       }
     } catch (error) {
       console.error("Error fetching requirement analysis:", error);
     }
   };
 
-  const fetchExistingValidation = async (reqId: string) => {
+  const fetchExistingValidation = async (requirementInternalId: string) => {
     try {
-      console.log("Checking for existing validation for req_id:", reqId);
-      // First get the requirement ID (UUID) from the req_id
-      const { data: reqData, error: reqError } = await supabase
-        .from("requirements")
-        .select("id")
-        .eq("req_id", reqId)
-        .single();
+      console.log("Checking for existing validation for requirement ID:", requirementInternalId);
+      
+      // Fetch the validation using the requirement UUID
+      const { data, error } = await supabase
+        .from("requirement_validation")
+        .select("*")
+        .eq("requirement_id", requirementInternalId)
+        .maybeSingle();
 
-      if (reqError) {
-        console.error("Error fetching requirement ID:", reqError);
+      if (error && error.code !== "PGRST116") {
+        console.error("Error fetching validation:", error);
         return;
       }
 
-      if (reqData) {
-        console.log("Found requirement ID:", reqData.id);
-        // Now fetch the validation using the requirement UUID
-        const { data, error } = await supabase
-          .from("requirement_validation")
-          .select("*")
-          .eq("requirement_id", reqData.id)
-          .maybeSingle();
-
-        if (error && error.code !== "PGRST116") {
-          console.error("Error fetching validation:", error);
-          return;
-        }
-
-        if (data) {
-          console.log("Found existing validation:", data);
-          setValidationData(data);
-        } else {
-          console.log("No validation record found");
-        }
+      if (data) {
+        console.log("Found existing validation:", data);
+        setValidationData(data);
+      } else {
+        console.log("No validation record found");
+        setValidationData(null);
       }
     } catch (error) {
       console.error("Error fetching existing validation:", error);
@@ -217,9 +204,10 @@ export function useValidation(requirementId: string | null) {
 
     try {
       toast.info("Starting AI validation process...", { duration: 2000 });
-      console.log("Starting validation for requirement:", requirement.id);
+      console.log("Starting validation for requirement req_id:", requirementId);
+      console.log("Requirement object:", requirement);
 
-      // Call the AI validator edge function
+      // Call the AI validator edge function with the req_id
       const { data, error } = await supabase.functions.invoke("ai-validator", {
         body: { requirementId },
       });
@@ -281,6 +269,7 @@ export function useValidation(requirementId: string | null) {
     isRequirementLoading,
     isValidating,
     dataFetchAttempted,
+    error,
     handleValidate,
     fetchValidations,
   };
