@@ -39,7 +39,7 @@ export interface TestCase {
 }
 
 // Add a type definition for Requirement
-interface Requirement {
+export interface Requirement {
   id: string;
   projectName: string;
   industry: string;
@@ -107,7 +107,17 @@ export const useCaseGenerator = (requirementId: string | null) => {
         
         if (reqData) {
           console.log("Successfully found requirement:", reqData);
-          setRequirement(reqData);
+          // Make sure to transform the data to match our Requirement interface
+          const formattedRequirement: Requirement = {
+            id: reqData.id,
+            projectName: reqData.projectName || reqData.project_name || "Unknown Project",
+            industry: reqData.industry || reqData.industry_type || "Unknown Industry",
+            created: reqData.created || 
+              (reqData.created_at ? new Date(reqData.created_at).toLocaleDateString() : "Unknown Date"),
+            description: reqData.description || "No description available",
+            req_id: reqData.req_id
+          };
+          setRequirement(formattedRequirement);
         } else {
           console.log("Could not find requirement directly, trying to find via case_generator table");
           
@@ -131,18 +141,32 @@ export const useCaseGenerator = (requirementId: string | null) => {
               
             if (caseGenError) {
               console.error("Error fetching from case_generator:", caseGenError);
-            } else if (caseGenData?.requirements) {
+            } else if (caseGenData && caseGenData.requirements) {
               console.log("Found requirement via case_generator join:", caseGenData.requirements);
               
+              // Safely access properties with type checking
+              const requirementsData = caseGenData.requirements as {
+                id?: string;
+                project_name?: string;
+                industry_type?: string;
+                created_at?: string;
+                description?: string;
+                req_id?: string;
+              };
+              
               // Create a standardized requirement object from the join result
-              setRequirement({
-                id: caseGenData.requirements.id,
-                projectName: caseGenData.requirements.project_name || "Unknown Project",
-                industry: caseGenData.requirements.industry_type || "Unknown Industry",
-                created: new Date(caseGenData.requirements.created_at).toLocaleDateString(),
-                description: caseGenData.requirements.description || "",
-                req_id: caseGenData.requirements.req_id
-              });
+              const formattedRequirement: Requirement = {
+                id: requirementsData.id || requirementId,
+                projectName: requirementsData.project_name || "Unknown Project",
+                industry: requirementsData.industry_type || "Unknown Industry",
+                created: requirementsData.created_at 
+                  ? new Date(requirementsData.created_at).toLocaleDateString() 
+                  : "Unknown Date",
+                description: requirementsData.description || "",
+                req_id: requirementsData.req_id
+              };
+              
+              setRequirement(formattedRequirement);
             }
           }
         }
