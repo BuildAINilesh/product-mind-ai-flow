@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { ForgeFlowItem } from "@/hooks/useCaseGenerator";
@@ -54,14 +55,19 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
 
   // Status badge renderer
   const renderStatusBadge = (status: string) => {
+    if (!status) return <Badge variant="secondary">Pending</Badge>;
+    
+    status = status.toLowerCase();
     if (status === "completed") {
       return <Badge variant="success">Completed</Badge>;
     } else if (status === "in-progress") {
       return <Badge variant="warning">In Progress</Badge>;
     } else if (status === "failed") {
       return <Badge variant="destructive">Failed</Badge>;
+    } else if (status === "draft") {
+      return <Badge variant="secondary">Draft</Badge>;
     }
-    return <Badge variant="secondary">Pending</Badge>;
+    return <Badge variant="secondary">{status}</Badge>;
   };
 
   return (
@@ -140,47 +146,49 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
               icon={<CodeIcon className="h-12 w-12" />}
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Project</TableHead>
-                  <TableHead>Industry</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>User Stories</TableHead>
-                  <TableHead>Use Cases</TableHead>
-                  <TableHead>Test Cases</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {caseGeneratorItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.id}</TableCell>
-                    <TableCell>{item.projectName}</TableCell>
-                    <TableCell>{item.industry}</TableCell>
-                    <TableCell>{item.created}</TableCell>
-                    <TableCell>
-                      {renderStatusBadge(item.userStoriesStatus)}
-                    </TableCell>
-                    <TableCell>
-                      {renderStatusBadge(item.useCasesStatus)}
-                    </TableCell>
-                    <TableCell>
-                      {renderStatusBadge(item.testCasesStatus)}
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        to={`/dashboard/ai-cases?requirementId=${item.requirementId}`}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-                      >
-                        View Details
-                      </Link>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Requirement ID</TableHead>
+                    <TableHead className="whitespace-nowrap">Project</TableHead>
+                    <TableHead className="whitespace-nowrap">Industry</TableHead>
+                    <TableHead className="whitespace-nowrap">Created</TableHead>
+                    <TableHead className="whitespace-nowrap">User Stories</TableHead>
+                    <TableHead className="whitespace-nowrap">Use Cases</TableHead>
+                    <TableHead className="whitespace-nowrap">Test Cases</TableHead>
+                    <TableHead className="whitespace-nowrap">Action</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {caseGeneratorItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="whitespace-nowrap">{item.requirementId?.substring(0, 10)}</TableCell>
+                      <TableCell className="max-w-[150px] truncate">{item.projectName}</TableCell>
+                      <TableCell>{item.industry}</TableCell>
+                      <TableCell className="whitespace-nowrap">{item.created}</TableCell>
+                      <TableCell>
+                        {renderStatusBadge(item.userStoriesStatus)}
+                      </TableCell>
+                      <TableCell>
+                        {renderStatusBadge(item.useCasesStatus)}
+                      </TableCell>
+                      <TableCell>
+                        {renderStatusBadge(item.testCasesStatus)}
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          to={`/dashboard/ai-cases?requirementId=${item.requirementId}`}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                        >
+                          View Details
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
       </div>

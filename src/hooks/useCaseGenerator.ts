@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { getRequirement } from "@/services/requirementService";
 import {
   getCaseGeneratorItems,
@@ -108,6 +109,7 @@ export const useCaseGenerator = (requirementId: string | null) => {
         );
       } finally {
         setIsRequirementLoading(false);
+        setDataFetchAttempted(true);
       }
     };
 
@@ -115,7 +117,7 @@ export const useCaseGenerator = (requirementId: string | null) => {
   }, [requirementId]);
 
   // Function to generate/regenerate case generator elements
-  const handleGenerate = async (
+  const handleGenerate = useCallback(async (
     type?: "userStories" | "useCases" | "testCases"
   ) => {
     if (!requirementId) return;
@@ -141,7 +143,7 @@ export const useCaseGenerator = (requirementId: string | null) => {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [requirementId]);
 
   return {
     caseGeneratorItems,

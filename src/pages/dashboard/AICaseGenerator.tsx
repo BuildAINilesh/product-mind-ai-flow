@@ -38,7 +38,7 @@ const AICaseGenerator = () => {
     };
     
     autoGenerateOnNav();
-  }, [requirementId, dataFetchAttempted, isRequirementLoading, requirement, userStories.length, useCases.length, testCases.length]);
+  }, [requirementId, dataFetchAttempted, isRequirementLoading, requirement, userStories.length, useCases.length, testCases.length, handleGenerate]);
 
   // If requirementId is provided, but we've tried to fetch and got an error or no data found
   if (requirementId && dataFetchAttempted && !isRequirementLoading && !requirement) {
