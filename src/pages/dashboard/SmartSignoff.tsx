@@ -74,17 +74,17 @@ const SmartSignoff = () => {
 
         if (!data || data.length === 0) {
           // If no data from database, use mock data for demonstration
-          setRequirements(mockRequirements);
+          setRequirements(mockRequirements as BRDRequirement[]);
         } else {
           // Transform the data to match our component's expected format
           const transformedData = data.map((req) => {
             // Default values if BRD doesn't exist
-            let status = "draft";
+            let status: "draft" | "ready" | "signed_off" | "rejected" = "draft";
             let qualityScore = 85;
             
             // Update with actual BRD data if it exists
             if (req.requirement_brd) {
-              status = req.requirement_brd.status;
+              status = req.requirement_brd.status as "draft" | "ready" | "signed_off" | "rejected";
               // Calculate quality score based on BRD document completeness
               qualityScore = calculateQualityScore(req.requirement_brd.brd_document);
             }
@@ -103,13 +103,13 @@ const SmartSignoff = () => {
             };
           });
           
-          setRequirements(transformedData);
+          setRequirements(transformedData as BRDRequirement[]);
         }
       } catch (error) {
         console.error("Error fetching requirements:", error);
         toast.error("Failed to load requirements");
         // Fall back to mock data
-        setRequirements(mockRequirements);
+        setRequirements(mockRequirements as BRDRequirement[]);
       } finally {
         setLoading(false);
       }
@@ -215,12 +215,12 @@ const SmartSignoff = () => {
       
       // Update the requirement status in our state
       setRequirements(requirements.map(req => 
-        req.id === requirementId ? { ...req, status: "signed_off" } : req
+        req.id === requirementId ? { ...req, status: "signed_off" as const } : req
       ));
       
       // Update selected requirement if it's the one we're approving
       if (selectedRequirement && selectedRequirement.id === requirementId) {
-        setSelectedRequirement({ ...selectedRequirement, status: "signed_off" });
+        setSelectedRequirement({ ...selectedRequirement, status: "signed_off" as const });
       }
     } catch (error) {
       console.error("Error approving requirement:", error);
@@ -250,12 +250,12 @@ const SmartSignoff = () => {
       
       // Update the requirement status in our state
       setRequirements(requirements.map(req => 
-        req.id === requirementId ? { ...req, status: "rejected" } : req
+        req.id === requirementId ? { ...req, status: "rejected" as const } : req
       ));
       
       // Update selected requirement if it's the one we're rejecting
       if (selectedRequirement && selectedRequirement.id === requirementId) {
-        setSelectedRequirement({ ...selectedRequirement, status: "rejected" });
+        setSelectedRequirement({ ...selectedRequirement, status: "rejected" as const });
       }
     } catch (error) {
       console.error("Error rejecting requirement:", error);
@@ -538,7 +538,7 @@ const mockRequirements = [
     req_id: "REQ-25-01",
     title: "User Authentication System",
     description: "Implement secure user authentication with OAuth 2.0 and JWT",
-    status: "ready",
+    status: "ready" as const,
     stakeholders: [
       { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
       { id: 2, name: "Robert Fox", role: "Security Lead", approved: true, avatar: "/placeholder.svg" },
@@ -557,7 +557,7 @@ const mockRequirements = [
     req_id: "REQ-25-02",
     title: "Dashboard Analytics Module",
     description: "Real-time analytics dashboard with user activity tracking",
-    status: "draft",
+    status: "draft" as const,
     stakeholders: [
       { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
       { id: 5, name: "Sarah Miller", role: "Data Scientist", approved: false, avatar: "/placeholder.svg" },
@@ -575,7 +575,7 @@ const mockRequirements = [
     req_id: "REQ-25-03",
     title: "Payment Processing Integration",
     description: "Implement secure payment processing with Stripe and PayPal",
-    status: "signed_off",
+    status: "signed_off" as const,
     stakeholders: [
       { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
       { id: 2, name: "Robert Fox", role: "Security Lead", approved: true, avatar: "/placeholder.svg" },
