@@ -1,5 +1,5 @@
+
 import { useState, useEffect } from "react";
-import { FileCheck } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -7,15 +7,12 @@ import { BRDRequirement } from "@/types/smart-signoff";
 import { RequirementsList } from "@/components/smart-signoff/RequirementsList";
 import { RequirementDetails } from "@/components/smart-signoff/RequirementDetails";
 import { EmptyRequirementState } from "@/components/smart-signoff/EmptyRequirementState";
-import { AISignoffStats } from "@/components/smart-signoff/AISignoffStats";
-import { AISignoffTable } from "@/components/smart-signoff/AISignoffTable";
 
 const SmartSignoff = () => {
   const [requirements, setRequirements] = useState<BRDRequirement[]>([]);
   const [selectedRequirement, setSelectedRequirement] = useState<BRDRequirement | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<"list" | "table">("list");
 
   // Fetch requirements with BRD status
   useEffect(() => {
@@ -23,7 +20,6 @@ const SmartSignoff = () => {
       setLoading(true);
       try {
         // Fetch requirements with their associated BRD documents
-        // Note: We updated the fields to match what's actually in the database
         const { data, error } = await supabase
           .from('requirements')
           .select(`
@@ -269,74 +265,28 @@ const SmartSignoff = () => {
         </p>
       </div>
 
-      {/* Add a toggle for view modes */}
-      <div className="flex justify-end mb-2">
-        <div className="flex bg-muted/50 rounded-md p-1">
-          <button
-            onClick={() => setViewMode("list")}
-            className={`px-3 py-1 text-sm rounded-md transition-colors ${
-              viewMode === "list"
-                ? "bg-background shadow"
-                : "hover:bg-muted/70"
-            }`}
-          >
-            List View
-          </button>
-          <button
-            onClick={() => setViewMode("table")}
-            className={`px-3 py-1 text-sm rounded-md transition-colors ${
-              viewMode === "table"
-                ? "bg-background shadow"
-                : "hover:bg-muted/70"
-            }`}
-          >
-            Table View
-          </button>
-        </div>
-      </div>
-
-      {viewMode === "list" ? (
-        // Original view
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-1">
-            <RequirementsList 
-              requirements={requirements}
-              selectedRequirement={selectedRequirement}
-              onSelectRequirement={handleSelectRequirement}
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            {selectedRequirement ? (
-              <RequirementDetails
-                requirement={selectedRequirement}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                onViewBRD={handleViewBRD}
-              />
-            ) : (
-              <EmptyRequirementState />
-            )}
-          </div>
-        </div>
-      ) : (
-        // New table view
-        <div className="space-y-6">
-          <AISignoffStats requirements={requirements} />
-          <AISignoffTable 
-            requirements={requirements} 
-            onViewDetails={handleSelectRequirement} 
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="md:col-span-1">
+          <RequirementsList 
+            requirements={requirements}
+            selectedRequirement={selectedRequirement}
+            onSelectRequirement={handleSelectRequirement}
           />
-          {selectedRequirement && (
+        </div>
+
+        <div className="md:col-span-2">
+          {selectedRequirement ? (
             <RequirementDetails
               requirement={selectedRequirement}
               onApprove={handleApprove}
               onReject={handleReject}
               onViewBRD={handleViewBRD}
             />
+          ) : (
+            <EmptyRequirementState />
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
