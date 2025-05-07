@@ -2,7 +2,6 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import StatusBadge from "./StatusBadge";
-import { AIGradientText } from "@/components/ui/ai-elements";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
 
