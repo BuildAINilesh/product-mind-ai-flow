@@ -3,6 +3,8 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import StatusBadge from "./StatusBadge";
 import { AIGradientText } from "@/components/ui/ai-elements";
+import { Badge } from "@/components/ui/badge";
+import { User } from "lucide-react";
 
 interface CaseItemCardProps {
   item: {
@@ -36,11 +38,13 @@ const CaseItemCard: React.FC<CaseItemCardProps> = ({ item, index, type }) => {
         <StatusBadge status={item.status || "Draft"} showForItemType={type} />
       </div>
       
-      {/* Special formatting for user stories to include actor */}
+      {/* Display actor as a tag for user stories */}
       {type === "userStories" && item.actor && (
         <div className="mb-2">
-          <span className="text-sm font-medium text-slate-700">Actor: </span>
-          <AIGradientText variant="neural" className="text-sm font-medium">{item.actor}</AIGradientText>
+          <Badge variant="outline" className="bg-slate-100 text-slate-700 flex items-center gap-1 mb-2">
+            <User size={12} />
+            {item.actor}
+          </Badge>
         </div>
       )}
       
