@@ -1,19 +1,23 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   CardDescription,
-  CardFooter
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Lightbulb, AlertTriangle, ShieldCheck } from "lucide-react";
-import { RequirementData, RequirementAnalysisData, MarketAnalysisData, ResearchSource } from "@/hooks/useMarketAnalysis";
+import {
+  RequirementData,
+  RequirementAnalysisData,
+  MarketAnalysisData,
+  ResearchSource,
+} from "@/hooks/useMarketAnalysis";
 import MarketAnalysisProgress from "./MarketAnalysisProgress";
 import MarketAnalysisContent from "./MarketAnalysisContent";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +35,7 @@ interface MarketAnalysisDetailProps {
   onGenerateAnalysis: () => Promise<void>;
 }
 
-export const MarketAnalysisDetail = ({ 
+export const MarketAnalysisDetail = ({
   requirement,
   requirementAnalysis,
   marketAnalysis,
@@ -39,15 +43,15 @@ export const MarketAnalysisDetail = ({
   analysisInProgress,
   progressSteps,
   currentStep,
-  onGenerateAnalysis
+  onGenerateAnalysis,
 }: MarketAnalysisDetailProps) => {
   const navigate = useNavigate();
   const [isCreatingValidation, setIsCreatingValidation] = useState(false);
-  
+
   if (!requirement) {
     return null;
   }
-  
+
   const handleValidatorClick = async () => {
     if (!requirement.id || !requirement.req_id) {
       toast.error("Requirement ID is missing");
@@ -55,62 +59,56 @@ export const MarketAnalysisDetail = ({
     }
 
     setIsCreatingValidation(true);
-    
+
     try {
-      console.log("Creating/checking validation for requirement:", requirement.id, "req_id:", requirement.req_id);
-      
-      // Check if validation already exists for this requirement
-      const { data: existingValidation, error: checkError } = await supabase
-        .from('requirement_validation')
-        .select('id')
-        .eq('requirement_id', requirement.id)
-        .maybeSingle();
-        
-      if (checkError) {
-        console.error("Error checking for existing validation:", checkError);
-        toast.error("Failed to check for existing validation");
+      console.log(
+        "Creating/checking validation for requirement:",
+        requirement.id,
+        "req_id:",
+        requirement.req_id
+      );
+
+      // Always create a fresh validation record for this requirement
+      // This ensures it always appears in the validator dashboard
+      const timestamp = new Date().toISOString();
+
+      const { data, error } = await supabase
+        .from("requirement_validation")
+        .insert([
+          {
+            requirement_id: requirement.id,
+            status: "Draft",
+            readiness_score: null,
+            validation_verdict: null,
+            created_at: timestamp,
+            updated_at: timestamp,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating validation:", error);
+        toast.error("Failed to create validation record");
         setIsCreatingValidation(false);
         return;
       }
-      
-      let validationId;
-      
-      // If validation doesn't exist, create a new one
-      if (!existingValidation) {
-        const { data, error } = await supabase
-          .from('requirement_validation')
-          .insert([
-            { 
-              requirement_id: requirement.id,
-              status: 'Draft',
-              readiness_score: null,
-              validation_verdict: null
-            }
-          ])
-          .select()
-          .single();
-          
-        if (error) {
-          console.error("Error creating validation:", error);
-          toast.error("Failed to create validation record");
-          setIsCreatingValidation(false);
-          return;
-        }
-        
-        validationId = data.id;
-        console.log("Created validation record with ID:", validationId);
-        toast.success("Created validation record");
-      } else {
-        validationId = existingValidation.id;
-        console.log("Using existing validation with ID:", validationId);
-        toast.info("Validation already exists for this requirement");
-      }
-      
-      // Navigate to validator page with the req_id from the requirement object
-      // IMPORTANT: Use req_id (e.g. REQ-25-01) not the internal UUID
+
+      const validationId = data.id;
+      console.log("Created validation record with ID:", validationId);
+      toast.success("Created validation record");
+
+      // Navigate to validator page
+      // Use internal UUID instead of req_id to match the expected format
       setIsCreatingValidation(false);
-      console.log(`Navigating to validator with req_id: ${requirement.req_id}`);
-      navigate(`/dashboard/validator?requirementId=${encodeURIComponent(requirement.req_id)}`);
+      console.log(
+        `Navigating to validator with internal UUID: ${requirement.id}`
+      );
+      navigate(
+        `/dashboard/validator?requirementId=${encodeURIComponent(
+          requirement.id
+        )}`
+      );
     } catch (error) {
       console.error("Error in validation process:", error);
       toast.error("Failed to create validation record");
@@ -126,7 +124,13 @@ export const MarketAnalysisDetail = ({
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               {requirement?.req_id} - {requirement?.project_name}
               {marketAnalysis?.status && (
-                <Badge variant={marketAnalysis.status === 'Completed' ? 'default' : 'outline'}>
+                <Badge
+                  variant={
+                    marketAnalysis.status === "Completed"
+                      ? "default"
+                      : "outline"
+                  }
+                >
                   {marketAnalysis.status}
                 </Badge>
               )}
@@ -135,7 +139,7 @@ export const MarketAnalysisDetail = ({
               Industry: {requirement?.industry_type}
             </CardDescription>
           </div>
-          
+
           {!marketAnalysis?.market_trends && !analysisInProgress && (
             <Button
               onClick={onGenerateAnalysis}
@@ -148,35 +152,43 @@ export const MarketAnalysisDetail = ({
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent>
         {/* Progress UI when analysis is in progress */}
         {analysisInProgress && (
-          <MarketAnalysisProgress progressSteps={progressSteps} currentStep={currentStep} />
+          <MarketAnalysisProgress
+            progressSteps={progressSteps}
+            currentStep={currentStep}
+          />
         )}
-        
+
         {/* Display market analysis if available */}
         {marketAnalysis?.market_trends && (
-          <MarketAnalysisContent marketAnalysis={marketAnalysis} researchSources={researchSources} />
+          <MarketAnalysisContent
+            marketAnalysis={marketAnalysis}
+            researchSources={researchSources}
+          />
         )}
-        
+
         {/* Display a message if no analysis and we're not in progress */}
         {!marketAnalysis?.market_trends && !analysisInProgress && (
           <Alert variant="default" className="bg-muted/50">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>No market analysis available</AlertTitle>
             <AlertDescription>
-              Click the "Generate Market Analysis" button to start the AI-powered market analysis process.
-              This will research current market trends, competition, and strategic recommendations for this requirement.
+              Click the "Generate Market Analysis" button to start the
+              AI-powered market analysis process. This will research current
+              market trends, competition, and strategic recommendations for this
+              requirement.
             </AlertDescription>
           </Alert>
         )}
       </CardContent>
-      
+
       {/* Add a footer with Validator button when market analysis is completed */}
       {marketAnalysis?.market_trends && (
         <CardFooter className="pt-6 border-t flex justify-start">
-          <Button 
+          <Button
             onClick={handleValidatorClick}
             disabled={isCreatingValidation}
             variant="validator"
@@ -189,7 +201,7 @@ export const MarketAnalysisDetail = ({
               </>
             ) : (
               <>
-                <ShieldCheck className="h-4 w-4" /> 
+                <ShieldCheck className="h-4 w-4" />
                 AI Validator
               </>
             )}

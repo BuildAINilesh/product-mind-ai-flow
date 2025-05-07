@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,18 +27,18 @@ export function useValidation(requirementId: string | null) {
   const [loading, setLoading] = useState(true);
   const [requirement, setRequirement] = useState<any>(null);
   const [requirementAnalysis, setRequirementAnalysis] = useState<any>(null);
-  const [validationData, setValidationData] = useState<ValidationItem | null>(null);
+  const [validationData, setValidationData] = useState<ValidationItem | null>(
+    null
+  );
   const [isRequirementLoading, setIsRequirementLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [dataFetchAttempted, setDataFetchAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch validation list when component loads (no requirementId is provided)
+  // Always fetch validation list on mount
   useEffect(() => {
-    if (!requirementId) {
-      fetchValidations();
-    }
-  }, [requirementId]);
+    fetchValidations();
+  }, []);
 
   // Fetch requirement details if requirementId is provided
   useEffect(() => {
@@ -91,16 +90,31 @@ export function useValidation(requirementId: string | null) {
   const fetchRequirement = async (reqId: string) => {
     setIsRequirementLoading(true);
     setError(null);
-    
+
     try {
-      console.log("Fetching requirement with req_id:", reqId);
-      
-      // Query the requirements table for the specified requirement using req_id
-      const { data, error } = await supabase
+      // Decode the reqId in case it was URL encoded
+      const decodedReqId = decodeURIComponent(reqId);
+      console.log("Fetching requirement with ID:", reqId);
+      console.log("Decoded ID:", decodedReqId);
+
+      // First try to find the requirement by internal UUID (id)
+      let { data, error } = await supabase
         .from("requirements")
         .select("*")
-        .eq("req_id", reqId)
+        .eq("id", decodedReqId)
         .maybeSingle();
+
+      // If not found by internal UUID, try by req_id
+      if (!data && !error) {
+        console.log("Not found by internal UUID, trying req_id...");
+
+        // Try exact match with req_id
+        ({ data, error } = await supabase
+          .from("requirements")
+          .select("*")
+          .eq("req_id", decodedReqId)
+          .maybeSingle());
+      }
 
       if (error) {
         console.error("Error fetching requirement:", error);
@@ -111,20 +125,42 @@ export function useValidation(requirementId: string | null) {
       }
 
       if (!data) {
-        console.error("Requirement not found with req_id:", reqId);
-        toast.error(`Requirement with ID ${reqId} not found`);
-        setError(`Requirement with ID ${reqId} not found`);
+        console.error("Requirement not found with ID or req_id:", decodedReqId);
+        console.log("Trying case-insensitive search...");
+
+        // Try case-insensitive search as fallback
+        const { data: altData, error: altError } = await supabase
+          .from("requirements")
+          .select("*")
+          .ilike("req_id", decodedReqId)
+          .maybeSingle();
+
+        if (altError || !altData) {
+          console.error("All search methods failed for ID:", decodedReqId);
+          toast.error(`Requirement with ID ${decodedReqId} not found`);
+          setError(`Requirement with ID ${decodedReqId} not found`);
+          setDataFetchAttempted(true);
+          return;
+        }
+
+        console.log(
+          "Found requirement using case-insensitive search:",
+          altData
+        );
+        setRequirement(altData);
+        fetchRequirementAnalysis(altData.id);
+        fetchExistingValidation(altData.id);
         setDataFetchAttempted(true);
         return;
       }
 
       console.log("Found requirement:", data);
       setRequirement(data);
-      
+
       // Now that we have the requirement, fetch the analysis and validation
       fetchRequirementAnalysis(data.id);
       fetchExistingValidation(data.id);
-      
+
       setDataFetchAttempted(true);
     } catch (error: any) {
       console.error("Error fetching requirement:", error);
@@ -138,8 +174,11 @@ export function useValidation(requirementId: string | null) {
 
   const fetchRequirementAnalysis = async (requirementInternalId: string) => {
     try {
-      console.log("Fetching analysis for requirement ID:", requirementInternalId);
-      
+      console.log(
+        "Fetching analysis for requirement ID:",
+        requirementInternalId
+      );
+
       const { data, error } = await supabase
         .from("requirement_analysis")
         .select("*")
@@ -164,8 +203,11 @@ export function useValidation(requirementId: string | null) {
 
   const fetchExistingValidation = async (requirementInternalId: string) => {
     try {
-      console.log("Checking for existing validation for requirement ID:", requirementInternalId);
-      
+      console.log(
+        "Checking for existing validation for requirement ID:",
+        requirementInternalId
+      );
+
       // Fetch the validation using the requirement UUID
       const { data, error } = await supabase
         .from("requirement_validation")
@@ -230,27 +272,27 @@ export function useValidation(requirementId: string | null) {
         // Ensure the status is set to "Completed"
         const validationRecord = {
           ...data.record[0],
-          status: "Completed"
+          status: "Completed",
         };
         setValidationData(validationRecord);
-        
+
         // Also update the status in the database
         const { error: updateError } = await supabase
           .from("requirement_validation")
           .update({ status: "Completed" })
           .eq("id", validationRecord.id);
-          
+
         if (updateError) {
           console.error("Error updating validation status:", updateError);
         }
       } else if (data.data) {
         const validationRecord = {
           ...data.data,
-          status: "Completed"
+          status: "Completed",
         };
         setValidationData(validationRecord);
       }
-      
+
       fetchValidations(); // Refresh the validations list
       toast.success("Requirement validation complete!");
     } catch (error: any) {

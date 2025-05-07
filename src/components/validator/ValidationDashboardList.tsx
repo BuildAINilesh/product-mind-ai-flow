@@ -1,7 +1,12 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -74,7 +79,11 @@ const ValidationDashboardList = ({
   // Format the date string
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' });
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
   };
 
   // Get status badge class
@@ -96,7 +105,8 @@ const ValidationDashboardList = ({
       <CardHeader>
         <CardTitle>Validation Analyses</CardTitle>
         <CardDescription>
-          View and manage your AI-powered requirement validations for all projects
+          View and manage your AI-powered requirement validations for all
+          projects
         </CardDescription>
         <div className="mt-4">
           <div className="relative">
@@ -133,19 +143,34 @@ const ValidationDashboardList = ({
               <TableBody>
                 {filteredValidations.map((validation) => (
                   <TableRow key={validation.id}>
-                    <TableCell className="font-medium">{validation.requirements?.req_id || 'N/A'}</TableCell>
-                    <TableCell>{validation.requirements?.project_name || 'Unknown Project'}</TableCell>
-                    <TableCell>{validation.requirements?.industry_type || 'N/A'}</TableCell>
+                    <TableCell className="font-medium">
+                      {validation.requirements?.req_id || "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {validation.requirements?.project_name ||
+                        "Unknown Project"}
+                    </TableCell>
+                    <TableCell>
+                      {validation.requirements?.industry_type || "N/A"}
+                    </TableCell>
                     <TableCell>{formatDate(validation.created_at)}</TableCell>
                     <TableCell>
-                      <div className={`text-xs font-medium px-2 py-1 rounded-full inline-flex ${getStatusBadgeClass(validation.status)}`}>
+                      <div
+                        className={`text-xs font-medium px-2 py-1 rounded-full inline-flex ${getStatusBadgeClass(
+                          validation.status
+                        )}`}
+                      >
                         {validation.status}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
                         size="sm"
-                        onClick={() => handleViewValidation(validation.requirements?.req_id || "")}
+                        onClick={() =>
+                          handleViewValidation(
+                            validation.requirements?.id || ""
+                          )
+                        }
                         className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
                       >
                         View Validation
