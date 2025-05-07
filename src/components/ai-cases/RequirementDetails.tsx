@@ -38,14 +38,12 @@ const RequirementDetails: React.FC<RequirementDetailsProps> = ({
         </div>
       </div>
 
-      <div>
-        <p className="text-sm font-medium text-slate-500 mb-1">
-          Requirement Text
-        </p>
-        <p className="text-slate-900 p-4 bg-slate-50 rounded-md">
-          {requirement.description}
-        </p>
-      </div>
+      <p className="text-sm font-medium text-slate-500 mb-1">
+        Requirement Text
+      </p>
+      <p className="text-slate-900 p-4 bg-slate-50 rounded-md">
+        {requirement.description}
+      </p>
     </Card>
   );
 };
