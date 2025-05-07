@@ -77,6 +77,7 @@ const ValidationDetails = ({
       }
 
       // Navigate to the AI Case Generator page for this requirement
+      // Now we should just navigate without any auto-starting flag
       navigate(`/dashboard/ai-cases?requirementId=${encodeURIComponent(requirementId)}`);
     } catch (error) {
       console.error("Error in AI Case Generator process:", error);

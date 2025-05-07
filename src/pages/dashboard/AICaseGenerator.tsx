@@ -13,6 +13,8 @@ const AICaseGenerator = () => {
   const [searchParams] = useSearchParams();
   const requirementId = searchParams.get("requirementId");
   const [error, setError] = useState<string | null>(null);
+  // Add a state to track whether auto-generation should happen
+  const [shouldAutoGenerate, setShouldAutoGenerate] = useState<boolean>(false);
 
   console.log("AICaseGenerator - received requirementId:", requirementId);
 
@@ -30,18 +32,22 @@ const AICaseGenerator = () => {
     statusData,
   } = useCaseGenerator(requirementId);
 
-  // When navigating from validator page, auto-generate if no data exists yet
+  // Auto-generation should only happen when explicitly triggered, not on navigation
   useEffect(() => {
     const autoGenerateOnNav = async () => {
+      if (!shouldAutoGenerate) return;
+      
       if (requirementId && dataFetchAttempted && !isRequirementLoading && 
           requirement && userStories.length === 0 && useCases.length === 0 && testCases.length === 0) {
-        console.log("Auto-generating case data for newly navigated requirement");
+        console.log("Auto-generating case data for requirement with auto-generate flag");
         handleGenerate();
+        // Reset the flag after triggering generation
+        setShouldAutoGenerate(false);
       }
     };
     
     autoGenerateOnNav();
-  }, [requirementId, dataFetchAttempted, isRequirementLoading, requirement, userStories.length, useCases.length, testCases.length, handleGenerate]);
+  }, [requirementId, dataFetchAttempted, isRequirementLoading, requirement, userStories.length, useCases.length, testCases.length, handleGenerate, shouldAutoGenerate]);
 
   // If requirementId is provided, but we've tried to fetch and got an error or no data found
   if (requirementId && dataFetchAttempted && !isRequirementLoading && !requirement) {
@@ -65,6 +71,8 @@ const AICaseGenerator = () => {
         isGenerating={isGenerating}
         statusData={statusData}
         handleGenerate={handleGenerate}
+        // Pass down the function to enable auto-generation
+        triggerAutoGenerate={() => setShouldAutoGenerate(true)}
       />
     );
   }

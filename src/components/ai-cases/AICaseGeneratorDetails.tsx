@@ -35,6 +35,8 @@ interface AICaseGeneratorDetailsProps {
   handleGenerate: (
     type?: "userStories" | "useCases" | "testCases"
   ) => Promise<void>;
+  // Add the new prop for triggering auto-generation
+  triggerAutoGenerate?: () => void;
 }
 
 const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
@@ -47,6 +49,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
   isGenerating,
   statusData,
   handleGenerate,
+  triggerAutoGenerate,
 }) => {
   const [activeTab, setActiveTab] = useState<string>("userStories");
 
@@ -71,7 +74,12 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
 
   // Handle "Generate All" button
   const handleGenerateAll = () => {
-    handleGenerate();
+    // Instead of directly calling handleGenerate, we now trigger auto-generation
+    if (triggerAutoGenerate) {
+      triggerAutoGenerate();
+    } else {
+      handleGenerate();
+    }
   };
 
   if (isRequirementLoading) {
