@@ -1,6 +1,6 @@
 
 import { useSearchParams } from "react-router-dom";
-import { useCaseGenerator } from "@/hooks/useCaseGenerator";
+import { useCaseGenerator } from "@/hooks/caseGenerator";
 import AICaseGeneratorDashboard from "@/components/ai-cases/AICaseGeneratorDashboard";
 import AICaseGeneratorDetails from "@/components/ai-cases/AICaseGeneratorDetails";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";

@@ -1,124 +1,27 @@
 
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { getRequirement } from "@/services/requirementService";
 import {
-  getCaseGeneratorItems,
   getCaseGeneratorData,
   generateCaseGeneratorElements,
 } from "@/services/caseGeneratorService";
-import { supabase } from "@/integrations/supabase/client";
+import { Requirement, UserStory, UseCase, TestCase, StatusData } from "./types";
+import { formatRequirement } from "./utils";
 
-export interface ForgeFlowItem {
-  id: string;
-  requirementId: string;
-  projectName: string;
-  industry: string;
-  created: string;
-  userStoriesStatus: string;
-  useCasesStatus: string;
-  testCasesStatus: string;
-  reqId: string;
-}
-
-export interface UserStory {
-  id: string;
-  content: string;
-  status: string;
-}
-
-export interface UseCase {
-  id: string;
-  content: string;
-  status: string;
-}
-
-export interface TestCase {
-  id: string;
-  content: string;
-  status: string;
-}
-
-// Add a type definition for Requirement
-export interface Requirement {
-  id: string;
-  projectName: string;
-  industry: string;
-  created: string;
-  description: string;
-  req_id?: string;
-  [key: string]: any;
-}
-
-// Type for the database requirement object which might have different field names
-interface DatabaseRequirement {
-  id: string;
-  project_name?: string;
-  projectName?: string;
-  industry_type?: string;
-  industry?: string;
-  created_at?: string;
-  created?: string;
-  description?: string;
-  document_summary?: string;
-  req_id?: string;
-  [key: string]: any;
-}
-
-// Helper function to format a database requirement to our Requirement interface
-const formatRequirement = (data: DatabaseRequirement): Requirement => {
-  return {
-    id: data.id,
-    projectName: data.projectName || data.project_name || "Unknown Project",
-    industry: data.industry || data.industry_type || "Unknown Industry",
-    created: data.created || 
-      (data.created_at ? new Date(data.created_at).toLocaleDateString() : "Unknown Date"),
-    description: data.description || data.document_summary || "No description available",
-    req_id: data.req_id,
-  };
-};
-
-export const useCaseGenerator = (requirementId: string | null) => {
-  // States for dashboard view
-  const [caseGeneratorItems, setCaseGeneratorItems] = useState<ForgeFlowItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [dataFetchAttempted, setDataFetchAttempted] = useState<boolean>(false);
-
-  // States for detail view
+export const useCaseGeneratorDetails = (requirementId: string | null) => {
   const [requirement, setRequirement] = useState<Requirement | null>(null);
   const [userStories, setUserStories] = useState<UserStory[]>([]);
   const [useCases, setUseCases] = useState<UseCase[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [isRequirementLoading, setIsRequirementLoading] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [statusData, setStatusData] = useState<{
-    userStoriesStatus: string;
-    useCasesStatus: string;
-    testCasesStatus: string;
-  }>({
+  const [dataFetchAttempted, setDataFetchAttempted] = useState<boolean>(false);
+  const [statusData, setStatusData] = useState<StatusData>({
     userStoriesStatus: "Draft",
     useCasesStatus: "Draft",
     testCasesStatus: "Draft",
   });
-
-  // Fetch case generator items for dashboard view
-  useEffect(() => {
-    const fetchCaseGeneratorItems = async () => {
-      if (requirementId) return;
-
-      setLoading(true);
-      try {
-        const data = await getCaseGeneratorItems();
-        setCaseGeneratorItems(data);
-      } catch (error) {
-        console.error("Error fetching case generator items:", error);
-      } finally {
-        setLoading(false);
-        setDataFetchAttempted(true);
-      }
-    };
-
-    fetchCaseGeneratorItems();
-  }, [requirementId]);
 
   // Fetch requirement and case generator data for detail view
   useEffect(() => {
@@ -163,7 +66,7 @@ export const useCaseGenerator = (requirementId: string | null) => {
               
               // Create a standardized requirement object from the join result using our helper function
               if (typeof caseGenData.requirements === 'object') {
-                const reqData: DatabaseRequirement = {
+                const reqData = {
                   id: requirementId,
                   ...(caseGenData.requirements as object)
                 };
@@ -236,8 +139,6 @@ export const useCaseGenerator = (requirementId: string | null) => {
   }, [requirementId]);
 
   return {
-    caseGeneratorItems,
-    loading,
     requirement,
     userStories,
     useCases,
