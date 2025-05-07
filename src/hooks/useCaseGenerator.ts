@@ -17,7 +17,7 @@ export interface ForgeFlowItem {
   userStoriesStatus: string;
   useCasesStatus: string;
   testCasesStatus: string;
-  reqId: string; // Add the reqId field to match the format REQ-25-01
+  reqId: string;
 }
 
 export interface UserStory {
@@ -45,8 +45,8 @@ export interface Requirement {
   industry: string;
   created: string;
   description: string;
-  req_id?: string; // Add the req_id field
-  [key: string]: any; // Allow additional properties
+  req_id?: string;
+  [key: string]: any;
 }
 
 // Type for the database requirement object which might have different field names
@@ -165,12 +165,14 @@ export const useCaseGenerator = (requirementId: string | null) => {
               console.log("Found requirement via case_generator join:", caseGenData.requirements);
               
               // Create a standardized requirement object from the join result using our helper function
-              const reqData = {
-                id: requirementId,
-                ...caseGenData.requirements
-              };
-              
-              setRequirement(formatRequirement(reqData));
+              if (typeof caseGenData.requirements === 'object') {
+                const reqData: DatabaseRequirement = {
+                  id: requirementId,
+                  ...(caseGenData.requirements as object)
+                };
+                
+                setRequirement(formatRequirement(reqData));
+              }
             }
           }
         }
