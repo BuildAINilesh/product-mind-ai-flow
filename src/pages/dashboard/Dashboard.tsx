@@ -20,6 +20,12 @@ import {
   Network,
   BarChart,
   CircuitBoard,
+  MoveUpRight,
+  MoveDownLeft,
+  AlertCircle,
+  Users,
+  Activity,
+  CheckCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { AIAnalyticsCard } from "@/components/analytics/AIAnalyticsCard";
@@ -30,6 +36,33 @@ import {
   AIGradientText,
   NeuralNetwork,
 } from "@/components/ui/ai-elements";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  CartesianGrid,
+  XAxis,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useState } from "react";
 
 const lineChartData = [
   { month: "Jan", requirements: 4, validated: 2 },
@@ -48,7 +81,73 @@ const barChartData = [
   { category: "Scalability", value: 56 },
 ];
 
+// Stat card component for the dashboard
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  description: string;
+  icon: React.ReactNode;
+  trend?: number;
+  trendUp?: boolean;
+}
+
+function StatCard({
+  title,
+  value,
+  description,
+  icon,
+  trend,
+  trendUp,
+}: StatCardProps) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+          {icon}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <div className="flex items-center space-x-2">
+          <p className="text-xs text-muted-foreground">{description}</p>
+          {trend && trend > 0 && (
+            <div className="flex items-center text-xs">
+              {trendUp ? (
+                <MoveUpRight className="h-3 w-3 text-green-500 mr-1" />
+              ) : (
+                <MoveDownLeft className="h-3 w-3 text-red-500 mr-1" />
+              )}
+              <span className={trendUp ? "text-green-500" : "text-red-500"}>
+                {trend}%
+              </span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 const Dashboard = () => {
+  const { data, loading, error } = useDashboardStats();
+  const [activeTab, setActiveTab] = useState("activity");
+
+  // Chart configurations
+  const weeklyChartConfig = {
+    requirements: {
+      label: "Requirements",
+      color: "hsl(var(--primary))",
+    },
+    validated: {
+      label: "Validations",
+      color: "hsl(var(--secondary))",
+    },
+  };
+
+  // Colors for pie chart
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+
   return (
     <div className="space-y-6">
       {/* Enhanced Welcome Section */}
@@ -148,225 +247,457 @@ const Dashboard = () => {
         </AIBackground>
       </section>
 
-      {/* Stats Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AIAnalyticsCard
-          title="Total Requirements"
-          value="24"
-          trend={12}
-          trendLabel="vs last month"
-          icon={<FileText size={18} />}
-        />
-
-        <AIAnalyticsCard
-          title="AI Validated"
-          value="18"
-          trend={50}
-          trendLabel="completion rate"
-          icon={<Brain size={18} />}
-        />
-
-        <AIAnalyticsCard
-          title="Test Coverage"
-          value="75%"
-          trend={8}
-          trendLabel="improvement"
-          icon={<CheckSquare size={18} />}
-        />
-
-        <AIAnalyticsCard
-          title="Approval Rate"
-          value="92%"
-          trend={4}
-          trendLabel="improvement"
-          icon={<FileCheck size={18} />}
-        />
-      </section>
-
-      {/* Charts Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AIChart
-          title="Requirements & Validation Trends"
-          description="Monthly comparison of new requirements and AI validations"
-          data={lineChartData}
-          type="line"
-          xKey="month"
-          yKeys={["requirements", "validated"]}
-        />
-
-        <AIChart
-          title="Requirement Categories Analysis"
-          description="AI scoring by requirement category"
-          data={barChartData}
-          type="bar"
-          xKey="category"
-          yKeys={["value"]}
-        />
-      </section>
-
-      {/* Features Grid - Fixed links by using proper Link components */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">AI Platform Features</h3>
-          <div className="h-px flex-1 bg-border mx-4"></div>
+      {loading ? (
+        <div className="flex h-[600px] w-full items-center justify-center">
+          <div className="text-center">
+            <p className="text-muted-foreground">Loading dashboard data...</p>
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/requirements" className="block h-full">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">AI Requirements</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Create structured product requirements with machine learning
-                    assistance.
-                  </p>
-                  <span className="text-primary text-sm font-medium">
-                    View Requirements
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </AICard>
-
-          <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/market-sense" className="block h-full">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-secondary/10">
-                  <BarChart3 className="h-5 w-5 text-secondary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">MarketSense AI</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Get neural network-powered market insights and competitive
-                    analysis.
-                  </p>
-                  <span className="text-primary text-sm font-medium">
-                    Analyze Market
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </AICard>
-
-          <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/validator" className="block h-full">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Brain className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">Requirement Validator</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Machine learning validation against industry best practices.
-                  </p>
-                  <span className="text-primary text-sm font-medium">
-                    Validate Requirements
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </AICard>
-
-          <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/ai-cases" className="block h-full">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-secondary/10">
-                  <Network className="h-5 w-5 text-secondary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">AI Case Generator</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Generate comprehensive test cases using advanced AI models.
-                  </p>
-                  <span className="text-primary text-sm font-medium">
-                    Generate Tests
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </AICard>
-
-          <AICard className="p-6 hover:shadow-lg transition-shadow">
-            <Link to="/dashboard/signoff" className="block h-full">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-secondary/10">
-                  <CircuitBoard className="h-5 w-5 text-secondary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">AI Signoff</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Streamline approvals with neural network validation.
-                  </p>
-                  <span className="text-primary text-sm font-medium">
-                    Manage Approvals
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </AICard>
+      ) : error ? (
+        <div className="flex h-[400px] w-full items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="mx-auto h-10 w-10 text-destructive" />
+            <h3 className="mt-4 text-lg font-medium">Error Loading Data</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+          </div>
         </div>
-      </section>
+      ) : (
+        <>
+          {/* Stats Grid */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Requirements"
+              value={data?.requirementStats.total || 0}
+              description={`${data?.requirementStats.completed || 0} completed`}
+              icon={<FileText size={18} />}
+              trend={8}
+              trendUp={true}
+            />
 
-      {/* Recent Activity */}
-      <section>
-        <AICard>
-          <CardHeader>
-            <CardTitle>AI Activity Feed</CardTitle>
-            <CardDescription>
-              Latest AI-processed updates from your product requirements.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start gap-3 pb-3 border-b">
-              <div className="w-1.5 h-1.5 mt-2 rounded-full bg-green-500"></div>
-              <div>
-                <p className="font-medium">
-                  AI approved User Authentication System
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  2 hours ago · 98% confidence score
-                </p>
-              </div>
+            <StatCard
+              title="AI Validated"
+              value={data?.validationStats.passed || 0}
+              description={`${
+                Math.round(
+                  ((data?.validationStats.passed || 0) /
+                    ((data?.validationStats.passed || 0) +
+                      (data?.validationStats.failed || 0) +
+                      (data?.validationStats.pending || 0))) *
+                    100
+                ) || 0
+              }% success rate`}
+              icon={<Brain size={18} />}
+              trend={12}
+              trendUp={true}
+            />
+
+            <StatCard
+              title="Test Coverage"
+              value={`${Math.round(
+                ((data?.testCoverage.functional || 0) +
+                  (data?.testCoverage.integration || 0) +
+                  (data?.testCoverage.edge || 0) +
+                  (data?.testCoverage.negative || 0)) /
+                  4
+              )}%`}
+              description="Average across test types"
+              icon={<CheckSquare size={18} />}
+              trend={5}
+              trendUp={true}
+            />
+
+            <StatCard
+              title="Approval Rate"
+              value={`${
+                Math.round(
+                  ((data?.validationStats.passed || 0) /
+                    ((data?.validationStats.passed || 0) +
+                      (data?.validationStats.failed || 0))) *
+                    100
+                ) || 0
+              }%`}
+              description={`${
+                data?.validationStats.pending || 0
+              } pending review`}
+              icon={<FileCheck size={18} />}
+              trend={3}
+              trendUp={true}
+            />
+          </section>
+
+          {/* Charts Section */}
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Weekly Progress Chart */}
+            <div className="lg:col-span-2">
+              <AIChart
+                title="Weekly Progress"
+                description="Requirements and validations completed over the past week"
+                data={data?.weeklyProgress || []}
+                type="bar"
+                xKey="date"
+                yKeys={["requirements", "validated"]}
+                colors={["hsl(var(--primary))", "hsl(var(--secondary))"]}
+              />
             </div>
-            <div className="flex items-start gap-3 pb-3 border-b">
-              <div className="w-1.5 h-1.5 mt-2 rounded-full bg-blue-500"></div>
-              <div>
-                <p className="font-medium">
-                  Neural validation completed for Payment Processing Gateway
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  5 hours ago · 93% confidence score
-                </p>
-              </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Test Coverage</CardTitle>
+                <CardDescription>
+                  Distribution across test types
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          {
+                            name: "Functional",
+                            value: data?.testCoverage.functional || 0,
+                          },
+                          { name: "Edge", value: data?.testCoverage.edge || 0 },
+                          {
+                            name: "Integration",
+                            value: data?.testCoverage.integration || 0,
+                          },
+                          {
+                            name: "Negative",
+                            value: data?.testCoverage.negative || 0,
+                          },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) =>
+                          `${name}: ${(percent * 100).toFixed(0)}%`
+                        }
+                      >
+                        {[0, 1, 2, 3].map((index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Tabs Section */}
+          <Tabs
+            defaultValue="activity"
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList>
+              <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+              <TabsTrigger value="requirements">Requirements</TabsTrigger>
+              <TabsTrigger value="validation">Validation</TabsTrigger>
+            </TabsList>
+            <TabsContent value="activity">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Activity</CardTitle>
+                  <CardDescription>
+                    Latest updates from your product requirements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data?.recentActivity.map((activity) => (
+                        <TableRow key={activity.id}>
+                          <TableCell className="font-medium">
+                            {activity.user}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                activity.action === "Completed"
+                                  ? "bg-green-100 text-green-800"
+                                  : activity.action === "Failed"
+                                  ? "bg-red-100 text-red-800"
+                                  : activity.action === "Updated"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : activity.action === "Added"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {activity.action}
+                            </span>
+                          </TableCell>
+                          <TableCell>{activity.item}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(activity.timestamp).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="requirements">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Requirements Breakdown</CardTitle>
+                  <CardDescription>
+                    Current status of all requirements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex flex-col p-4 border rounded-md">
+                      <span className="text-sm text-muted-foreground">
+                        Completed
+                      </span>
+                      <span className="text-2xl font-bold">
+                        {data?.requirementStats.completed || 0}
+                      </span>
+                      <span className="text-sm text-muted-foreground mt-2">
+                        {Math.round(
+                          ((data?.requirementStats.completed || 0) /
+                            (data?.requirementStats.total || 1)) *
+                            100
+                        )}
+                        % of total
+                      </span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-md">
+                      <span className="text-sm text-muted-foreground">
+                        In Progress
+                      </span>
+                      <span className="text-2xl font-bold">
+                        {data?.requirementStats.inProgress || 0}
+                      </span>
+                      <span className="text-sm text-muted-foreground mt-2">
+                        {Math.round(
+                          ((data?.requirementStats.inProgress || 0) /
+                            (data?.requirementStats.total || 1)) *
+                            100
+                        )}
+                        % of total
+                      </span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-md">
+                      <span className="text-sm text-muted-foreground">
+                        Pending
+                      </span>
+                      <span className="text-2xl font-bold">
+                        {data?.requirementStats.pending || 0}
+                      </span>
+                      <span className="text-sm text-muted-foreground mt-2">
+                        {Math.round(
+                          ((data?.requirementStats.pending || 0) /
+                            (data?.requirementStats.total || 1)) *
+                            100
+                        )}
+                        % of total
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="validation">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Validation Results</CardTitle>
+                  <CardDescription>
+                    Current validation status across the project
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex flex-col p-4 border rounded-md">
+                      <span className="text-sm text-muted-foreground">
+                        Passed
+                      </span>
+                      <span className="text-2xl font-bold text-green-600">
+                        {data?.validationStats.passed || 0}
+                      </span>
+                      <span className="text-sm text-muted-foreground mt-2">
+                        {Math.round(
+                          ((data?.validationStats.passed || 0) /
+                            ((data?.validationStats.passed || 0) +
+                              (data?.validationStats.failed || 0) +
+                              (data?.validationStats.pending || 0))) *
+                            100
+                        )}
+                        % success rate
+                      </span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-md">
+                      <span className="text-sm text-muted-foreground">
+                        Failed
+                      </span>
+                      <span className="text-2xl font-bold text-red-600">
+                        {data?.validationStats.failed || 0}
+                      </span>
+                      <span className="text-sm text-muted-foreground mt-2">
+                        {Math.round(
+                          ((data?.validationStats.failed || 0) /
+                            ((data?.validationStats.passed || 0) +
+                              (data?.validationStats.failed || 0) +
+                              (data?.validationStats.pending || 0))) *
+                            100
+                        )}
+                        % failure rate
+                      </span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-md">
+                      <span className="text-sm text-muted-foreground">
+                        Pending
+                      </span>
+                      <span className="text-2xl font-bold text-yellow-600">
+                        {data?.validationStats.pending || 0}
+                      </span>
+                      <span className="text-sm text-muted-foreground mt-2">
+                        {Math.round(
+                          ((data?.validationStats.pending || 0) /
+                            ((data?.validationStats.passed || 0) +
+                              (data?.validationStats.failed || 0) +
+                              (data?.validationStats.pending || 0))) *
+                            100
+                        )}
+                        % awaiting validation
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Features Grid */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">AI Platform Features</h3>
+              <div className="h-px flex-1 bg-border mx-4"></div>
             </div>
-            <div className="flex items-start gap-3 pb-3 border-b">
-              <div className="w-1.5 h-1.5 mt-2 rounded-full bg-amber-500"></div>
-              <div>
-                <p className="font-medium">
-                  AI generated 24 test cases for Inventory Management
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  8 hours ago · 87% coverage
-                </p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <AICard className="p-6 hover:shadow-lg transition-shadow">
+                <Link to="/dashboard/requirements" className="block h-full">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">AI Requirements</h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Create structured product requirements with machine
+                        learning assistance.
+                      </p>
+                      <span className="text-primary text-sm font-medium">
+                        View Requirements
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </AICard>
+
+              <AICard className="p-6 hover:shadow-lg transition-shadow">
+                <Link to="/dashboard/market-sense" className="block h-full">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 rounded-lg bg-secondary/10">
+                      <Activity className="h-5 w-5 text-secondary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">MarketSense AI</h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Get neural network-powered market insights and
+                        competitive analysis.
+                      </p>
+                      <span className="text-primary text-sm font-medium">
+                        Analyze Market
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </AICard>
+
+              <AICard className="p-6 hover:shadow-lg transition-shadow">
+                <Link to="/dashboard/validator" className="block h-full">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Brain className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">
+                        Requirement Validator
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Machine learning validation against industry best
+                        practices.
+                      </p>
+                      <span className="text-primary text-sm font-medium">
+                        Validate Requirements
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </AICard>
+
+              <AICard className="p-6 hover:shadow-lg transition-shadow">
+                <Link to="/dashboard/ai-cases" className="block h-full">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 rounded-lg bg-secondary/10">
+                      <CheckCircle className="h-5 w-5 text-secondary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">AI Case Generator</h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Generate comprehensive test cases using advanced AI
+                        models.
+                      </p>
+                      <span className="text-primary text-sm font-medium">
+                        Generate Tests
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </AICard>
+
+              <AICard className="p-6 hover:shadow-lg transition-shadow">
+                <Link to="/dashboard/signoff" className="block h-full">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 rounded-lg bg-secondary/10">
+                      <FileCheck className="h-5 w-5 text-secondary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">AI Signoff</h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Streamline approvals with neural network validation.
+                      </p>
+                      <span className="text-primary text-sm font-medium">
+                        Manage Approvals
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </AICard>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 h-1.5 mt-2 rounded-full bg-red-500"></div>
-              <div>
-                <p className="font-medium">
-                  AI flagged potential issues in Customer Feedback System
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  2 days ago · 4 critical issues detected
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </AICard>
-      </section>
+          </section>
+        </>
+      )}
     </div>
   );
 };

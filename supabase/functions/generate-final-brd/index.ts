@@ -155,6 +155,36 @@ serve(async (req) => {
     Use Cases: ${promptData.use_cases_json}
 
     Test Cases (summary): ${promptData.test_case_counts}
+
+    Output Format:
+    json
+    
+    {
+      "brd_document": {
+        "project_overview": "...",
+        "problem_statement": "...",
+        "proposed_solution": "...",
+        "key_features": "...",
+        "business_goals": "...",
+        "target_audience": "...",
+        "market_research_summary": "...",
+        "validation_summary": "...",
+        "user_stories_summary": ["..."],
+        "use_cases_summary": ["..."],
+        "test_case_summary": {
+          "total_tests": number,
+          "functional": number,
+          "edge": number,
+          "negative": number,
+          "integration": number
+        },
+        "risks_and_mitigations": ["..."],
+        "final_recommendation": "string",
+        "ai_signoff_confidence": number (0–100)
+      }
+    }
+    
+    Respond with valid JSON only.
     `;
 
     // Call OpenAI API to generate the BRD
@@ -213,16 +243,35 @@ serve(async (req) => {
       throw new Error(`Failed to parse BRD data: ${error.message}`);
     }
 
-    // Add the requirement_id to the BRD data
+    // Map the BRD document to the requirement_brd table structure
+    const doc = brdData.brd_document;
     const finalBrdData = {
       requirement_id: projectId,
-      brd_document: brdData.brd_document, // Make sure OpenAI response matches this structure
-      created_at: new Date().toISOString(),
+      status: "ready",
+      project_overview: doc.project_overview || "",
+      problem_statement: doc.problem_statement || "",
+      proposed_solution: doc.proposed_solution || "",
+      key_features: doc.key_features || "",
+      business_goals: doc.business_goals || "",
+      target_audience: doc.target_audience || "",
+      market_research_summary: doc.market_research_summary || "",
+      validation_summary: doc.validation_summary || "",
+      user_stories_summary: doc.user_stories_summary || [],
+      use_cases_summary: doc.use_cases_summary || [],
+      total_tests: doc.test_case_summary?.total_tests || 0,
+      functional_tests: doc.test_case_summary?.functional || 0,
+      edge_tests: doc.test_case_summary?.edge || 0,
+      negative_tests: doc.test_case_summary?.negative || 0,
+      integration_tests: doc.test_case_summary?.integration || 0,
+      risks_and_mitigations: doc.risks_and_mitigations || [],
+      final_recommendation: doc.final_recommendation || "",
+      ai_signoff_confidence: doc.ai_signoff_confidence || 0,
+      updated_at: new Date().toISOString(),
     };
 
     // Check if BRD already exists
     const { data: existingBrd } = await supabase
-      .from("final_brd")
+      .from("requirement_brd")
       .select("id")
       .eq("requirement_id", projectId)
       .maybeSingle();
@@ -232,13 +281,16 @@ serve(async (req) => {
     if (existingBrd) {
       // Update existing BRD
       result = await supabase
-        .from("final_brd")
+        .from("requirement_brd")
         .update(finalBrdData)
         .eq("id", existingBrd.id)
         .select();
     } else {
       // Insert new BRD
-      result = await supabase.from("final_brd").insert(finalBrdData).select();
+      result = await supabase
+        .from("requirement_brd")
+        .insert(finalBrdData)
+        .select();
     }
 
     if (result.error) {

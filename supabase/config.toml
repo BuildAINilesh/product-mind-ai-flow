@@ -1,4 +1,5 @@
-
+# For detailed configuration reference documentation, visit:
+# https://supabase.com/docs/guides/local-development/cli/config
 project_id = "nbjajaafqswspkytekun"
 
 [api]
@@ -58,18 +59,5 @@ port = 54327
 vector_port = 54328
 backend = "postgres"
 
-[experimental]
-multiuser_enabled = false
-
-[functions]
+[edge_runtime]
 enabled = true
-port = 54325
-
-[functions.generate-user-stories]
-verify_jwt = true
-
-[functions.generate-use-cases]
-verify_jwt = true
-
-[functions.generate-test-cases]
-verify_jwt = true
