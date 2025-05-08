@@ -1,364 +1,561 @@
-
+import { useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { toast } from "@/components/ui/sonner";
+import AISignoffDashboard from "@/components/signoff/AISignoffDashboard";
+import BRDDisplay, { BRDData } from "@/components/signoff/BRDDisplay";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertTriangle,
+  FileText,
+  ClipboardCheck,
+  Calendar,
+  User,
+  Building,
+  FileOutput,
+  Loader2,
+} from "lucide-react";
+import { NotFoundDisplay } from "@/components/market-sense/NotFoundDisplay";
+import { useSignoff } from "@/hooks/useSignoff";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import Loader from "@/components/shared/Loader";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { BRDRequirement } from "@/types/smart-signoff";
-import { AISignoffHeader } from "@/components/smart-signoff/AISignoffHeader";
-import { AISignoffStats } from "@/components/smart-signoff/AISignoffStats";
-import { AISignoffTable } from "@/components/smart-signoff/AISignoffTable";
-import { RequirementDetails } from "@/components/smart-signoff/RequirementDetails";
-import { EmptyRequirementState } from "@/components/smart-signoff/EmptyRequirementState";
+import { PostgrestError } from "@supabase/supabase-js";
 
 const AISignoff = () => {
-  const [requirements, setRequirements] = useState<BRDRequirement[]>([]);
-  const [selectedRequirement, setSelectedRequirement] = useState<BRDRequirement | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("all");
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requirementId = searchParams.get("requirementId");
+  const [error, setError] = useState<string | null>(null);
+  const [isGeneratingBRD, setIsGeneratingBRD] = useState<boolean>(false);
+  const [brdData, setBrdData] = useState<BRDData | null>(null);
+  const [isBrdLoading, setIsBrdLoading] = useState<boolean>(false);
+  const { toast } = useToast();
 
-  // Fetch requirements with BRD status
+  console.log("AISignoff - received requirementId:", requirementId);
+
+  // Get the signoff data via our hook
+  const {
+    signoffItems,
+    loading,
+    requirement,
+    signoffDetails,
+    isRequirementLoading,
+    dataFetchAttempted,
+    refreshData,
+  } = useSignoff(requirementId);
+
+  // Force a refresh when the component mounts
   useEffect(() => {
-    const fetchRequirements = async () => {
-      setLoading(true);
+    console.log("AISignoff component mounted, refreshing data");
+    refreshData();
+  }, [refreshData]);
+
+  // Fetch BRD data when requirementId is available or signoffDetails change
+  useEffect(() => {
+    const fetchBRDData = async () => {
+      if (!requirementId) return;
+
+      setIsBrdLoading(true);
       try {
-        // Fetch requirements with their associated BRD documents
         const { data, error } = await supabase
-          .from('requirements')
-          .select(`
-            id, 
-            req_id,
-            project_name,
-            project_idea,
-            updated_at,
-            requirement_brd (
-              id,
-              status,
-              brd_document,
-              approver_name,
-              approver_comment,
-              signed_off_at
-            )
-          `)
-          .order('updated_at', { ascending: false });
+          .from("requirement_brd")
+          .select("*")
+          .eq("requirement_id", requirementId)
+          .single();
 
-        if (error) {
-          console.error("Error fetching requirements:", error);
-          toast.error("Failed to load requirements");
-          return;
-        }
+        if (error) throw error;
 
-        if (!data || data.length === 0) {
-          // If no data from database, use mock data for demonstration
-          setRequirements(mockRequirements);
-        } else {
-          // Transform the data to match our component's expected format
-          const transformedData = data.map((req) => {
-            // Default values if BRD doesn't exist
-            let status: "draft" | "ready" | "signed_off" | "rejected" = "draft";
-            let qualityScore = 85;
-            
-            // Update with actual BRD data if it exists
-            if (req.requirement_brd) {
-              status = req.requirement_brd.status as "draft" | "ready" | "signed_off" | "rejected";
-              // Calculate quality score based on BRD document completeness
-              qualityScore = calculateQualityScore(req.requirement_brd.brd_document);
-            }
+        if (data) {
+          // Cast raw data to any to avoid TypeScript errors
+          const rawData = data as any;
 
-            return {
-              id: req.id,
-              req_id: req.req_id || `REQ-${Math.floor(Math.random() * 1000)}`,
-              title: req.project_name,
-              // Use project_idea instead of description as it exists in the database
-              description: req.project_idea || "No description available",
-              status: status,
-              stakeholders: generateMockStakeholders(status),
-              qualityScore: qualityScore,
-              lastUpdated: new Date(req.updated_at).toISOString().split('T')[0],
-              comments: generateMockComments(status),
-              brd_document: req.requirement_brd?.brd_document
-            };
-          });
-          
-          setRequirements(transformedData);
+          // Create BRD data with proper typing
+          const brdData: BRDData = {
+            id: rawData.id,
+            requirement_id: rawData.requirement_id,
+            project_overview: rawData.project_overview || "",
+            problem_statement: rawData.problem_statement || "",
+            proposed_solution: rawData.proposed_solution || "",
+            key_features: rawData.key_features || "",
+            business_goals: rawData.business_goals || "",
+            target_audience: rawData.target_audience || "",
+            market_research_summary: rawData.market_research_summary || "",
+            validation_summary: rawData.validation_summary || "",
+            user_stories_summary: parseArrayField(rawData.user_stories_summary),
+            use_cases_summary: parseArrayField(rawData.use_cases_summary),
+            total_tests: rawData.total_tests || 0,
+            functional_tests: rawData.functional_tests || 0,
+            edge_tests: rawData.edge_tests || 0,
+            negative_tests: rawData.negative_tests || 0,
+            integration_tests: rawData.integration_tests || 0,
+            risks_and_mitigations: parseArrayField(
+              rawData.risks_and_mitigations
+            ),
+            final_recommendation: rawData.final_recommendation || "",
+            ai_signoff_confidence: rawData.ai_signoff_confidence || 0,
+            status: rawData.status || "draft",
+            approver_name: rawData.approver_name || null,
+            approver_comment: rawData.approver_comment || null,
+            signed_off_at: rawData.signed_off_at || null,
+            created_at: rawData.created_at,
+            updated_at: rawData.updated_at || rawData.created_at,
+          };
+
+          setBrdData(brdData);
         }
       } catch (error) {
-        console.error("Error fetching requirements:", error);
-        toast.error("Failed to load requirements");
-        // Fall back to mock data
-        setRequirements(mockRequirements);
+        console.error("Error fetching BRD data:", error);
+        // Don't set an error if the record simply doesn't exist yet
+        if ((error as PostgrestError).code !== "PGRST116") {
+          setError("Failed to load BRD data");
+        }
       } finally {
-        setLoading(false);
+        setIsBrdLoading(false);
       }
     };
 
-    fetchRequirements();
-  }, []);
-
-  // Helper function to generate mock stakeholders based on status
-  const generateMockStakeholders = (status: string) => {
-    const baseStakeholders = [
-      { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
-      { id: 2, name: "Robert Fox", role: "Security Lead", approved: status === "signed_off", avatar: "/placeholder.svg" },
-      { id: 3, name: "Emma Wilson", role: "UX Designer", approved: status === "signed_off" || Math.random() > 0.5, avatar: "/placeholder.svg" },
-      { id: 4, name: "Mike Johnson", role: "Engineering Lead", approved: status === "signed_off", avatar: "/placeholder.svg" }
-    ];
-    return baseStakeholders;
-  };
-
-  // Helper function to generate mock comments based on status
-  const generateMockComments = (status: string) => {
-    const baseComments = [
-      { id: 1, user: "Jane Cooper", message: "All requirements documented clearly", date: getRandomRecentDate() }
-    ];
-    
-    if (status === "ready" || status === "signed_off") {
-      baseComments.push({ 
-        id: 2, 
-        user: "Robert Fox", 
-        message: "Security requirements are properly addressed", 
-        date: getRandomRecentDate() 
-      });
-    }
-    
-    if (status === "signed_off") {
-      baseComments.push({ 
-        id: 3, 
-        user: "Mike Johnson", 
-        message: "Approved implementation approach", 
-        date: getRandomRecentDate() 
-      });
-    }
-    
-    return baseComments;
-  };
-
-  // Helper function to get random recent date
-  const getRandomRecentDate = () => {
-    const today = new Date();
-    const daysAgo = Math.floor(Math.random() * 7) + 1;
-    const pastDate = new Date(today);
-    pastDate.setDate(today.getDate() - daysAgo);
-    return pastDate.toISOString().split('T')[0];
-  };
-
-  // Calculate quality score based on BRD document completeness
-  const calculateQualityScore = (brdDocument: any) => {
-    if (!brdDocument) return 75;
-    
-    let score = 80; // Base score
-    const sections = [
-      'project_overview', 
-      'problem_statement', 
-      'proposed_solution', 
-      'business_goals', 
-      'target_audience',
-      'key_features',
-      'competitive_landscape',
-      'constraints_assumptions',
-      'risks_mitigations',
-      'acceptance_criteria'
-    ];
-    
-    // Add points for each populated section
-    sections.forEach(section => {
-      if (brdDocument[section] && brdDocument[section].length > 10) {
-        score += 2;
+    // Helper function to parse array fields that might be strings
+    const parseArrayField = (field: unknown): string[] => {
+      if (!field) return [];
+      if (Array.isArray(field)) return field;
+      if (typeof field === "string") {
+        try {
+          return JSON.parse(field);
+        } catch (e) {
+          console.error("Error parsing array field:", e);
+        }
       }
+      return [];
+    };
+
+    if (
+      signoffDetails?.status === "ready" ||
+      signoffDetails?.status === "signed_off" ||
+      signoffDetails?.status === "rejected"
+    ) {
+      fetchBRDData();
+    } else {
+      setBrdData(null);
+    }
+  }, [requirementId, signoffDetails]);
+
+  // Handle BRD Generation
+  const handleGenerateBRD = async () => {
+    if (!requirementId) {
+      toast({
+        title: "Error",
+        description: "Requirement ID is missing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingBRD(true);
+
+    try {
+      // If there's already a signoff record, update it, otherwise create one
+      if (signoffDetails) {
+        // Update existing record
+        const { error } = await supabase
+          .from("requirement_brd")
+          .update({
+            status: "ready",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", signoffDetails.id);
+
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { error } = await supabase.from("requirement_brd").insert({
+          requirement_id: requirementId,
+          status: "ready",
+        });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "BRD generation initiated successfully",
+        variant: "default",
+      });
+
+      // Refresh the data to show updated status
+      refreshData();
+    } catch (error: unknown) {
+      console.error("Error generating BRD:", error);
+      const errorMessage =
+        error instanceof PostgrestError
+          ? error.message
+          : error instanceof Error
+          ? error.message
+          : "Failed to initiate BRD generation";
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingBRD(false);
+    }
+  };
+
+  // Handle BRD Regeneration
+  const handleRegenerateBRD = async () => {
+    if (!requirementId || !brdData) {
+      toast({
+        title: "Error",
+        description: "Cannot regenerate BRD: missing data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingBRD(true);
+
+    try {
+      const { error } = await supabase
+        .from("requirement_brd")
+        .update({
+          status: "ready", // This triggers regeneration
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", brdData.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "BRD regeneration initiated successfully",
+        variant: "default",
+      });
+
+      // Refresh the data
+      refreshData();
+    } catch (error: unknown) {
+      console.error("Error regenerating BRD:", error);
+      const errorMessage =
+        error instanceof PostgrestError
+          ? error.message
+          : error instanceof Error
+          ? error.message
+          : "Failed to initiate BRD regeneration";
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingBRD(false);
+    }
+  };
+
+  // Handle BRD Sign-off
+  const handleSignOffBRD = async () => {
+    if (!requirementId || !brdData) {
+      toast({
+        title: "Error",
+        description: "Cannot sign off BRD: missing data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("requirement_brd")
+        .update({
+          status: "signed_off",
+          approver_name: "Current User", // Replace with actual user data
+          signed_off_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", brdData.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "BRD signed off successfully",
+        variant: "default",
+      });
+
+      // Refresh the data
+      refreshData();
+    } catch (error: unknown) {
+      console.error("Error signing off BRD:", error);
+      const errorMessage =
+        error instanceof PostgrestError
+          ? error.message
+          : error instanceof Error
+          ? error.message
+          : "Failed to sign off BRD";
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle BRD Rejection
+  const handleRejectBRD = async () => {
+    if (!requirementId || !brdData) {
+      toast({
+        title: "Error",
+        description: "Cannot reject BRD: missing data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // In a real app, you would open a modal to collect rejection reason
+    const rejectionComment = "Needs revision"; // Placeholder for demo
+
+    try {
+      const { error } = await supabase
+        .from("requirement_brd")
+        .update({
+          status: "rejected",
+          approver_name: "Current User", // Replace with actual user data
+          approver_comment: rejectionComment,
+          signed_off_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", brdData.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "BRD Rejected",
+        description: "The BRD has been rejected and sent back for revision",
+        variant: "default",
+      });
+
+      // Refresh the data
+      refreshData();
+    } catch (error: unknown) {
+      console.error("Error rejecting BRD:", error);
+      const errorMessage =
+        error instanceof PostgrestError
+          ? error.message
+          : error instanceof Error
+          ? error.message
+          : "Failed to reject BRD";
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle BRD Export
+  const handleExportBRD = () => {
+    toast({
+      title: "Export Initiated",
+      description: "BRD export functionality would go here",
+      variant: "default",
     });
-    
-    return Math.min(100, score);
   };
 
-  const handleApprove = async (requirementId: string) => {
-    try {
-      // Update the BRD status in the database
-      const { error } = await supabase
-        .from('requirement_brd')
-        .update({
-          status: 'signed_off',
-          approver_name: 'Current User', // Ideally this would be the authenticated user's name
-          signed_off_at: new Date().toISOString()
-        })
-        .eq('requirement_id', requirementId);
-      
-      if (error) {
-        console.error("Error approving requirement:", error);
-        toast.error("Failed to approve requirement");
-        return;
-      }
-      
-      toast.success(`Requirement has been approved`);
-      
-      // Update the requirement status in our state
-      setRequirements(requirements.map(req => 
-        req.id === requirementId ? { ...req, status: "signed_off" as const } : req
-      ));
-      
-      // Update selected requirement if it's the one we're approving
-      if (selectedRequirement && selectedRequirement.id === requirementId) {
-        setSelectedRequirement({ ...selectedRequirement, status: "signed_off" as const });
-      }
-    } catch (error) {
-      console.error("Error approving requirement:", error);
-      toast.error("Failed to approve requirement");
+  // Render status badge
+  const renderStatusBadge = (status: string | null) => {
+    if (!status) return <Badge variant="warning">Pending</Badge>;
+
+    const normalizedStatus = status.toLowerCase();
+    if (normalizedStatus === "approved" || normalizedStatus === "signed_off") {
+      return <Badge variant="success">Approved</Badge>;
+    } else if (normalizedStatus === "pending" || normalizedStatus === "draft") {
+      return <Badge variant="warning">Pending</Badge>;
+    } else if (normalizedStatus === "rejected") {
+      return <Badge variant="destructive">Rejected</Badge>;
+    } else if (normalizedStatus === "review" || normalizedStatus === "ready") {
+      return <Badge variant="secondary">Under Review</Badge>;
+    } else if (normalizedStatus === "error") {
+      return <Badge variant="destructive">Error</Badge>;
     }
+    return <Badge variant="secondary">{status}</Badge>;
   };
 
-  const handleReject = async (requirementId: string) => {
-    try {
-      // Update the BRD status in the database
-      const { error } = await supabase
-        .from('requirement_brd')
-        .update({
-          status: 'rejected',
-          approver_name: 'Current User', // Ideally this would be the authenticated user's name
-          signed_off_at: new Date().toISOString()
-        })
-        .eq('requirement_id', requirementId);
-      
-      if (error) {
-        console.error("Error rejecting requirement:", error);
-        toast.error("Failed to reject requirement");
-        return;
-      }
-      
-      toast.error(`Requirement has been rejected`);
-      
-      // Update the requirement status in our state
-      setRequirements(requirements.map(req => 
-        req.id === requirementId ? { ...req, status: "rejected" as const } : req
-      ));
-      
-      // Update selected requirement if it's the one we're rejecting
-      if (selectedRequirement && selectedRequirement.id === requirementId) {
-        setSelectedRequirement({ ...selectedRequirement, status: "rejected" as const });
-      }
-    } catch (error) {
-      console.error("Error rejecting requirement:", error);
-      toast.error("Failed to reject requirement");
+  // Check if the BRD can be generated
+  const canGenerateBRD = () => {
+    if (!requirementId || isRequirementLoading) return false;
+
+    // Allow generation if status is draft or if there's no signoff record yet
+    return !signoffDetails || signoffDetails.status.toLowerCase() === "draft";
+  };
+
+  // Render appropriate view based on requirementId
+  if (requirementId) {
+    // Only show NotFoundDisplay if we've attempted to fetch data and found nothing
+    if (dataFetchAttempted && !isRequirementLoading && !requirement) {
+      console.log("Requirement not found, showing NotFoundDisplay");
+      return <NotFoundDisplay requirementId={requirementId} />;
     }
-  };
 
-  const handleViewDetails = (requirement: BRDRequirement) => {
-    setSelectedRequirement(requirement);
-  };
-
-  const handleViewBRD = (requirementId: string) => {
-    navigate(`/dashboard/requirements/${requirementId}`);
-  };
-
-  // Filter requirements based on selected filter
-  const filteredRequirements = filter === "all"
-    ? requirements
-    : filter === "pending"
-      ? requirements.filter(req => req.status === "ready" || req.status === "draft")
-      : requirements.filter(req => req.status === "signed_off");
-
-  // Count pending approvals for header
-  const pendingCount = requirements.filter(req => req.status === "ready").length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center space-y-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Loading requirements...</p>
+    // Loading state
+    if (isRequirementLoading || isBrdLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64">
+          <Loader size="large" />
+          <p className="mt-4 text-slate-500">Loading requirement details...</p>
         </div>
+      );
+    }
+
+    // If we have BRD data and it's in viewable state, show the BRD display
+    if (
+      brdData &&
+      (brdData.status === "ready" ||
+        brdData.status === "signed_off" ||
+        brdData.status === "rejected")
+    ) {
+      return (
+        <BRDDisplay
+          brdData={brdData}
+          projectName={requirement?.project_name}
+          onRegenerate={handleRegenerateBRD}
+          onExport={handleExportBRD}
+          onSignOff={brdData.status === "ready" ? handleSignOffBRD : undefined}
+          onReject={brdData.status === "ready" ? handleRejectBRD : undefined}
+        />
+      );
+    }
+
+    // Default view showing requirement info and BRD generation button
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">AI Signoff Details</h1>
+          <p className="text-slate-500">
+            Review and manage AI signoff for this requirement
+          </p>
+        </div>
+
+        {/* Requirement Info Card */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-xl">Requirement Information</CardTitle>
+              {renderStatusBadge(signoffDetails?.status || "Pending")}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center">
+                <FileText className="h-5 w-5 text-slate-400 mr-2" />
+                <span className="font-medium mr-2">ID:</span>
+                <span>{requirement?.req_id || "N/A"}</span>
+              </div>
+              <div className="flex items-center">
+                <Calendar className="h-5 w-5 text-slate-400 mr-2" />
+                <span className="font-medium mr-2">Created:</span>
+                <span>
+                  {requirement?.created_at
+                    ? new Date(requirement.created_at).toLocaleDateString()
+                    : "N/A"}
+                </span>
+              </div>
+              <div className="flex items-center">
+                <User className="h-5 w-5 text-slate-400 mr-2" />
+                <span className="font-medium mr-2">Project:</span>
+                <span>{requirement?.project_name || "N/A"}</span>
+              </div>
+              <div className="flex items-center">
+                <Building className="h-5 w-5 text-slate-400 mr-2" />
+                <span className="font-medium mr-2">Industry:</span>
+                <span>{requirement?.industry_type || "N/A"}</span>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button
+              onClick={handleGenerateBRD}
+              disabled={isGeneratingBRD || !canGenerateBRD()}
+              className="bg-gradient-to-r from-primary to-blue-700 hover:opacity-90"
+            >
+              {isGeneratingBRD ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <FileOutput className="h-4 w-4 mr-2" />
+                  Generate Final BRD
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
+
+        {/* Signoff Details */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl">Signoff Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {signoffDetails ? (
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <ClipboardCheck className="h-5 w-5 text-slate-400 mr-2" />
+                  <span className="font-medium mr-2">Status:</span>
+                  {renderStatusBadge(signoffDetails.status)}
+                </div>
+                {signoffDetails.reviewer_comments && (
+                  <div>
+                    <h4 className="font-medium mb-2">Reviewer Comments:</h4>
+                    <p className="bg-slate-50 p-3 rounded-md border border-slate-200">
+                      {signoffDetails.reviewer_comments}
+                    </p>
+                  </div>
+                )}
+                {!signoffDetails.reviewer_comments && (
+                  <div className="text-slate-500 italic">
+                    No reviewer comments available.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>No Signoff Data Available</AlertTitle>
+                <AlertDescription>
+                  This requirement has not been submitted for AI signoff yet.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
-  }
-
-  return (
-    <div className="space-y-6">
-      <AISignoffHeader 
-        pendingCount={pendingCount} 
-        onFilterChange={setFilter}
+  } else {
+    // Show dashboard when no requirementId is provided
+    console.log(
+      "Rendering AISignoffDashboard with items:",
+      signoffItems.length
+    );
+    return (
+      <AISignoffDashboard
+        signoffItems={signoffItems}
+        loading={loading}
+        dataFetchAttempted={dataFetchAttempted}
       />
-
-      <AISignoffStats requirements={requirements} />
-      
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-3">
-          <AISignoffTable 
-            requirements={filteredRequirements}
-            onViewDetails={handleViewDetails}
-          />
-        </div>
-
-        {selectedRequirement && (
-          <div className="md:col-span-3">
-            <RequirementDetails
-              requirement={selectedRequirement}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              onViewBRD={handleViewBRD}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Mock data for fallback
-const mockRequirements: BRDRequirement[] = [
-  {
-    id: "REQ-001",
-    req_id: "REQ-25-01",
-    title: "User Authentication System",
-    description: "Implement secure user authentication with OAuth 2.0 and JWT",
-    status: "ready",
-    stakeholders: [
-      { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
-      { id: 2, name: "Robert Fox", role: "Security Lead", approved: true, avatar: "/placeholder.svg" },
-      { id: 3, name: "Emma Wilson", role: "UX Designer", approved: true, avatar: "/placeholder.svg" },
-      { id: 4, name: "Mike Johnson", role: "Engineering Lead", approved: false, avatar: "/placeholder.svg" }
-    ],
-    qualityScore: 94,
-    lastUpdated: "2025-04-21",
-    comments: [
-      { id: 1, user: "Jane Cooper", message: "All security requirements are met", date: "2025-04-20" },
-      { id: 2, user: "Robert Fox", message: "Approved after security review", date: "2025-04-21" }
-    ]
-  },
-  {
-    id: "REQ-002",
-    req_id: "REQ-25-02",
-    title: "Dashboard Analytics Module",
-    description: "Real-time analytics dashboard with user activity tracking",
-    status: "draft",
-    stakeholders: [
-      { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
-      { id: 5, name: "Sarah Miller", role: "Data Scientist", approved: false, avatar: "/placeholder.svg" },
-      { id: 6, name: "David Chen", role: "Frontend Dev", approved: false, avatar: "/placeholder.svg" },
-      { id: 4, name: "Mike Johnson", role: "Engineering Lead", approved: false, avatar: "/placeholder.svg" }
-    ],
-    qualityScore: 86,
-    lastUpdated: "2025-04-19",
-    comments: [
-      { id: 3, user: "Sarah Miller", message: "Need to specify data retention policy", date: "2025-04-19" }
-    ]
-  },
-  {
-    id: "REQ-003",
-    req_id: "REQ-25-03",
-    title: "Payment Processing Integration",
-    description: "Implement secure payment processing with Stripe and PayPal",
-    status: "signed_off",
-    stakeholders: [
-      { id: 1, name: "Jane Cooper", role: "Product Manager", approved: true, avatar: "/placeholder.svg" },
-      { id: 2, name: "Robert Fox", role: "Security Lead", approved: true, avatar: "/placeholder.svg" },
-      { id: 7, name: "Lisa Wong", role: "Financial Officer", approved: true, avatar: "/placeholder.svg" },
-      { id: 4, name: "Mike Johnson", role: "Engineering Lead", approved: true, avatar: "/placeholder.svg" }
-    ],
-    qualityScore: 98,
-    lastUpdated: "2025-04-18",
-    comments: [
-      { id: 4, user: "Lisa Wong", message: "All financial regulations are addressed", date: "2025-04-17" },
-      { id: 5, user: "Mike Johnson", message: "Implementation plan looks good", date: "2025-04-18" }
-    ]
+    );
   }
-];
+};
 
 export default AISignoff;

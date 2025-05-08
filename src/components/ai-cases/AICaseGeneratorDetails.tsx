@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Tabs } from "@/components/ui/tabs";
@@ -58,7 +57,7 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
     if (!validateGenerationDependencies(type, statusData)) {
       return;
     }
-    
+
     handleGenerate(type);
   };
 
@@ -93,9 +92,10 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
 
   return (
     <div className="space-y-6">
-      <AICaseGeneratorHeader 
-        isGenerating={isGenerating} 
-        handleGenerateAll={handleGenerateAll} 
+      <AICaseGeneratorHeader
+        isGenerating={isGenerating}
+        handleGenerateAll={handleGenerateAll}
+        requirementId={requirementId}
       />
 
       {/* Requirement Info */}
@@ -103,14 +103,14 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <AICaseTabNavigation 
+        <AICaseTabNavigation
           activeTab={activeTab}
           userStoriesStatus={statusData.userStoriesStatus}
           useCasesStatus={statusData.useCasesStatus}
           testCasesStatus={statusData.testCasesStatus}
         />
 
-        <AICaseTabContent 
+        <AICaseTabContent
           userStories={userStories}
           useCases={useCases}
           testCases={testCases}

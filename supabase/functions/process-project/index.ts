@@ -182,44 +182,11 @@ serve(async (req) => {
     if (result.error) {
       throw new Error(`Error saving analysis: ${result.error.message}`);
     }
-
-    // Create/Update the BRD document
-    const { data: existingBRD } = await supabase
-      .from("requirement_brd")
-      .select("id")
-      .eq("requirement_id", projectId)
-      .maybeSingle();
     
-    const brdData = {
-      requirement_id: projectId,
-      brd_document: analysisData,
-      status: "ready" // Set to ready since we just generated it
-    };
-    
-    let brdResult;
-    
-    if (existingBRD) {
-      brdResult = await supabase
-        .from("requirement_brd")
-        .update(brdData)
-        .eq("id", existingBRD.id);
-    } else {
-      brdResult = await supabase
-        .from("requirement_brd")
-        .insert(brdData);
-    }
-    
-    if (brdResult.error) {
-      throw new Error(`Error saving BRD: ${brdResult.error.message}`);
-    }
-    
-    // Update the requirement's structured_document field with the BRD data
+    // Finally update the requirement status
     await supabase
       .from("requirements")
-      .update({ 
-        status: "Completed",
-        structured_document: analysisData
-      })
+      .update({ status: "Completed" })
       .eq("id", projectId);
     
     return new Response(
