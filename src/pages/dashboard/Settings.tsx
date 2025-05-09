@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +39,48 @@ const Settings = () => {
               <Input id="email" type="email" placeholder="john@example.com" />
             </div>
             <Button>Save Changes</Button>
+          </CardContent>
+        </Card>
+
+        {/* Jira API Connection Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Jira API Connection</CardTitle>
+            <CardDescription>Connect to your Jira instance by providing the required details below.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="jiraUrl">Jira URL</Label>
+              <Input id="jiraUrl" placeholder="https://your-domain.atlassian.net" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jiraUsername">Username</Label>
+              <Input id="jiraUsername" placeholder="your-email@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jiraApiToken">Password/API Token</Label>
+              <Input id="jiraApiToken" type="password" placeholder="Jira API Token or Password" />
+            </div>
+            <Button
+              onClick={() => {
+                const url = (document.getElementById('jiraUrl') as HTMLInputElement)?.value;
+                const username = (document.getElementById('jiraUsername') as HTMLInputElement)?.value;
+                const token = (document.getElementById('jiraApiToken') as HTMLInputElement)?.value;
+
+                // Save to localStorage
+                localStorage.setItem('jiraUrl', url);
+                localStorage.setItem('jiraUsername', username);
+                localStorage.setItem('jiraApiToken', token);
+
+                toast({
+                  title: 'Jira settings saved',
+                  description: 'Your Jira integration settings have been saved locally.',
+                  variant: 'default',
+                });
+              }}
+            >
+              Save Jira Settings
+            </Button>
           </CardContent>
         </Card>
 

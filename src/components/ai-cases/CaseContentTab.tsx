@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -7,6 +6,7 @@ import StatusBadge from "./StatusBadge";
 import CasePendingGeneration from "./CasePendingGeneration";
 import CaseItemCard from "./CaseItemCard";
 import { LucideIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface CaseContentTabProps {
   title: string;
@@ -29,6 +29,7 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
 }) => {
   const isDraft = status === "Draft";
   const isGeneratingStatus = isGenerating;
+  const { toast } = useToast();
 
   return (
     <>
@@ -59,6 +60,82 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
               </>
             )}
           </Button>
+          {/* Add to Jira button for userStories only */}
+          {type === "userStories" && (
+            <Button
+              variant="default"
+              disabled={isGenerating}
+              className="ml-3 flex items-center space-x-2"
+              onClick={async () => {
+                const jiraUrl = localStorage.getItem('jiraUrl');
+                const jiraUsername = localStorage.getItem('jiraUsername');
+                const jiraApiToken = localStorage.getItem('jiraApiToken');
+
+                if (!jiraUrl || !jiraUsername || !jiraApiToken) {
+                  toast({
+                    title: 'Jira settings missing',
+                    description: 'Please set your Jira settings in the Settings page.',
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+
+                const projectKey = window.prompt('Enter your Jira Project Key (e.g. PROJ):');
+                if (!projectKey) {
+                  toast({
+                    title: 'Jira Project Key required',
+                    description: 'You must enter a Jira Project Key to create issues.',
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+
+                let allSuccess = true;
+                let errorMsg = '';
+                const payload = {
+                  jiraUrl,
+                  username: jiraUsername,
+                  apiToken: jiraApiToken,
+                  projectKey,
+                  stories: items,
+                };
+                console.log('Sending to proxy:', payload);
+                try {
+                  const res = await fetch('http://localhost:4000/api/jira', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    allSuccess = false;
+                    errorMsg = data.error || res.statusText;
+                  }
+                } catch (e) {
+                  allSuccess = false;
+                  errorMsg = e.message || 'Unknown error';
+                }
+
+                if (allSuccess) {
+                  toast({
+                    title: 'Success!',
+                    description: 'All user stories added to Jira.',
+                    variant: 'default',
+                  });
+                } else {
+                  toast({
+                    title: 'Jira Error',
+                    description: errorMsg || 'Failed to add user stories to Jira.',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+            >
+              <span>Add to Jira</span>
+            </Button>
+          )}
         </div>
       </div>
 
