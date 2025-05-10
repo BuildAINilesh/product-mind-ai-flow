@@ -16,6 +16,14 @@ interface JiraStory {
 
 app.post('/api/jira', async (req: Request, res: Response) => {
   const { jiraUrl, username, apiToken, projectKey, stories, sprintId } = req.body;
+  console.log('--- Incoming /api/jira request ---');
+  console.log('Project Key:', projectKey);
+  if (stories && stories.length > 0) {
+    console.log('First item:', JSON.stringify(stories[0], null, 2));
+    console.log('Total items:', stories.length);
+  } else {
+    console.log('No stories/items received.');
+  }
   if (!jiraUrl || !username || !apiToken || !projectKey || !stories) {
     return res.status(400).json({ error: 'Missing fields' });
   }
@@ -23,6 +31,7 @@ app.post('/api/jira', async (req: Request, res: Response) => {
   let allSuccess = true;
   let errorMsg = '';
   for (const story of stories) {
+    console.log('Processing item:', JSON.stringify(story, null, 2));
     // Always use a non-empty string for text
     const text = (story.actor ? `As ${story.actor}, ${story.content}` : story.content) || 'User Story';
     const payload = {

@@ -60,8 +60,8 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
               </>
             )}
           </Button>
-          {/* Add to Jira button for userStories only */}
-          {type === "userStories" && (
+          {/* Add to Jira button for all case types */}
+          {(type === "userStories" || type === "useCases" || type === "testCases") && (
             <Button
               variant="default"
               disabled={isGenerating}
@@ -90,8 +90,6 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
                   return;
                 }
 
-                let allSuccess = true;
-                let errorMsg = '';
                 const payload = {
                   jiraUrl,
                   username: jiraUsername,
@@ -100,6 +98,8 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
                   stories: items,
                 };
                 console.log('Sending to proxy:', payload);
+                let allSuccess = true;
+                let errorMsg = '';
                 try {
                   const res = await fetch('http://localhost:4000/api/jira', {
                     method: 'POST',
@@ -121,13 +121,13 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
                 if (allSuccess) {
                   toast({
                     title: 'Success!',
-                    description: 'All user stories added to Jira.',
+                    description: `All ${type} added to Jira.`,
                     variant: 'default',
                   });
                 } else {
                   toast({
                     title: 'Jira Error',
-                    description: errorMsg || 'Failed to add user stories to Jira.',
+                    description: errorMsg || `Failed to add ${type} to Jira.`,
                     variant: 'destructive',
                   });
                 }
