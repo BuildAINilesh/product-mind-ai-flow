@@ -34,10 +34,11 @@ app.post('/api/jira', async (req: Request, res: Response) => {
     console.log('Processing item:', JSON.stringify(story, null, 2));
     // Always use a non-empty string for text
     const text = (story.actor ? `As ${story.actor}, ${story.content}` : story.content) || 'User Story';
+    const summary = (story.content || 'User Story').slice(0, 250);
     const payload = {
       fields: {
         project: { key: projectKey },
-        summary: story.content || 'User Story',
+        summary,
         issuetype: { name: 'Story' },
       },
     };
