@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +22,7 @@ const Index = () => {
                 <AIGradientText>AI-Powered</AIGradientText> Product Management
               </h1>
               <p className="text-lg md:text-xl mb-8 text-foreground/80 max-w-2xl mx-auto lg:mx-0">
-                Transform your product development lifecycle with neural networks and machine learning assistance at every stage,
+                Transform your product development lifecycle with AI networks and machine learning assistance at every stage,
                 from ideation to finalized requirements, testing, and approval.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -73,7 +72,7 @@ const Index = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Supercharge Your Product Development with <AIGradientText>AI</AIGradientText></h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Our AI-powered platform streamlines every stage of the product lifecycle with intelligent assistance and neural networks.
+              Our AI-powered platform streamlines every stage of the product lifecycle with intelligent assistance and AI networks.
             </p>
           </div>
           
@@ -139,7 +138,7 @@ const Index = () => {
         <div className="container mx-auto text-center relative z-10">
           <h2 className="text-3xl font-bold mb-6">Ready to Transform Your Product Development with AI?</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
-            Join the teams already using ProductMind's neural networks to build better products, faster.
+            Join the teams already using ProductMind's AI networks to build better products, faster.
           </p>
           <Button size="lg" variant="secondary" asChild className="text-lg px-8 bg-white hover:bg-white/90 text-primary">
             <Link to="/register">Get Started Free</Link>
@@ -203,13 +202,13 @@ const Index = () => {
 // Feature data
 const features = [
   {
-    title: "Neural Requirements",
+    title: "AI Requirements",
     description: "Transform ideas into structured requirements with AI assistance that identifies gaps and enhances quality.",
     icon: <Brain size={24} className="text-primary" />
   },
   {
     title: "MarketSense AI",
-    description: "Get real-time market insights, competitor analysis, and gap identification powered by neural networks.",
+    description: "Get real-time market insights, competitor analysis, and gap identification powered by AI networks.",
     icon: <BarChart3 size={24} className="text-primary" />
   },
   {
@@ -223,7 +222,7 @@ const features = [
     icon: <Layers size={24} className="text-primary" />
   },
   {
-    title: "Neural Signoff",
+    title: "AI Signoff",
     description: "Streamline approvals with AI recommendations and automated validation of requirements.",
     icon: <CheckCircle size={24} className="text-primary" />
   },
@@ -238,14 +237,14 @@ const features = [
 const steps = [
   {
     title: "AI Requirement Creation",
-    description: "Input your product ideas and let neural networks structure them into formal requirements."
+    description: "Input your product ideas and let AI networks structure them into formal requirements."
   },
   {
     title: "Machine Learning Analysis",
     description: "Receive AI-powered market insights and competitive analysis for your requirements."
   },
   {
-    title: "Neural Test Generation",
+    title: "AI Test Generation",
     description: "Generate comprehensive test cases to validate your requirements using AI models."
   },
   {
