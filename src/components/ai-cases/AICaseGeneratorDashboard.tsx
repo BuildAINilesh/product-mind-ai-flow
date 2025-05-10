@@ -190,14 +190,14 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
       <div className="bg-white/80 rounded-3xl shadow-2xl p-10 animate-fadeIn">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-1">Case Generator Analyses</h2>
-            <p className="text-slate-500">View and manage your AI-powered requirement analyses</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-1">Case Generator Analysis</h2>
+            <p className="text-slate-500">View and manage your AI-powered requirement analysis</p>
           </div>
           <div className="relative w-full md:w-96">
             <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search analyses..."
+              placeholder="Search analysis..."
               className="pl-12 pr-4 py-3 rounded-full w-full bg-white/70 border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none shadow transition text-base"
             />
           </div>
@@ -208,7 +208,7 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
           </div>
         ) : dataFetchAttempted && caseGeneratorItems.length === 0 ? (
           <EmptyState
-            title="No case analyses yet"
+            title="No case analysis yet"
             description="Select a requirement to generate user stories, use cases, and test cases."
             icon={<CodeIcon className="h-12 w-12" />}
           />

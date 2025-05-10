@@ -64,10 +64,15 @@ app.post('/api/jira', async (req: Request, res: Response) => {
       }
     } catch (err: unknown) {
       allSuccess = false;
-      if (axios.isAxiosError(err)) {
-        errorMsg = err.response?.data?.errors?.description || err.response?.data?.errorMessages?.join(', ') || err.message;
+      if (typeof err === "object" && err !== null) {
+        const anyErr = err as any;
+        errorMsg =
+          anyErr.response?.data?.errors?.description ||
+          anyErr.response?.data?.errorMessages?.join(', ') ||
+          anyErr.message ||
+          "Unknown error";
       } else {
-        errorMsg = (err as Error).message;
+        errorMsg = String(err);
       }
       break;
     }
