@@ -779,24 +779,130 @@ const RequirementView = () => {
         </Alert>
       )}
 
+      {/* Notification for Re_Draft status */}
+      {project && project.status === "Re_Draft" && (
+        <Alert className="mb-4 bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+          <AlertTitle className="flex items-center text-amber-800 dark:text-amber-300">
+            <BrainCircuit className="h-4 w-4 mr-2" />
+            Changes Detected
+          </AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-400">
+            <p>
+              You've made changes to your requirement. Click the "Analyze" button to see the updated overview.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {project && project.status === "Draft" && (
-        <div className="py-12 text-center">
-          <div className="inline-flex p-4 rounded-full bg-blue-50 dark:bg-blue-950 mb-4">
-            <BrainCircuit className="h-12 w-12 text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-slate-800 border rounded-lg p-6">
+            <h3 className="text-xl font-semibold mb-4 flex items-center">
+              <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900 mr-3">
+                <BrainCircuit className="h-6 w-6 text-primary" />
+              </div>
+              New Requirement Details
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Project Name</h4>
+                <p className="text-lg font-medium">{project.project_name}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Company</h4>
+                <p>{project.company_name || "Not specified"}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Industry</h4>
+                <p className="capitalize">{project.industry_type}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Project Idea</h4>
+                <p className="text-sm whitespace-pre-line border-l-2 border-blue-200 dark:border-blue-800 pl-3 py-1">
+                  {project.project_idea}
+                </p>
+              </div>
+            </div>
           </div>
-          <h3 className="text-xl font-semibold mb-2">Ready for Analysis</h3>
-          <p className="text-muted-foreground max-w-md mx-auto mb-6">
-            This requirement hasn't been analyzed yet. 
-            Click the "Analyze" button to generate the AI-powered analysis.
-          </p>
-          <Button 
-            onClick={triggerAnalysis}
-            size="lg" 
-            className="bg-primary hover:bg-primary/90 text-white"
-          >
-            <BrainCircuit className="h-5 w-5 mr-2" />
-            Analyze
-          </Button>
+          
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6 flex flex-col justify-center items-center text-center">
+            <div className="inline-flex p-4 rounded-full bg-blue-100 dark:bg-blue-900 mb-4">
+              <BrainCircuit className="h-12 w-12 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Ready for Analysis</h3>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              This requirement hasn't been analyzed yet.
+              Click the button below to generate an AI-powered overview.
+            </p>
+            <Button 
+              onClick={triggerAnalysis}
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white w-full max-w-xs"
+            >
+              <BrainCircuit className="h-5 w-5 mr-2" />
+              Analyze Requirement
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {project && project.status === "Re_Draft" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-slate-800 border rounded-lg p-6">
+            <h3 className="text-xl font-semibold mb-4 flex items-center">
+              <div className="p-2 rounded-md bg-amber-100 dark:bg-amber-900 mr-3">
+                <BrainCircuit className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              Updated Requirement Details
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Project Name</h4>
+                <p className="text-lg font-medium">{project.project_name}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Company</h4>
+                <p>{project.company_name || "Not specified"}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Industry</h4>
+                <p className="capitalize">{project.industry_type}</p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Project Idea</h4>
+                <p className="text-sm whitespace-pre-line border-l-2 border-amber-200 dark:border-amber-800 pl-3 py-1">
+                  {project.project_idea}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-6 flex flex-col justify-center items-center text-center">
+            <div className="inline-flex p-4 rounded-full bg-amber-100 dark:bg-amber-900 mb-4">
+              <BrainCircuit className="h-12 w-12 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Ready to Generate Updated Analysis</h3>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Your requirement has been modified and needs to be re-analyzed.
+              Click the button below to generate an updated AI-powered overview.
+            </p>
+            <Button 
+              onClick={triggerAnalysis}
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white w-full max-w-xs"
+            >
+              <BrainCircuit className="h-5 w-5 mr-2" />
+              Analyze Requirement
+            </Button>
+          </div>
         </div>
       )}
 

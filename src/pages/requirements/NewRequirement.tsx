@@ -58,6 +58,7 @@ const NewRequirement = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isListening, setIsListening] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [hasStartedVoiceInput, setHasStartedVoiceInput] = useState(false);
   const recognitionServiceRef = useRef<SpeechRecognitionService | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     projectName?: boolean;
@@ -173,87 +174,60 @@ const NewRequirement = () => {
 
   // Initialize speech recognition service when component mounts or useEnhancedVoice changes
   useEffect(() => {
-    // Initialize speech recognition service
-    const recognitionService = new SpeechRecognitionService({
-      onStart: () => {
-        // Don't set isListening here, we'll manage it in toggleVoiceRecognition
-        // Always speak that we're inputting to Project Idea
-        speakText(`Voice input active for Project Idea`);
+    // Don't set up any handlers in the initial service - we'll fully initialize in toggleVoiceRecognition
+    try {
+      // Only create a minimal service to check for support
+      const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (SpeechRecognitionClass) {
+        console.log("Speech Recognition API is supported");
+        setIsSpeechSupported(true);
         
-        toast({
-          title: "Voice Input Activated",
-          description: useEnhancedVoice 
-            ? "Enhanced speech recognition active for Project Idea. Speak clearly..." 
-            : "Standard speech recognition active for Project Idea. Speak clearly...",
-        });
-      },
-      onEnd: () => {
-        // Don't set isListening here, we'll manage it in toggleVoiceRecognition
-        toast({
-          title: "Voice Input Completed",
-          description: "Voice input for Project Idea has stopped.",
-        });
-        
-        // Keep focus on Project Idea field
-        if (projectIdeaRef.current) {
-          projectIdeaRef.current.focus();
-        }
-      },
-      onError: (error) => {
-        // Manually reset the isListening state
-        setIsListening(false);
-        
-        toast({
-          title: "Voice Input Error",
-          description: `Error: ${error}. Please try again.`,
-          variant: "destructive",
-        });
-      },
-      onResult: (text) => {
-        console.log("Speech recognition result:", text, "Active field:", activeField);
-        
-        // ALWAYS add voice input to the Project Idea field regardless of active field
-        if (projectIdeaRef.current) {
-          // Completely replace the content of the Project Idea field to avoid text restoration issues
-          projectIdeaRef.current.value = text;
-          
-          // Update the form state
-          setFormData(prev => ({ 
-            ...prev, 
-            projectIdea: text 
-          }));
-          
-          // Make Project Idea the active field for visual feedback
-          setActiveField('projectIdea');
-          
-          // Clear any error for this field
-          clearFieldError('projectIdea');
-          
-          // Focus the field
-          projectIdeaRef.current.focus();
-        }
-      },
-      useOpenAI: useEnhancedVoice,
-      enhancedProcessing: useEnhancedVoice
-    });
-
-    recognitionServiceRef.current = recognitionService;
-    
-    // Check if speech recognition is supported
-    setIsSpeechSupported(recognitionService.isSupported());
+        // Create an empty service placeholder
+        const emptyService = new SpeechRecognitionService({});
+        recognitionServiceRef.current = emptyService;
+      } else {
+        console.warn("Speech Recognition API is not supported in this browser");
+        setIsSpeechSupported(false);
+      }
+    } catch (error) {
+      console.error("Error checking speech recognition support:", error);
+      setIsSpeechSupported(false);
+    }
 
     return () => {
       // Clean up speech recognition
       if (recognitionServiceRef.current) {
-        recognitionServiceRef.current.stop();
+        try {
+          console.log("Cleaning up speech recognition");
+          recognitionServiceRef.current.stop();
+          
+          // Force a second stop attempt
+          setTimeout(() => {
+            if (recognitionServiceRef.current) {
+              if (typeof recognitionServiceRef.current.forceAbort === 'function') {
+                recognitionServiceRef.current.forceAbort();
+              } else {
+                recognitionServiceRef.current.stop();
+              }
+              recognitionServiceRef.current = null;
+            }
+          }, 100);
+        } catch (error) {
+          console.error("Error cleaning up speech recognition:", error);
+        }
       }
+      
+      // Reset states
+      setHasStartedVoiceInput(false);
+      setIsListening(false);
       
       // Clean up any active speech synthesis
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     };
-  }, [useEnhancedVoice, activeField, fieldLabels, speakText, clearFieldError, moveToNextField, formData]);
+  }, []);
 
   // Function to identify which field to fill based on voice input
   const identifyAndFillField = useCallback((text: string) => {
@@ -331,39 +305,171 @@ const NewRequirement = () => {
 
   // Toggle voice recognition
   const toggleVoiceRecognition = useCallback(() => {
-    if (!recognitionServiceRef.current) return;
+    if (!recognitionServiceRef.current) {
+      console.error("Speech recognition service not initialized");
+      toast({
+        title: "Voice Input Error",
+        description: "Speech recognition service could not be initialized. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Get direct reference to the textarea DOM element
+    const projectIdeaTextarea = projectIdeaRef.current;
+    if (!projectIdeaTextarea) {
+      console.error("Project Idea textarea not found");
+      toast({
+        title: "Error",
+        description: "Could not find the Project Idea field. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Toggle voice recognition", isListening);
 
     if (isListening) {
       // Properly stop listening
-      recognitionServiceRef.current.stop();
-      setIsListening(false);
-      
-      // Turn off enhanced mode when stopping voice input
-      if (useEnhancedVoice) {
-        setUseEnhancedVoice(false);
+      try {
+        console.log("Stopping voice recognition");
+        const currentText = recognitionServiceRef.current.stop();
+        
+        // Explicitly try to stop again after a short delay
+        setTimeout(() => {
+          if (recognitionServiceRef.current) {
+            if (typeof recognitionServiceRef.current.forceAbort === 'function') {
+              recognitionServiceRef.current.forceAbort();
+            } else {
+              console.warn("forceAbort method not available, falling back to stop");
+              recognitionServiceRef.current.stop();
+            }
+          }
+        }, 100);
+        
+        setIsListening(false);
+        
+        // Reset the voice input started flag
+        setHasStartedVoiceInput(false);
+        
+        // Turn off enhanced mode when stopping voice input
+        if (useEnhancedVoice) {
+          setUseEnhancedVoice(false);
+          toast({
+            title: "AI Enhanced Mode Deactivated",
+            description: "Turning off Enhanced AI mode when voice input stops.",
+          });
+        }
+        
+        // Provide feedback
         toast({
-          title: "AI Enhanced Mode Deactivated",
-          description: "Turning off Enhanced AI mode when voice input stops.",
+          title: "Voice Input Stopped",
+          description: "Your text has been saved. Click 'Voice Input' again to continue from where you left off.",
         });
+        
+        // Make sure state is updated with current textarea value - prioritize what's actually in the textarea
+        const textToSave = projectIdeaTextarea.value || currentText || '';
+        
+        // Update form state with the most recent text
+        setFormData(prev => ({
+          ...prev,
+          projectIdea: textToSave
+        }));
+      } catch (error) {
+        console.error("Error stopping voice recognition:", error);
       }
     } else {
       // ALWAYS focus on the Project Idea field when starting voice input
-      focusAndSpeak('projectIdea');
+      projectIdeaTextarea.focus();
       
-      // Start speech recognition
-      recognitionServiceRef.current.start();
-      setIsListening(true);
-      
-      // Provide clear feedback about voice input
-      toast({
-        title: "Voice Input Ready",
-        description: "Speak into your microphone to fill the Project Idea field",
-      });
+      try {
+        // Get the current text from the textarea (most reliable source)
+        const currentText = projectIdeaTextarea.value || formData.projectIdea || '';
+        console.log("Starting voice input with existing text:", currentText);
+        
+        // Create a recognition service that preserves existing text
+        const recognitionService = new SpeechRecognitionService({
+          initialText: '', // Don't initialize with text, we'll handle it ourselves
+          onStart: () => {
+            console.log("Speech recognition started");
+            setIsListening(true);
+            setHasStartedVoiceInput(true);
+            toast({
+              title: "Voice Input Activated",
+              description: "Speak into your microphone to fill the Project Idea field",
+            });
+          },
+          onEnd: () => {
+            console.log("Speech recognition ended");
+            setIsListening(false);
+            
+            if (hasStartedVoiceInput) {
+              toast({
+                title: "Voice Input Completed",
+                description: "Voice input for Project Idea has stopped.",
+              });
+            }
+          },
+          onResult: (text) => {
+            console.log("DIRECT UPDATE: Got final result:", text);
+            
+            // Update DOM directly and save to state
+            if (projectIdeaTextarea) {
+              // Create the full text by appending the new speech to existing content
+              const fullText = currentText ? currentText + ' ' + text : text;
+              
+              // Set value and directly trigger input event
+              projectIdeaTextarea.value = fullText;
+              
+              // Manually trigger input event
+              const inputEvent = new Event('input', { bubbles: true });
+              projectIdeaTextarea.dispatchEvent(inputEvent);
+              
+              // Also update React state directly
+              setFormData(prev => ({
+                ...prev,
+                projectIdea: fullText
+              }));
+              
+              console.log("Updated Project Idea with:", fullText);
+              console.log("Current textarea value is now:", projectIdeaTextarea.value);
+            }
+          },
+          useOpenAI: useEnhancedVoice,
+          enhancedProcessing: useEnhancedVoice
+        });
+        
+        recognitionServiceRef.current = recognitionService;
+        recognitionServiceRef.current.start();
+        
+        console.log("Started voice recognition with new service");
+      } catch (error) {
+        console.error("Error starting voice recognition:", error);
+        toast({
+          title: "Voice Input Error",
+          description: "Failed to start speech recognition. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
-  }, [isListening, focusAndSpeak, useEnhancedVoice]);
+  }, [isListening, useEnhancedVoice, toast, hasStartedVoiceInput, formData.projectIdea]);
 
   // Toggle enhanced voice mode with explanation
   const toggleEnhancedVoice = useCallback(() => {
+    // Preserve current state
+    const wasListening = isListening;
+    
+    // Get current text from the textarea directly (most reliable source)
+    const currentText = projectIdeaRef.current?.value || formData.projectIdea || '';
+    console.log("Mode switch with current text:", currentText);
+    
+    // If currently listening, stop first
+    if (wasListening && recognitionServiceRef.current) {
+      recognitionServiceRef.current.stop();
+      setIsListening(false);
+    }
+    
+    // Toggle the enhanced mode
     setUseEnhancedVoice(prev => !prev);
     
     // Show explanation of the mode switch
@@ -373,7 +479,69 @@ const NewRequirement = () => {
         "Using OpenAI for better speech recognition. This works best for complex speech and noisy environments." : 
         "Using standard browser speech recognition.",
     });
-  }, [useEnhancedVoice]);
+    
+    // If was listening, restart with the new mode after a short delay
+    if (wasListening) {
+      setTimeout(() => {
+        if (projectIdeaRef.current) {
+          // Create a new recognition service with the current text
+          const recognitionService = new SpeechRecognitionService({
+            initialText: '', // Don't use initialText, we'll handle it manually
+            onStart: () => {
+              console.log("Speech recognition restarted with new mode");
+              setIsListening(true);
+              setHasStartedVoiceInput(true);
+              toast({
+                title: "Voice Input Reactivated",
+                description: `Continuing with ${!useEnhancedVoice ? "enhanced" : "standard"} voice recognition`,
+              });
+            },
+            onEnd: () => {
+              console.log("Speech recognition ended");
+              setIsListening(false);
+              
+              if (hasStartedVoiceInput) {
+                toast({
+                  title: "Voice Input Completed",
+                  description: "Voice input for Project Idea has stopped.",
+                });
+              }
+            },
+            onResult: (text) => {
+              console.log("DIRECT UPDATE: Got result after mode switch:", text);
+              
+              // Update DOM directly and save to state
+              if (projectIdeaRef.current) {
+                // Get current text directly from the textarea again (just in case it changed)
+                const latestText = projectIdeaRef.current.value || currentText || '';
+                
+                // Append new text to existing content
+                const fullText = latestText ? latestText + ' ' + text : text;
+                console.log("Mode switch updating with full text:", fullText);
+                
+                projectIdeaRef.current.value = fullText;
+                
+                // Manually trigger input event
+                const inputEvent = new Event('input', { bubbles: true });
+                projectIdeaRef.current.dispatchEvent(inputEvent);
+                
+                // Also update React state directly
+                setFormData(prev => ({
+                  ...prev,
+                  projectIdea: fullText
+                }));
+              }
+            },
+            useOpenAI: !useEnhancedVoice, // Use the new mode
+            enhancedProcessing: !useEnhancedVoice // Use the new mode
+          });
+          
+          recognitionServiceRef.current = recognitionService;
+          recognitionServiceRef.current.start();
+        }
+      }, 300); // Short delay to ensure clean restart
+    }
+  }, [useEnhancedVoice, isListening, toast, formData.projectIdea, hasStartedVoiceInput]);
 
   // Handle click on a field to set it as active
   const handleFieldClick = useCallback((fieldName: string) => {
