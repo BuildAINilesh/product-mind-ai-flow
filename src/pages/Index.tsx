@@ -149,38 +149,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-12 px-4 bg-muted">
         <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center relative overflow-hidden">
-                  <span className="text-white font-bold text-lg relative z-10">P</span>
-                  <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_70%_70%,_rgba(255,255,255,0.2),_transparent_70%)]"></div>
-                </div>
-                <span className="font-bold text-xl">Product<AIGradientText>Mind</AIGradientText></span>
-              </div>
-              <p className="text-muted-foreground">
-                AI-powered product management platform for modern teams.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li><Link to="/features" className="text-muted-foreground hover:text-foreground transition-colors">Features</Link></li>
-                <li><Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</Link></li>
-                <li><Link to="/roadmap" className="text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-4">Company</h4>
-              <ul className="space-y-2">
-                <li><Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link></li>
-                <li><Link to="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link></li>
-                <li><Link to="/careers" className="text-muted-foreground hover:text-foreground transition-colors">Careers</Link></li>
-              </ul>
-            </div>
-            
+          <div className="grid grid-cols-1 gap-8">
             <div>
               <h4 className="font-medium mb-4">Legal</h4>
               <ul className="space-y-2">
@@ -189,7 +158,6 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          
           <div className="mt-12 pt-8 border-t border-border text-center text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} ProductMind. All rights reserved.</p>
           </div>
