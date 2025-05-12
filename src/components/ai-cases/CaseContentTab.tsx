@@ -218,13 +218,12 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
             />
           ) : items.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
+              <table className="w-full max-w-5xl mx-auto divide-y divide-slate-200">
                 <thead className="bg-slate-50 sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">#</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Content</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actor</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">#</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Content</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-100">
@@ -234,32 +233,14 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
                     return (
                       <tr
                         key={item.id}
-                        className="hover:bg-blue-50 transition cursor-pointer group"
+                        className="hover:bg-slate-50 transition cursor-pointer group"
                         tabIndex={0}
                         onClick={() => { setModalItem(item); setShowModal(true); }}
                         onKeyDown={e => { if (e.key === 'Enter') { setModalItem(item); setShowModal(true); } }}
                       >
-                        <td className="px-4 py-2 text-sm text-slate-700">{index + 1}</td>
-                        <td className="px-4 py-2 text-sm text-slate-700 max-w-xs">
-                          {isLong && !isExpanded ? (
-                            <>
-                              {item.content.slice(0, 120)}...{' '}
-                              <button
-                                className="text-blue-500 underline text-xs ml-1 focus:outline-none"
-                                onClick={e => { e.stopPropagation(); setExpandedRows(r => ({ ...r, [item.id]: true })); }}
-                              >Show More</button>
-                            </>
-                          ) : isLong && isExpanded ? (
-                            <>
-                              {item.content}{' '}
-                              <button
-                                className="text-blue-500 underline text-xs ml-1 focus:outline-none"
-                                onClick={e => { e.stopPropagation(); setExpandedRows(r => ({ ...r, [item.id]: false })); }}
-                              >Show Less</button>
-                            </>
-                          ) : (
-                            item.content
-                          )}
+                        <td className="px-4 py-2 text-sm text-slate-800">{index + 1}</td>
+                        <td className="px-4 py-2 text-sm text-slate-800 max-w-2xl whitespace-pre-line break-words">
+                          {item.content}
                         </td>
                         <td className="px-4 py-2 text-sm">
                           <Tooltip>
@@ -269,17 +250,6 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>{item.status}</TooltipContent>
-                          </Tooltip>
-                        </td>
-                        <td className="px-4 py-2 text-sm text-slate-700">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="flex items-center gap-2">
-                                <UserCircle className="h-5 w-5 text-slate-400" />
-                                {item.actor || '-'}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>{item.actor || 'No actor'}</TooltipContent>
                           </Tooltip>
                         </td>
                       </tr>
