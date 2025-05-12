@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -106,7 +105,7 @@ const DashboardSidebar = ({ isOpen, onToggle }: DashboardSidebarProps) => {
     },
     {
       icon: <HelpCircle size={18} />,
-      label: "Help & Support",
+      label: "FAQs",
       href: "/dashboard/support",
     },
   ];

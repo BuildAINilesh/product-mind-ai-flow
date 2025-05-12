@@ -23,25 +23,6 @@ const Settings = () => {
       </div>
 
       <div className="grid gap-6">
-        {/* Profile Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile Settings</CardTitle>
-            <CardDescription>Update your personal information and email settings.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" placeholder="John Doe" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="john@example.com" />
-            </div>
-            <Button>Save Changes</Button>
-          </CardContent>
-        </Card>
-
         {/* Jira API Connection Settings */}
         <Card>
           <CardHeader>
