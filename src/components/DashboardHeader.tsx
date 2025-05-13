@@ -1,13 +1,10 @@
-
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Bell, 
   CircleUser,
-  Search,
-  Plus,
-  Menu
+  Menu,
+  Plus
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardHeaderProps {
@@ -26,14 +22,7 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader = ({ title, onMenuClick }: DashboardHeaderProps) => {
-  const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
-  
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Searching for:", searchQuery);
-    // Implement search functionality
-  };
   
   return (
     <header className="h-14 md:h-16 border-b border-border flex items-center justify-between px-3 md:px-6">
@@ -47,20 +36,6 @@ const DashboardHeader = ({ title, onMenuClick }: DashboardHeaderProps) => {
       </div>
       
       <div className="flex items-center gap-2 md:gap-4">
-        <form onSubmit={handleSearch} className="hidden md:flex relative">
-          <Input
-            type="search"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64 pl-9"
-          />
-          <Search 
-            size={16}
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-          />
-        </form>
-        
         <Button asChild size="sm" className="hidden sm:flex">
           <Link to="/dashboard/requirements/new">
             <Plus size={16} className="mr-2" />
