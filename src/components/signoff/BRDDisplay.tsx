@@ -139,31 +139,14 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
     }
   };
 
-  // Debug function to check data format issues
-  const debugDataFormat = () => {
-    console.log("Raw key_features:", brdData.key_features);
-    console.log(
-      "Formatted key_features:",
-      formatAsBulletPoints(brdData.key_features)
-    );
-    console.log("Raw business_goals:", brdData.business_goals);
-    console.log(
-      "Formatted business_goals:",
-      formatAsBulletPoints(brdData.business_goals)
-    );
-    console.log("Raw target_audience:", brdData.target_audience);
-    console.log(
-      "Formatted target_audience:",
-      formatAsBulletPoints(brdData.target_audience)
-    );
-    console.log(
-      "Raw market_research_summary:",
-      brdData.market_research_summary
-    );
-    console.log(
-      "Formatted market_research_summary:",
-      formatAsBulletPoints(brdData.market_research_summary)
-    );
+  // Format text with line breaks
+  const formatText = (text: string) => {
+    return text.split("\n").map((line, index) => (
+      <React.Fragment key={index}>
+        {line}
+        {index < text.split("\n").length - 1 && <br />}
+      </React.Fragment>
+    ));
   };
 
   // Render status badge
@@ -181,16 +164,6 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
       return <Badge variant="destructive">Error</Badge>;
     }
     return <Badge variant="secondary">{status}</Badge>;
-  };
-
-  // Format text with line breaks
-  const formatText = (text: string) => {
-    return text.split("\n").map((line, index) => (
-      <React.Fragment key={index}>
-        {line}
-        {index < text.split("\n").length - 1 && <br />}
-      </React.Fragment>
-    ));
   };
 
   // Convert text to bullet points
