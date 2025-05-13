@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +22,7 @@ const Index = () => {
                 <AIGradientText>AI-Powered</AIGradientText> Product Management
               </h1>
               <p className="text-lg md:text-xl mb-8 text-foreground/80 max-w-2xl mx-auto lg:mx-0">
-                Transform your product development lifecycle with neural networks and machine learning assistance at every stage,
+                Transform your product development lifecycle with AI networks and machine learning assistance at every stage,
                 from ideation to finalized requirements, testing, and approval.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -73,7 +72,7 @@ const Index = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Supercharge Your Product Development with <AIGradientText>AI</AIGradientText></h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Our AI-powered platform streamlines every stage of the product lifecycle with intelligent assistance and neural networks.
+              Our AI-powered platform streamlines every stage of the product lifecycle with intelligent assistance and AI networks.
             </p>
           </div>
           
@@ -139,7 +138,7 @@ const Index = () => {
         <div className="container mx-auto text-center relative z-10">
           <h2 className="text-3xl font-bold mb-6">Ready to Transform Your Product Development with AI?</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
-            Join the teams already using ProductMind's neural networks to build better products, faster.
+            Join the teams already using ProductMind's AI networks to build better products, faster.
           </p>
           <Button size="lg" variant="secondary" asChild className="text-lg px-8 bg-white hover:bg-white/90 text-primary">
             <Link to="/register">Get Started Free</Link>
@@ -150,38 +149,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-12 px-4 bg-muted">
         <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center relative overflow-hidden">
-                  <span className="text-white font-bold text-lg relative z-10">P</span>
-                  <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_70%_70%,_rgba(255,255,255,0.2),_transparent_70%)]"></div>
-                </div>
-                <span className="font-bold text-xl">Product<AIGradientText>Mind</AIGradientText></span>
-              </div>
-              <p className="text-muted-foreground">
-                AI-powered product management platform for modern teams.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li><Link to="/features" className="text-muted-foreground hover:text-foreground transition-colors">Features</Link></li>
-                <li><Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</Link></li>
-                <li><Link to="/roadmap" className="text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-4">Company</h4>
-              <ul className="space-y-2">
-                <li><Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link></li>
-                <li><Link to="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link></li>
-                <li><Link to="/careers" className="text-muted-foreground hover:text-foreground transition-colors">Careers</Link></li>
-              </ul>
-            </div>
-            
+          <div className="grid grid-cols-1 gap-8">
             <div>
               <h4 className="font-medium mb-4">Legal</h4>
               <ul className="space-y-2">
@@ -190,7 +158,6 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          
           <div className="mt-12 pt-8 border-t border-border text-center text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} ProductMind. All rights reserved.</p>
           </div>
@@ -203,13 +170,13 @@ const Index = () => {
 // Feature data
 const features = [
   {
-    title: "Neural Requirements",
+    title: "AI Requirements",
     description: "Transform ideas into structured requirements with AI assistance that identifies gaps and enhances quality.",
     icon: <Brain size={24} className="text-primary" />
   },
   {
     title: "MarketSense AI",
-    description: "Get real-time market insights, competitor analysis, and gap identification powered by neural networks.",
+    description: "Get real-time market insights, competitor analysis, and gap identification powered by AI networks.",
     icon: <BarChart3 size={24} className="text-primary" />
   },
   {
@@ -223,7 +190,7 @@ const features = [
     icon: <Layers size={24} className="text-primary" />
   },
   {
-    title: "Neural Signoff",
+    title: "AI Signoff",
     description: "Streamline approvals with AI recommendations and automated validation of requirements.",
     icon: <CheckCircle size={24} className="text-primary" />
   },
@@ -238,14 +205,14 @@ const features = [
 const steps = [
   {
     title: "AI Requirement Creation",
-    description: "Input your product ideas and let neural networks structure them into formal requirements."
+    description: "Input your product ideas and let AI networks structure them into formal requirements."
   },
   {
     title: "Machine Learning Analysis",
     description: "Receive AI-powered market insights and competitive analysis for your requirements."
   },
   {
-    title: "Neural Test Generation",
+    title: "AI Test Generation",
     description: "Generate comprehensive test cases to validate your requirements using AI models."
   },
   {

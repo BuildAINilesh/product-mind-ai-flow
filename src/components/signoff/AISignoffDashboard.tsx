@@ -32,6 +32,27 @@ interface AISignoffDashboardProps {
   dataFetchAttempted: boolean;
 }
 
+// Simple animated count-up hook
+function useCountUp(end: number, duration = 800) {
+  const [count, setCount] = React.useState(0);
+  const ref = React.useRef<number>();
+  React.useEffect(() => {
+    let start = 0;
+    const step = (timestamp: number) => {
+      if (!ref.current) ref.current = timestamp;
+      const progress = Math.min((timestamp - ref.current) / duration, 1);
+      setCount(Math.floor(progress * (end - start) + start));
+      if (progress < 1) requestAnimationFrame(step);
+      else setCount(end);
+    };
+    setCount(0);
+    ref.current = undefined;
+    requestAnimationFrame(step);
+    // eslint-disable-next-line
+  }, [end]);
+  return count;
+}
+
 const AISignoffDashboard: React.FC<AISignoffDashboardProps> = ({
   signoffItems,
   loading,
@@ -45,18 +66,21 @@ const AISignoffDashboard: React.FC<AISignoffDashboardProps> = ({
 
   // Calculate summary statistics
   const totalItems = signoffItems.length;
-
   const approvedItems = signoffItems.filter(
     (item) => item.status === "Approved"
   ).length;
-
   const pendingItems = signoffItems.filter(
     (item) => item.status === "Pending"
   ).length;
-
   const rejectedItems = signoffItems.filter(
     (item) => item.status === "Rejected"
   ).length;
+
+  // Animated stats
+  const totalCount = useCountUp(totalItems);
+  const approvedCount = useCountUp(approvedItems);
+  const pendingCount = useCountUp(pendingItems);
+  const rejectedCount = useCountUp(rejectedItems);
 
   // Status badge renderer
   const renderStatusBadge = (status: string) => {
@@ -78,124 +102,118 @@ const AISignoffDashboard: React.FC<AISignoffDashboardProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">AI Signoff</h1>
-        <p className="text-slate-500">
-          AI-powered requirement signoff management with comprehensive review
-          and approval workflow
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-blue-100 animate-gradient-x p-6">
+      <div className="mb-8">
+        <h1 className="text-4xl font-extrabold text-slate-900 mb-1 tracking-tight drop-shadow-lg">AI Signoff</h1>
+        <p className="text-lg text-slate-500">AI-powered requirement signoff management with comprehensive review and approval workflow</p>
       </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center space-x-2">
-            <FileText className="h-6 w-6 text-blue-600" />
-            <span className="text-sm font-medium">Total Requirements</span>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 justify-items-center">
+        {/* Total Requirements */}
+        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-blue-400 transition-all duration-200 max-w-xs w-full mx-auto">
+          <div className="flex items-center gap-4 mb-3">
+            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow">
+              <FileText className="h-6 w-6 text-white" />
+            </span>
+            <span className="text-base font-semibold text-slate-700">Total Requirements</span>
           </div>
-          <h2 className="text-3xl font-bold mt-2">{totalItems}</h2>
+          <h2 className="text-3xl font-extrabold text-blue-900 animate-countup">{totalCount}</h2>
         </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center space-x-2">
-            <Check className="h-6 w-6 text-green-600" />
-            <span className="text-sm font-medium">Approved</span>
+        {/* Approved */}
+        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-green-400 transition-all duration-200 max-w-xs w-full mx-auto">
+          <div className="flex items-center gap-4 mb-3">
+            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow">
+              <Check className="h-6 w-6 text-white" />
+            </span>
+            <span className="text-base font-semibold text-slate-700">Approved</span>
           </div>
-          <h2 className="text-3xl font-bold mt-2">{approvedItems}</h2>
+          <h2 className="text-3xl font-extrabold text-green-900 animate-countup">{approvedCount}</h2>
         </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center space-x-2">
-            <ClipboardCheck className="h-6 w-6 text-amber-600" />
-            <span className="text-sm font-medium">Pending</span>
+        {/* Pending */}
+        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-amber-400 transition-all duration-200 max-w-xs w-full mx-auto">
+          <div className="flex items-center gap-4 mb-3">
+            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 shadow">
+              <ClipboardCheck className="h-6 w-6 text-white" />
+            </span>
+            <span className="text-base font-semibold text-slate-700">Pending</span>
           </div>
-          <h2 className="text-3xl font-bold mt-2">{pendingItems}</h2>
+          <h2 className="text-3xl font-extrabold text-amber-900 animate-countup">{pendingCount}</h2>
         </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
-            <span className="text-sm font-medium">Rejected</span>
+        {/* Rejected */}
+        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-red-400 transition-all duration-200 max-w-xs w-full mx-auto">
+          <div className="flex items-center gap-4 mb-3">
+            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow">
+              <AlertTriangle className="h-6 w-6 text-white" />
+            </span>
+            <span className="text-base font-semibold text-slate-700">Rejected</span>
           </div>
-          <h2 className="text-3xl font-bold mt-2">{rejectedItems}</h2>
+          <h2 className="text-3xl font-extrabold text-red-900 animate-countup">{rejectedCount}</h2>
         </Card>
       </div>
-
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-2">Requirement Signoffs</h2>
-          <p className="text-slate-500 mb-4">
-            View and manage signoff status for your requirements
-          </p>
-
-          <div className="mb-4">
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search signoffs..."
-                className="pl-10 pr-4 py-2 border rounded-md w-full"
-              />
-            </div>
+      {/* Table Section */}
+      <div className="bg-white/80 rounded-3xl shadow-2xl p-10 animate-fadeIn">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-1">Signoff Analysis</h2>
+            <p className="text-slate-500">View and manage your AI-powered signoff analysis</p>
           </div>
-
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader size="large" />
-            </div>
-          ) : !dataFetchAttempted || signoffItems.length === 0 ? (
-            <EmptyState
-              title="No signoffs yet"
-              description="Select a requirement to begin the signoff process."
-              icon={<FileText className="h-12 w-12" />}
+          <div className="relative w-full md:w-96">
+            <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search signoffs..."
+              className="pl-12 pr-4 py-3 rounded-full w-full bg-white/70 border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none shadow transition text-base"
             />
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">
-                      Requirement ID
-                    </TableHead>
-                    <TableHead className="whitespace-nowrap">Project</TableHead>
-                    <TableHead className="whitespace-nowrap">
-                      Industry
-                    </TableHead>
-                    <TableHead className="whitespace-nowrap">Created</TableHead>
-                    <TableHead className="whitespace-nowrap">Status</TableHead>
-                    <TableHead className="whitespace-nowrap">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {signoffItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="whitespace-nowrap">
-                        {item.reqId || "N/A"}
-                      </TableCell>
-                      <TableCell className="max-w-[150px] truncate">
-                        {item.projectName}
-                      </TableCell>
-                      <TableCell>{item.industry}</TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {item.created}
-                      </TableCell>
-                      <TableCell>{renderStatusBadge(item.status)}</TableCell>
-                      <TableCell>
-                        <Link
-                          to={`/dashboard/signoff?requirementId=${item.requirementId}`}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-                        >
-                          View Details
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          </div>
         </div>
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader size="large" />
+          </div>
+        ) : !dataFetchAttempted || signoffItems.length === 0 ? (
+          <EmptyState
+            title="No signoffs yet"
+            description="Select a requirement to begin the signoff process."
+            icon={<FileText className="h-12 w-12" />}
+          />
+        ) : (
+          <div className="overflow-x-auto animate-fadeIn">
+            <Table className="min-w-full rounded-2xl overflow-hidden">
+              <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Requirement ID</TableHead>
+                  <TableHead className="whitespace-nowrap">Project</TableHead>
+                  <TableHead className="whitespace-nowrap">Industry</TableHead>
+                  <TableHead className="whitespace-nowrap">Created</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {signoffItems.map((item, idx) => (
+                  <TableRow key={item.id} className="hover:bg-blue-100/60 transition-all duration-200 cursor-pointer animate-fadeIn" style={{ animationDelay: `${idx * 40}ms` }}>
+                    <TableCell className="whitespace-nowrap font-mono text-blue-900 font-semibold">{item.reqId || "N/A"}</TableCell>
+                    <TableCell className="max-w-[180px] truncate font-semibold text-slate-800 flex items-center gap-3">
+                      <span className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-lg shadow bg-gradient-to-br from-blue-400 to-blue-600">{item.projectName?.[0] || "P"}</span>
+                      {item.projectName}
+                    </TableCell>
+                    <TableCell className="capitalize text-slate-700">{item.industry}</TableCell>
+                    <TableCell className="whitespace-nowrap text-slate-500">{item.created}</TableCell>
+                    <TableCell>{renderStatusBadge(item.status)}</TableCell>
+                    <TableCell>
+                      <Link
+                        to={`/dashboard/signoff?requirementId=${item.requirementId}`}
+                        className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-full font-semibold shadow hover:scale-105 hover:shadow-lg transition-all duration-150"
+                      >
+                        <SearchIcon className="h-4 w-4" /> View Details
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </div>
   );
