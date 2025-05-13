@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Input Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .field {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        textarea {
+            min-height: 100px;
+        }
+        .active {
+            border: 2px solid blue;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4744E0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button.listening {
+            background-color: #e74c3c;
+        }
+        button.enhanced {
+            background-color: #27ae60;
+        }
+        .error {
+            border-color: red;
+        }
+        .error-text {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Voice Input Test for ProductMind</h1>
+    <p>Click on a field to activate it, then use the Voice Input button to speak into that field.</p>
+
+    <form id="requirementForm">
+        <div class="field">
+            <label for="projectName">Project Name</label>
+            <input type="text" id="projectName" name="projectName" placeholder="Enter project name">
+        </div>
+
+        <div class="field">
+            <label for="companyName">Company Name</label>
+            <input type="text" id="companyName" name="companyName" placeholder="Enter company name">
+        </div>
+
+        <div class="field">
+            <label for="industryType">Industry Type</label>
+            <select id="industryType" name="industryType">
+                <option value="">Select industry type</option>
+                <option value="technology">Technology</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="finance">Finance</option>
+                <option value="education">Education</option>
+                <option value="retail">Retail</option>
+                <option value="manufacturing">Manufacturing</option>
+                <option value="logistics">Logistics</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="energy">Energy</option>
+                <option value="automotive">Automotive</option>
+                <option value="HR">HR</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="projectIdea">Project Idea</label>
+            <textarea id="projectIdea" name="projectIdea" placeholder="Enter your rough idea for the project"></textarea>
+        </div>
+
+        <div class="controls">
+            <button type="button" id="voiceBtn">Voice Input</button>
+            <button type="button" id="enhancedBtn">Use Enhanced AI</button>
+            <button type="submit">Create Requirement</button>
+        </div>
+    </form>
+
+    <script>
+        // Active field tracking
+        let activeField = 'projectName';
+        let isListening = false;
+        let useEnhanced = false;
+        let recognition = null;
+
+        // Field references
+        const fields = {
+            projectName: document.getElementById('projectName'),
+            companyName: document.getElementById('companyName'),
+            industryType: document.getElementById('industryType'),
+            projectIdea: document.getElementById('projectIdea')
+        };
+
+        // Field labels for speech
+        const fieldLabels = {
+            projectName: "Project Name",
+            companyName: "Company Name",
+            industryType: "Industry Type",
+            projectIdea: "Project Idea"
+        };
+
+        // Button references
+        const voiceBtn = document.getElementById('voiceBtn');
+        const enhancedBtn = document.getElementById('enhancedBtn');
+
+        // Initialize speech recognition
+        function initSpeechRecognition() {
+            if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                
+                recognition.onstart = () => {
+                    isListening = true;
+                    voiceBtn.textContent = 'Stop Listening';
+                    voiceBtn.classList.add('listening');
+                    alert(`Voice input activated for ${fieldLabels[activeField]}`);
+                    
+                    // Speak the field name
+                    speakText(`Please enter ${fieldLabels[activeField]}`);
+                };
+                
+                recognition.onend = () => {
+                    isListening = false;
+                    voiceBtn.textContent = 'Voice Input';
+                    voiceBtn.classList.remove('listening');
+                    alert('Voice input stopped');
+                };
+                
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error', event.error);
+                    isListening = false;
+                    voiceBtn.textContent = 'Voice Input';
+                    voiceBtn.classList.remove('listening');
+                    alert(`Voice input error: ${event.error}`);
+                };
+                
+                recognition.onresult = (event) => {
+                    const transcript = Array.from(event.results)
+                        .map(result => result[0].transcript)
+                        .join(' ');
+                    
+                    console.log(`Voice input for ${activeField}: ${transcript}`);
+                    
+                    // Update the active field
+                    if (activeField === 'industryType') {
+                        // Try to match industry from transcript
+                        const options = fields.industryType.options;
+                        for (let i = 0; i < options.length; i++) {
+                            if (transcript.toLowerCase().includes(options[i].value.toLowerCase())) {
+                                fields.industryType.value = options[i].value;
+                                break;
+                            }
+                        }
+                    } else {
+                        // For other fields, just set the value
+                        fields[activeField].value = transcript;
+                    }
+                    
+                    // Move to next field if this one has content
+                    if (transcript.trim()) {
+                        moveToNextField();
+                    }
+                };
+                
+                return true;
+            } else {
+                alert('Speech recognition is not supported in your browser');
+                return false;
+            }
+        }
+
+        // Speak text using speech synthesis
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                // Cancel any previous speech
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn('Browser does not support speech synthesis');
+            }
+        }
+
+        // Set the active field
+        function setActiveField(fieldName) {
+            // Remove active class from all fields
+            Object.values(fields).forEach(field => {
+                field.classList.remove('active');
+            });
+            
+            // Set the new active field
+            activeField = fieldName;
+            fields[fieldName].classList.add('active');
+            fields[fieldName].focus();
+            
+            // Update voice button text
+            voiceBtn.textContent = `Voice Input for ${fieldLabels[fieldName]}`;
+        }
+
+        // Move to the next field
+        function moveToNextField() {
+            const fieldOrder = ['projectName', 'companyName', 'industryType', 'projectIdea'];
+            const currentIndex = fieldOrder.indexOf(activeField);
+            
+            if (currentIndex < fieldOrder.length - 1) {
+                const nextField = fieldOrder[currentIndex + 1];
+                setActiveField(nextField);
+                speakText(`Please enter ${fieldLabels[nextField]}`);
+            } else {
+                // All fields filled
+                speakText('All fields are filled. You can now submit the form.');
+            }
+        }
+
+        // Toggle voice recognition
+        function toggleVoiceRecognition() {
+            if (!recognition && !initSpeechRecognition()) {
+                return;
+            }
+            
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        // Toggle enhanced mode
+        function toggleEnhancedMode() {
+            useEnhanced = !useEnhanced;
+            if (useEnhanced) {
+                enhancedBtn.textContent = '✓ Enhanced AI Active';
+                enhancedBtn.classList.add('enhanced');
+                alert('Enhanced mode activated');
+            } else {
+                enhancedBtn.textContent = 'Use Enhanced AI';
+                enhancedBtn.classList.remove('enhanced');
+                alert('Standard mode activated');
+            }
+        }
+
+        // Set up event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize speech recognition
+            initSpeechRecognition();
+            
+            // Set initial active field
+            setActiveField('projectName');
+            
+            // Set up field focus events
+            Object.entries(fields).forEach(([fieldName, field]) => {
+                field.addEventListener('focus', () => setActiveField(fieldName));
+            });
+            
+            // Set up button click events
+            voiceBtn.addEventListener('click', toggleVoiceRecognition);
+            enhancedBtn.addEventListener('click', toggleEnhancedMode);
+            
+            // Form submission
+            document.getElementById('requirementForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                // Check if all fields are filled
+                let valid = true;
+                Object.entries(fields).forEach(([fieldName, field]) => {
+                    if (!field.value.trim()) {
+                        field.classList.add('error');
+                        valid = false;
+                    } else {
+                        field.classList.remove('error');
+                    }
+                });
+                
+                if (valid) {
+                    alert('Form submitted successfully!');
+                } else {
+                    alert('Please fill in all required fields.');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
