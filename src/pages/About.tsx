@@ -1,4 +1,3 @@
-
 import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -13,15 +12,15 @@ const About = () => {
   const values = [
     {
       title: "Innovation",
-      description: "Pushing the boundaries of what's possible with AI in product development"
+      description: "We leverage cutting-edge AI to automate and enhance every stage of product management—from requirements analysis to test case generation, validation, and signoff. ProductMind empowers teams to move faster and smarter."
     },
     {
-      title: "Quality",
-      description: "Maintaining the highest standards in everything we do"
+      title: "Quality & Trust",
+      description: "Our platform ensures your requirements are validated against industry best practices, risks are identified early, and recommendations are always data-driven. We prioritize accuracy, reliability, and actionable insights."
     },
     {
       title: "Customer Success",
-      description: "Dedicated to helping our customers achieve their goals"
+      description: "We're dedicated to helping you build better products. With AI-powered dashboards, analytics, and market insights, ProductMind gives you the tools to make informed decisions and achieve your goals."
     }
   ];
 
@@ -36,19 +35,6 @@ const About = () => {
           <p className="text-muted-foreground text-lg">
             Revolutionizing product development with AI-powered insights
           </p>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-          {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-primary mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-muted-foreground">{stat.label}</div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
 
         <div className="max-w-3xl mx-auto mb-16">

@@ -273,16 +273,6 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {process.env.NODE_ENV === "development" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mr-2 text-xs border-dashed border-gray-300"
-                  onClick={debugDataFormat}
-                >
-                  Debug
-                </Button>
-              )}
               {renderStatusBadge(brdData.status)}
               <Badge
                 variant={

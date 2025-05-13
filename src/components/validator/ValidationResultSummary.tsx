@@ -1,101 +1,161 @@
-
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Share2, UserCircle2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { AICard, AIGradientText } from "@/components/ui/ai-elements";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface ValidationResultSummaryProps {
   validationData: any;
   requirement?: any;
+  summaryOnly?: boolean;
+  strengthsOnly?: boolean;
 }
 
-const ValidationResultSummary = ({ validationData, requirement }: ValidationResultSummaryProps) => {
-  return (
-    <div className="space-y-6">
-      {/* Summary Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-start">
+const ValidationResultSummary = ({ validationData, requirement, summaryOnly, strengthsOnly }: ValidationResultSummaryProps) => {
+  if (summaryOnly) {
+    return (
+      <AICard gradient hover className="space-y-8 p-6 bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950">
+        {/* Header Row with Avatar (Share button removed) */}
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-blue-400 text-white">
+                <UserCircle2 className="h-7 w-7" />
+              </AvatarFallback>
+            </Avatar>
             <div>
-              <CardTitle className="text-xl">Validation Summary</CardTitle>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <AIGradientText>Validation Summary</AIGradientText>
+                <Badge 
+                  variant={
+                    validationData?.validation_verdict === "validated" ? "success" : 
+                    validationData?.validation_verdict === "needs_refinement" ? "warning" : 
+                    "destructive"
+                  }
+                  className="uppercase text-xs font-medium"
+                >
+                  {validationData?.validation_verdict === "validated" ? "Validated" : 
+                  validationData?.validation_verdict === "needs_refinement" ? "Needs Refinement" : 
+                  "High Risk"}
+                </Badge>
+              </CardTitle>
               <CardDescription>AI-powered analysis of your requirement</CardDescription>
             </div>
-            <Badge 
-              variant={
-                validationData?.validation_verdict === "validated" ? "success" : 
-                validationData?.validation_verdict === "needs_refinement" ? "warning" : 
-                "destructive"
-              }
-              className="uppercase text-xs font-medium"
-            >
-              {validationData?.validation_verdict === "validated" ? "Validated" : 
-               validationData?.validation_verdict === "needs_refinement" ? "Needs Refinement" : 
-               "High Risk"}
-            </Badge>
           </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground whitespace-pre-line">
+          {/* Share button removed */}
+        </div>
+        {/* Summary Text */}
+        <Card className="mb-4 bg-white/80 dark:bg-slate-900/80 shadow-none border-0">
+          <CardContent className="pt-4 pb-2">
+            <p className="text-muted-foreground whitespace-pre-line text-base">
+              {validationData?.validation_summary || "No summary available"}
+            </p>
+          </CardContent>
+        </Card>
+      </AICard>
+    );
+  }
+  if (strengthsOnly) {
+    return (
+      <AICard className="w-full p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Check className="text-green-500 h-5 w-5" />
+          <CardTitle className="text-lg">Strengths</CardTitle>
+        </div>
+        {validationData?.strengths && validationData.strengths.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>Strength</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {validationData.strengths.map((strength: string, index: number) => (
+                <TableRow key={index}>
+                  <TableCell className="font-bold text-green-600 dark:text-green-400">{index + 1}</TableCell>
+                  <TableCell>{strength}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-muted-foreground">No strengths identified</p>
+        )}
+      </AICard>
+    );
+  }
+  // Default: both
+  return (
+    <AICard gradient hover className="space-y-8 p-6 bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950">
+      {/* Header Row with Avatar (Share button removed) */}
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-3">
+          <Avatar>
+            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-blue-400 text-white">
+              <UserCircle2 className="h-7 w-7" />
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <AIGradientText>Validation Summary</AIGradientText>
+              <Badge 
+                variant={
+                  validationData?.validation_verdict === "validated" ? "success" : 
+                  validationData?.validation_verdict === "needs_refinement" ? "warning" : 
+                  "destructive"
+                }
+                className="uppercase text-xs font-medium"
+              >
+                {validationData?.validation_verdict === "validated" ? "Validated" : 
+                 validationData?.validation_verdict === "needs_refinement" ? "Needs Refinement" : 
+                 "High Risk"}
+              </Badge>
+            </CardTitle>
+            <CardDescription>AI-powered analysis of your requirement</CardDescription>
+          </div>
+        </div>
+        {/* Share button removed */}
+      </div>
+      {/* Summary Text */}
+      <Card className="mb-4 bg-white/80 dark:bg-slate-900/80 shadow-none border-0">
+        <CardContent className="pt-4 pb-2">
+          <p className="text-muted-foreground whitespace-pre-line text-base">
             {validationData?.validation_summary || "No summary available"}
           </p>
         </CardContent>
       </Card>
-
-      {/* Readiness Score Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Requirement Readiness</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">Readiness Score</span>
-            <span className="text-2xl font-bold">{validationData?.readiness_score || 0}%</span>
-          </div>
-          <Progress 
-            value={validationData?.readiness_score || 0} 
-            className={`h-2 ${
-              validationData?.readiness_score >= 70 ? "bg-emerald-100" : 
-              validationData?.readiness_score >= 40 ? "bg-amber-100" : 
-              "bg-red-100"
-            }`}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>0%</span>
-            <span>50%</span>
-            <span>100%</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Strengths Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Check className="text-green-500 h-5 w-5" />
-            <CardTitle className="text-lg">Strengths</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {validationData?.strengths && validationData.strengths.length > 0 ? (
-            <ul className="space-y-2 list-disc pl-5">
+      {/* Strengths Table - now full width */}
+      <AICard className="w-full p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Check className="text-green-500 h-5 w-5" />
+          <CardTitle className="text-lg">Strengths</CardTitle>
+        </div>
+        {validationData?.strengths && validationData.strengths.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>Strength</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {validationData.strengths.map((strength: string, index: number) => (
-                <motion.li 
-                  key={index}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  {strength}
-                </motion.li>
+                <TableRow key={index}>
+                  <TableCell className="font-bold text-green-600 dark:text-green-400">{index + 1}</TableCell>
+                  <TableCell>{strength}</TableCell>
+                </TableRow>
               ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground">No strengths identified</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-muted-foreground">No strengths identified</p>
+        )}
+      </AICard>
+    </AICard>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,54 +10,9 @@ const Support = () => {
       <div className="flex items-center gap-4">
         <HelpCircle className="h-8 w-8 text-muted-foreground" />
         <div>
-          <h1 className="text-2xl font-bold">Help & Support</h1>
-          <p className="text-muted-foreground">Get help with your account and product features</p>
+          <h1 className="text-2xl font-bold">FAQs</h1>
+          <p className="text-muted-foreground">Find answers to common questions about ProductMind's AI features</p>
         </div>
-      </div>
-
-      {/* Contact Options */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Chat Support
-            </CardTitle>
-            <CardDescription>Chat with our support team</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">Available 24/7 for all your queries</p>
-            <Button className="w-full">Start Chat</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Email Support
-            </CardTitle>
-            <CardDescription>Send us an email</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">support@productmind.com</p>
-            <Button variant="outline" className="w-full">Send Email</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PhoneCall className="h-5 w-5" />
-              Phone Support
-            </CardTitle>
-            <CardDescription>Call our support team</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">+1 (555) 123-4567</p>
-            <Button variant="outline" className="w-full">Call Now</Button>
-          </CardContent>
-        </Card>
       </div>
 
       {/* FAQ Section */}
@@ -78,8 +32,32 @@ const Support = () => {
               answer: "MarketSense is our AI-powered market analysis tool that helps you understand market trends and competition."
             },
             {
-              question: "How does the test case generation work?",
-              answer: "Our AI analyzes your requirements and automatically generates comprehensive test cases based on best practices."
+              question: "How does AI TestGen work?",
+              answer: "AI TestGen analyzes your requirements and automatically generates comprehensive test cases based on best practices."
+            },
+            {
+              question: "What is BugShield ML?",
+              answer: "BugShield ML predicts potential defects and issues before they occur using advanced AI risk analysis algorithms."
+            },
+            {
+              question: "How does AI Signoff streamline approvals?",
+              answer: "AI Signoff provides automated validation and recommendations, making the approval process faster and more reliable."
+            },
+            {
+              question: "What insights does AI Analytics provide?",
+              answer: "AI Analytics creates comprehensive reports with visualizations and actionable insights from your product development process."
+            },
+            {
+              question: "Can I edit or delete requirements after creation?",
+              answer: "Yes, you can edit or delete requirements from your dashboard at any time."
+            },
+            {
+              question: "Is my data secure?",
+              answer: "Yes, ProductMind uses industry-standard security practices to keep your data safe and private."
+            },
+            {
+              question: "How do I contact support?",
+              answer: "You can reach out to us via the contact form on our website or email support@productmind.com."
             }
           ].map((faq, index) => (
             <div key={index} className="border-b pb-4 last:border-none last:pb-0">

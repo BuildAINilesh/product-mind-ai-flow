@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -66,11 +65,6 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <div className="w-full max-w-md">
-        {/* Debug info */}
-        <div className="mb-4 text-sm text-muted-foreground">
-          Page rendered successfully. {new Date().toISOString()}
-        </div>
-
         {/* Back to Home button */}
         <div className="mb-4">
           <Button 

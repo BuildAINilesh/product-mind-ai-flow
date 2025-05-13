@@ -99,7 +99,12 @@ const AICaseGeneratorDetails: React.FC<AICaseGeneratorDetailsProps> = ({
       />
 
       {/* Requirement Info */}
-      <RequirementDetails requirement={requirement} />
+      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow p-6 border border-slate-200 mb-4">
+        <h2 className="text-2xl font-bold text-blue-900 mb-2">{requirement.projectName}</h2>
+        {requirement.description && (
+          <p className="text-slate-700 text-lg">{requirement.description}</p>
+        )}
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>

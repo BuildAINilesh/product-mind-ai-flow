@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import StatusBadge from "./StatusBadge";
@@ -14,9 +13,10 @@ interface CaseItemCardProps {
   };
   index: number;
   type: "userStories" | "useCases" | "testCases";
+  headingBold?: boolean;
 }
 
-const CaseItemCard: React.FC<CaseItemCardProps> = ({ item, index, type }) => {
+const CaseItemCard: React.FC<CaseItemCardProps> = ({ item, index, type, headingBold }) => {
   const getItemTitle = () => {
     switch (type) {
       case "userStories":
@@ -33,7 +33,7 @@ const CaseItemCard: React.FC<CaseItemCardProps> = ({ item, index, type }) => {
   return (
     <Card key={item.id} className="p-4 mb-4">
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-sm font-medium">{getItemTitle()}</h3>
+        <h3 className={headingBold ? "text-sm font-extrabold" : "text-sm font-medium"}>{getItemTitle()}</h3>
         {/* Pass the type to StatusBadge to control visibility */}
         <StatusBadge status={item.status || "Draft"} showForItemType={type} />
       </div>

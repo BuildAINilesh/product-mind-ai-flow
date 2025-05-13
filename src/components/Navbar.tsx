@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
@@ -10,6 +9,8 @@ import { useAuth } from '@/hooks/use-auth';
 const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
+  const location = useLocation();
+  const isHome = location.pathname === '/';
   
   return (
     <header className={cn(
@@ -32,9 +33,6 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
           </Link>
           <Link to="/features" className="text-foreground/90 hover:text-foreground transition-colors">
             Features
-          </Link>
-          <Link to="/pricing" className="text-foreground/90 hover:text-foreground transition-colors">
-            Pricing
           </Link>
           <Link to="/about" className="text-foreground/90 hover:text-foreground transition-colors">
             About
@@ -77,9 +75,6 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
             </Link>
             <Link to="/features" className="p-2 hover:bg-accent rounded-md" onClick={() => setIsOpen(false)}>
               Features
-            </Link>
-            <Link to="/pricing" className="p-2 hover:bg-accent rounded-md" onClick={() => setIsOpen(false)}>
-              Pricing
             </Link>
             <Link to="/about" className="p-2 hover:bg-accent rounded-md" onClick={() => setIsOpen(false)}>
               About
