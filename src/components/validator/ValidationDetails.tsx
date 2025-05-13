@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, EditIcon, BrainCircuit, AlertTriangle } from "lucide-react";
@@ -85,89 +84,62 @@ const ValidationDetails = ({
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <Button
-          onClick={() => navigate("/dashboard/market-sense")}
-          variant="outline"
-          size="sm"
-          className="gap-1"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back to Market Sense
-        </Button>
-        {requirement && (
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              className="gap-1" 
-              onClick={() => console.log("Edit button clicked")}
-            >
-              <EditIcon className="h-4 w-4" />
-              Edit
-            </Button>
-            <Button
-              variant="validator"
-              className="gap-1"
-              onClick={validationData && validationData.status === "Completed" ? handleAICaseGenerator : handleValidate}
-              disabled={isValidating}
-            >
-              <BrainCircuit className="h-4 w-4" />
-              {isValidating
-                ? "Validating..."
-                : validationData && validationData.status === "Completed"
-                ? "AI Case Generator"
-                : "Analyze"}
-            </Button>
-          </div>
-        )}
+  if (isRequirementLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
+        <p className="ml-2">Loading requirement...</p>
       </div>
-
-      {isRequirementLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin h-8 w-8 border-4 border-primary/20 border-t-primary rounded-full" />
-          <p className="ml-2">Loading requirement...</p>
+    );
+  }
+  if (error) {
+    return (
+      <Alert variant="destructive" className="my-6">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+  if (!requirement) {
+    return (
+      <Alert variant="destructive" className="my-6">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Requirement Not Found</AlertTitle>
+        <AlertDescription>
+          The requested requirement could not be found. It might have been deleted or you may not have access to it.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  if (validationData && validationData.status === "Completed") {
+    // 2x2 grid layout for 4 sections
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl mx-auto mt-6">
+        {/* Box 1: Validation Summary */}
+        <div className="min-h-[260px]">
+          <ValidationResultSummary validationData={validationData} requirement={requirement} summaryOnly />
         </div>
-      ) : error ? (
-        <Alert variant="destructive" className="my-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : !requirement ? (
-        <Alert variant="destructive" className="my-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Requirement Not Found</AlertTitle>
-          <AlertDescription>
-            The requested requirement could not be found. It might have been deleted or you may not have access to it.
-          </AlertDescription>
-        </Alert>
-      ) : validationData && validationData.status === "Completed" ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left column - Summary and scores */}
-          <div className="md:col-span-2">
-            <ValidationResultSummary
-              validationData={validationData}
-              requirement={requirement}
-            />
-          </div>
-
-          {/* Right column - Risks and Recommendations */}
-          <div>
-            <ValidationRisksRecommendations
-              validationData={validationData}
-              requirement={requirement}
-            />
-          </div>
+        {/* Box 2: Strengths */}
+        <div className="min-h-[260px]">
+          <ValidationResultSummary validationData={validationData} requirement={requirement} strengthsOnly />
         </div>
-      ) : (
-        <ValidationEmptyState
-          handleValidate={handleValidate}
-          isValidating={isValidating}
-        />
-      )}
-    </div>
+        {/* Box 3: Risks */}
+        <div className="min-h-[260px]">
+          <ValidationRisksRecommendations validationData={validationData} requirement={requirement} risksOnly />
+        </div>
+        {/* Box 4: Recommendations */}
+        <div className="min-h-[260px]">
+          <ValidationRisksRecommendations validationData={validationData} requirement={requirement} recommendationsOnly />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <ValidationEmptyState
+      handleValidate={handleValidate}
+      isValidating={isValidating}
+    />
   );
 };
 

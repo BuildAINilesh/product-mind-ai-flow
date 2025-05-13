@@ -144,46 +144,46 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
         <p className="text-lg text-slate-500">AI-powered generation of user stories, use cases, and test cases for your requirements</p>
       </div>
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 justify-items-center">
         {/* Total Requirements */}
-        <Card className="p-8 rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-3xl hover:border-blue-400 transition-all duration-200 group animate-fadeIn">
+        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-blue-400 transition-all duration-200 group animate-fadeIn max-w-xs w-full mx-auto">
           <div className="flex items-center gap-4 mb-3">
-            <span className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg group-hover:scale-110 transition">
-              <SearchIcon className="h-8 w-8 text-white" />
+            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow group-hover:scale-100 transition">
+              <SearchIcon className="h-6 w-6 text-white" />
             </span>
-            <span className="text-lg font-semibold text-slate-700">Total Requirements</span>
+            <span className="text-base font-semibold text-slate-700">Total Requirements</span>
           </div>
-          <h2 className="text-5xl font-extrabold text-blue-900 animate-countup">{totalCount}</h2>
+          <h2 className="text-3xl font-extrabold text-blue-900 animate-countup">{totalCount}</h2>
         </Card>
         {/* User Stories */}
-        <Card className="p-8 rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-3xl hover:border-purple-400 transition-all duration-200 group animate-fadeIn">
+        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-purple-400 transition-all duration-200 group animate-fadeIn max-w-xs w-full mx-auto">
           <div className="flex items-center gap-4 mb-3">
-            <span className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 shadow-lg group-hover:scale-110 transition">
-              <BookIcon className="h-8 w-8 text-white" />
+            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 shadow group-hover:scale-100 transition">
+              <BookIcon className="h-6 w-6 text-white" />
             </span>
-            <span className="text-lg font-semibold text-slate-700">User Stories</span>
+            <span className="text-base font-semibold text-slate-700">User Stories</span>
           </div>
-          <h2 className="text-5xl font-extrabold text-purple-900 animate-countup">{userStoriesCount}</h2>
+          <h2 className="text-3xl font-extrabold text-purple-900 animate-countup">{userStoriesCount}</h2>
         </Card>
         {/* Use Cases */}
-        <Card className="p-8 rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-3xl hover:border-green-400 transition-all duration-200 group animate-fadeIn">
+        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-green-400 transition-all duration-200 group animate-fadeIn max-w-xs w-full mx-auto">
           <div className="flex items-center gap-4 mb-3">
-            <span className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow-lg group-hover:scale-110 transition">
-              <CodeIcon className="h-8 w-8 text-white" />
+            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow group-hover:scale-100 transition">
+              <CodeIcon className="h-6 w-6 text-white" />
             </span>
-            <span className="text-lg font-semibold text-slate-700">Use Cases</span>
+            <span className="text-base font-semibold text-slate-700">Use Cases</span>
           </div>
-          <h2 className="text-5xl font-extrabold text-green-900 animate-countup">{useCasesCount}</h2>
+          <h2 className="text-3xl font-extrabold text-green-900 animate-countup">{useCasesCount}</h2>
         </Card>
         {/* Test Cases */}
-        <Card className="p-8 rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-3xl hover:border-orange-400 transition-all duration-200 group animate-fadeIn">
+        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-orange-400 transition-all duration-200 group animate-fadeIn max-w-xs w-full mx-auto">
           <div className="flex items-center gap-4 mb-3">
-            <span className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg group-hover:scale-110 transition">
-              <TestTubeIcon className="h-8 w-8 text-white" />
+            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 shadow group-hover:scale-100 transition">
+              <TestTubeIcon className="h-6 w-6 text-white" />
             </span>
-            <span className="text-lg font-semibold text-slate-700">Test Cases</span>
+            <span className="text-base font-semibold text-slate-700">Test Cases</span>
           </div>
-          <h2 className="text-5xl font-extrabold text-orange-900 animate-countup">{testCasesCount}</h2>
+          <h2 className="text-3xl font-extrabold text-orange-900 animate-countup">{testCasesCount}</h2>
         </Card>
       </div>
       {/* Table Section */}

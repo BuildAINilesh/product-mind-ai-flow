@@ -64,46 +64,6 @@ const Settings = () => {
             </Button>
           </CardContent>
         </Card>
-
-        {/* Notification Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Notifications</CardTitle>
-            <CardDescription>Configure how you want to be notified.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive email updates about your account</p>
-                </div>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={emailNotifications}
-                onChange={(e) => setEmailNotifications(e.target.checked)}
-                className="toggle"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <BellRing className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Push Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive push notifications in-app</p>
-                </div>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={pushNotifications}
-                onChange={(e) => setPushNotifications(e.target.checked)}
-                className="toggle"
-              />
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

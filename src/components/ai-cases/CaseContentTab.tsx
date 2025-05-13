@@ -207,7 +207,9 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
           </div>
         </div>
         {/* Sub-section divider */}
-        <div className="mb-2 mt-4 text-slate-500 font-semibold text-sm tracking-wide uppercase">{title} List</div>
+        <div className="mb-2 mt-4 text-slate-500 font-semibold text-sm tracking-wide uppercase">
+          <span className={type === "useCases" ? "font-bold text-slate-700" : ""}>{title} List</span>
+        </div>
         <div className="rounded-2xl shadow-lg bg-white p-0 overflow-hidden animate-fadeIn">
           {isDraft ? (
             <CasePendingGeneration 
@@ -217,46 +219,10 @@ const CaseContentTab: React.FC<CaseContentTabProps> = ({
               onGenerate={onGenerate} 
             />
           ) : items.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full max-w-5xl mx-auto divide-y divide-slate-200">
-                <thead className="bg-slate-50 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">#</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Content</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-100">
-                  {items.map((item, index) => {
-                    const isExpanded = expandedRows[item.id];
-                    const isLong = item.content.length > 120;
-                    return (
-                      <tr
-                        key={item.id}
-                        className="hover:bg-slate-50 transition cursor-pointer group"
-                        tabIndex={0}
-                        onClick={() => { setModalItem(item); setShowModal(true); }}
-                        onKeyDown={e => { if (e.key === 'Enter') { setModalItem(item); setShowModal(true); } }}
-                      >
-                        <td className="px-4 py-2 text-sm text-slate-800">{index + 1}</td>
-                        <td className="px-4 py-2 text-sm text-slate-800 max-w-2xl whitespace-pre-line break-words">
-                          {item.content}
-                        </td>
-                        <td className="px-4 py-2 text-sm">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span>
-                                <StatusBadge status={item.status} />
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>{item.status}</TooltipContent>
-                          </Tooltip>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {items.map((item, index) => (
+                <CaseItemCard key={item.id} item={item} index={index} type={type} headingBold={type === "useCases"} />
+              ))}
             </div>
           ) : (
             <CasePendingGeneration

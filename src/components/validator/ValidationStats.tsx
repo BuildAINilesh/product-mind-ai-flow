@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, CheckCircle2, AlertTriangle, LineChart } from "lucide-react";
+import { Shield, CheckCircle2, AlertTriangle, LineChart, Brain } from "lucide-react";
 import React from "react";
 
 interface ValidationItem {
@@ -74,9 +74,9 @@ const ValidationStats = ({ validations, loading }: ValidationStatsProps) => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 justify-items-center mb-8">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="p-8 rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-slate-200 animate-pulse">
+          <Card key={i} className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 animate-pulse">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-semibold text-muted-foreground">
                 <div className="h-4 bg-muted rounded w-2/3"></div>
@@ -92,21 +92,47 @@ const ValidationStats = ({ validations, loading }: ValidationStatsProps) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-      {stats.map((stat) => (
-        <Card
-          key={stat.name}
-          className={`p-8 rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-3xl transition-all duration-200 group animate-fadeIn`}
-        >
-          <div className="flex items-center gap-4 mb-3">
-            <span className={`inline-flex items-center justify-center h-14 w-14 rounded-full ${stat.bg} shadow-lg group-hover:scale-110 transition`}>
-              {stat.icon}
-            </span>
-            <span className="text-lg font-semibold text-slate-700">{stat.name}</span>
-          </div>
-          <h2 className={`text-5xl font-extrabold ${stat.text} animate-countup`}>{stat.value}</h2>
-        </Card>
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 justify-items-center mb-8">
+      {/* Total Validations */}
+      <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-blue-400 transition-all duration-200 max-w-xs w-full mx-auto">
+        <div className="flex items-center gap-4 mb-3">
+          <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow">
+            <Brain className="h-6 w-6 text-white" />
+          </span>
+          <span className="text-base font-semibold text-slate-700">Total Validations</span>
+        </div>
+        <h2 className="text-3xl font-extrabold text-blue-900 animate-countup">{totalCount}</h2>
+      </Card>
+      {/* Completed */}
+      <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-green-400 transition-all duration-200 max-w-xs w-full mx-auto">
+        <div className="flex items-center gap-4 mb-3">
+          <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow">
+            <CheckCircle2 className="h-6 w-6 text-white" />
+          </span>
+          <span className="text-base font-semibold text-slate-700">Completed</span>
+        </div>
+        <h2 className="text-3xl font-extrabold text-green-900 animate-countup">{completedCount}</h2>
+      </Card>
+      {/* High Risk */}
+      <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-red-400 transition-all duration-200 max-w-xs w-full mx-auto">
+        <div className="flex items-center gap-4 mb-3">
+          <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow">
+            <AlertTriangle className="h-6 w-6 text-white" />
+          </span>
+          <span className="text-base font-semibold text-slate-700">High Risk</span>
+        </div>
+        <h2 className="text-3xl font-extrabold text-red-900 animate-countup">{highRiskAnimated}</h2>
+      </Card>
+      {/* In Progress */}
+      <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-indigo-400 transition-all duration-200 max-w-xs w-full mx-auto">
+        <div className="flex items-center gap-4 mb-3">
+          <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 shadow">
+            <LineChart className="h-6 w-6 text-white" />
+          </span>
+          <span className="text-base font-semibold text-slate-700">In Progress</span>
+        </div>
+        <h2 className="text-3xl font-extrabold text-indigo-900 animate-countup">{totalValidations - completedCount}</h2>
+      </Card>
     </div>
   );
 };
