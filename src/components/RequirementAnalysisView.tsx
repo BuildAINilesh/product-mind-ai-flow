@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -87,15 +86,6 @@ const RequirementAnalysisView = ({ project, analysis, loading, onRefresh }: Requ
           
           {project.status === "Completed" && (
             <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onRefresh} 
-                className="flex items-center gap-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm"
-              >
-                <RefreshCcw className="h-4 w-4" />
-                Refresh Analysis
-              </Button>
             </motion.div>
           )}
         </div>
@@ -188,24 +178,28 @@ const RequirementAnalysisView = ({ project, analysis, loading, onRefresh }: Requ
             )}
           </div>
         ) : (
-          <div className="py-12 text-center">
-            <div className="inline-flex p-4 rounded-full bg-red-50 dark:bg-red-950 mb-4">
-              <AlertTriangle className="h-12 w-12 text-red-500" />
+          <div className="py-8">
+            <div className="bg-slate-50 dark:bg-slate-900 border rounded-lg p-8 max-w-3xl mx-auto">
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="p-4 rounded-full bg-amber-50 dark:bg-amber-950 mb-4">
+                  <AlertTriangle className="h-10 w-10 text-amber-500" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Analysis Needs to Be Generated</h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-2">
+                  Since you've made changes to your requirement, you need to run the analysis again to see the updated overview.
+                </p>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Go back to the requirement page and click the "Analyze" button to generate fresh insights based on your updated content.
+                </p>
+              </div>
+              
+              <div className="border-t pt-5 mt-4">
+                <div className="flex items-center px-4 py-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-blue-700 dark:text-blue-300 text-sm">
+                  <BrainCircuit className="h-5 w-5 mr-2 flex-shrink-0" />
+                  <p>The AI will analyze your updated requirement and generate a comprehensive overview with features, goals, target audience, and other key insights.</p>
+                </div>
+              </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Analysis Not Available</h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              Analysis data could not be loaded. Please try refreshing.
-            </p>
-            {onRefresh && (
-              <Button 
-                variant="outline" 
-                onClick={onRefresh} 
-                className="flex items-center gap-2 border-red-200 dark:border-red-800"
-              >
-                <RefreshCcw className="h-4 w-4" />
-                Refresh Analysis
-              </Button>
-            )}
           </div>
         )}
       </CardContent>
