@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Waitlist from "./pages/Waitlist";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Roadmap from "./pages/Roadmap";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/waitlist" element={<Waitlist />} />
               <Route path="/logout" element={<Logout />} />
               <Route path="/features" element={<Features />} />
               <Route path="/pricing" element={<Pricing />} />
