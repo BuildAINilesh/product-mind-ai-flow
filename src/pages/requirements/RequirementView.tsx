@@ -2,10 +2,38 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, BrainCircuit, Loader, Edit, Plus, Check, Play } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  BrainCircuit,
+  Loader,
+  Edit,
+  Plus,
+  Check,
+  Play,
+  Clock,
+  FileText,
+  BarChart,
+  ArrowUpRight,
+  ExternalLink,
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AIBackground,
+  AIBadge,
+  AIGradientText,
+} from "@/components/ui/ai-elements";
 import RequirementAnalysisView from "@/components/RequirementAnalysisView";
 
 // Define a type for the analysis process step
@@ -28,6 +56,7 @@ const RequirementView = () => {
   const [project, setProject] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Progress tracking states
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
@@ -259,7 +288,12 @@ const RequirementView = () => {
   };
 
   // Function to update step status
-  const updateStepStatus = (stepIndex, status, current = null, total = null) => {
+  const updateStepStatus = (
+    stepIndex,
+    status,
+    current = null,
+    total = null
+  ) => {
     setProgressSteps((prevSteps) => {
       const updatedSteps = prevSteps.map((step, index) => {
         if (index === stepIndex) {
@@ -397,16 +431,16 @@ const RequirementView = () => {
         "Generate market queries response from Supabase:",
         queriesData
       );
-      
+
       // Get the total number of queries - Updated to use the correct table name
       const { data: queriesCount, error: countError } = await supabase
         .from("firecrawl_queries")
         .select("id", { count: "exact" })
         .eq("requirement_id", id);
-        
+
       const totalQueries = queriesCount?.length || 5;
       updateStepStatus(1, "pending", 0, totalQueries); // Update the total for search queries
-      
+
       updateStepStatus(0, "completed");
       setCurrentStep(1);
       localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, "1");
@@ -428,17 +462,17 @@ const RequirementView = () => {
         "Process market queries response from Supabase:",
         processData
       );
-      
+
       // Get count of market research sources
       const { data: sourcesCount, error: sourcesError } = await supabase
         .from("market_research_sources")
         .select("id", { count: "exact" })
         .eq("requirement_id", id);
-        
+
       const totalSources = sourcesCount?.length || 9;
       updateStepStatus(2, "pending", 0, totalSources); // Update the total for scraping
       updateStepStatus(3, "pending", 0, totalSources); // Update the total for summarizing
-      
+
       updateStepStatus(1, "completed", totalQueries, totalQueries);
       setCurrentStep(2);
       localStorage.setItem(ANALYSIS_CURRENT_STEP_KEY + id, "2");
@@ -524,7 +558,11 @@ const RequirementView = () => {
   };
 
   // Helper function to continue summarizing content if needed
-  const summarizeAdditionalContent = async (reqId, processedCount, totalCount) => {
+  const summarizeAdditionalContent = async (
+    reqId,
+    processedCount,
+    totalCount
+  ) => {
     try {
       const { data, error } = await supabase.functions.invoke(
         "summarize-research-content",
@@ -540,12 +578,12 @@ const RequirementView = () => {
         );
 
       console.log("Additional content summarization from Supabase:", data);
-      
+
       // Update progress
       if (data.remaining && data.remaining > 0) {
         const newProcessedCount = totalCount - data.remaining;
         updateStepStatus(3, "processing", newProcessedCount, totalCount);
-        
+
         // Continue recursively if there's still more to summarize
         await new Promise((resolve) => setTimeout(resolve, 1000)); // Small delay
         await summarizeAdditionalContent(reqId, newProcessedCount, totalCount);
@@ -617,10 +655,11 @@ const RequirementView = () => {
             }`}
           >
             {step.name}
-            {step.current !== undefined && step.total ? 
+            {step.current !== undefined && step.total ? (
               <span className="ml-1 text-xs font-normal text-slate-500">
                 ({step.current}/{step.total})
-              </span> : null}
+              </span>
+            ) : null}
           </span>
         </div>
         {(step.status === "processing" || step.status === "completed") && (
@@ -713,25 +752,115 @@ const RequirementView = () => {
     fetchAnalysisData();
   };
 
+  // Helper function to render the status badge for the requirement
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return (
+          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20">
+            <div className="h-2 w-2 rounded-full bg-green-500"></div>
+            <span className="text-xs font-medium text-green-700 dark:text-green-400">
+              Completed
+            </span>
+          </div>
+        );
+      case "re_draft":
+        return (
+          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+            <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+              Re-Draft
+            </span>
+          </div>
+        );
+      case "draft":
+        return (
+          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
+            <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+            <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
+              Draft
+            </span>
+          </div>
+        );
+      default:
+        return (
+          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-gray-50 dark:bg-gray-500/10 border border-gray-200 dark:border-gray-600/20">
+            <div className="h-2 w-2 rounded-full bg-gray-400"></div>
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-400">
+              Unknown
+            </span>
+          </div>
+        );
+    }
+  };
+
+  // Format the creation date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }).format(date);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="animate-spin h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full mb-4" />
+        <p className="text-muted-foreground">Loading requirement details...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate("/dashboard/requirements")}
-          className="flex items-center gap-1"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Requirements
-        </Button>
+      {/* Header with page title and actions */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/dashboard/requirements")}
+            className="h-9 gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
 
-        <div className="flex gap-2">
+          <div>
+            <h1 className="text-2xl font-bold mt-2 flex items-center gap-2">
+              {project?.project_name}
+              {project?.status && getStatusBadge(project.status)}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {project?.req_id && (
+                <span className="font-medium text-foreground/70 mr-2">
+                  {project.req_id}
+                </span>
+              )}
+              <span className="text-muted-foreground flex items-center gap-1 text-xs mt-1">
+                <Clock className="h-3.5 w-3.5" /> Created{" "}
+                {formatDate(project?.created_at)}
+                {project?.company_name && (
+                  <span> • {project.company_name}</span>
+                )}
+                {project?.industry_type && (
+                  <span> • {project.industry_type}</span>
+                )}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 self-end md:self-auto">
           <Button
             variant="outline"
             onClick={handleEdit}
             disabled={loading}
-            className="flex items-center gap-2"
+            size="sm"
+            className="h-9 gap-1.5"
           >
             <Edit className="h-4 w-4" />
             Edit
@@ -742,7 +871,8 @@ const RequirementView = () => {
               <Button
                 onClick={triggerAnalysis}
                 disabled={loading}
-                className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-white h-9 gap-1.5"
               >
                 <BrainCircuit className="h-4 w-4" />
                 Analyze
@@ -753,9 +883,11 @@ const RequirementView = () => {
             <Button
               onClick={analysisInProgress ? null : navigateToMarketSense}
               variant="default"
+              size="sm"
               disabled={analysisInProgress}
-              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 h-9 gap-1.5"
             >
+              <BarChart className="h-4 w-4" />
               MarketSense AI
             </Button>
           )}
@@ -764,12 +896,12 @@ const RequirementView = () => {
 
       {/* Progress indicator for market analysis */}
       {analysisInProgress && (
-        <Alert className="mb-4">
-          <AlertTitle className="flex items-center">
-            <Loader className="h-4 w-4 animate-spin mr-2" />
+        <Alert className="border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30">
+          <AlertTitle className="flex items-center text-blue-800 dark:text-blue-300">
+            <Loader className="h-4 w-4 animate-spin mr-2 text-blue-600" />
             Market Analysis in Progress
           </AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="text-blue-700 dark:text-blue-400">
             <div className="mt-3">{progressSteps.map(renderStepIndicator)}</div>
             <p className="mt-2 text-sm text-muted-foreground">
               The analysis will continue processing even if you navigate away
@@ -781,156 +913,161 @@ const RequirementView = () => {
 
       {/* Notification for Re_Draft status */}
       {project && project.status === "Re_Draft" && (
-        <Alert className="mb-4 bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+        <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
           <AlertTitle className="flex items-center text-amber-800 dark:text-amber-300">
             <BrainCircuit className="h-4 w-4 mr-2" />
             Changes Detected
           </AlertTitle>
           <AlertDescription className="text-amber-700 dark:text-amber-400">
             <p>
-              You've made changes to your requirement. Click the "Analyze" button to see the updated overview.
+              You've made changes to your requirement. Click the "Analyze"
+              button to see the updated overview.
             </p>
           </AlertDescription>
         </Alert>
       )}
 
-      {project && project.status === "Draft" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-slate-800 border rounded-lg p-6">
-            <h3 className="text-xl font-semibold mb-4 flex items-center">
-              <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900 mr-3">
-                <BrainCircuit className="h-6 w-6 text-primary" />
-              </div>
-              New Requirement Details
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Project Name</h4>
-                <p className="text-lg font-medium">{project.project_name}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Company</h4>
-                <p>{project.company_name || "Not specified"}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Industry</h4>
-                <p className="capitalize">{project.industry_type}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Project Idea</h4>
-                <p className="text-sm whitespace-pre-line border-l-2 border-blue-200 dark:border-blue-800 pl-3 py-1">
-                  {project.project_idea}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6 flex flex-col justify-center items-center text-center">
-            <div className="inline-flex p-4 rounded-full bg-blue-100 dark:bg-blue-900 mb-4">
-              <BrainCircuit className="h-12 w-12 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Ready for Analysis</h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              This requirement hasn't been analyzed yet.
-              Click the button below to generate an AI-powered overview.
-            </p>
-            <Button 
-              onClick={triggerAnalysis}
-              size="lg" 
-              className="bg-primary hover:bg-primary/90 text-white w-full max-w-xs"
+      {/* Main content */}
+      {project && (
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-4"
+        >
+          <TabsList className="grid grid-cols-2 w-full max-w-md">
+            <TabsTrigger value="overview" className="flex items-center gap-1.5">
+              <FileText className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value="analysis"
+              disabled={project.status !== "Completed"}
+              className="flex items-center gap-1.5"
             >
-              <BrainCircuit className="h-5 w-5 mr-2" />
-              Analyze Requirement
-            </Button>
-          </div>
-        </div>
-      )}
+              <BrainCircuit className="h-4 w-4" />
+              AI Analysis
+            </TabsTrigger>
+          </TabsList>
 
-      {project && project.status === "Re_Draft" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-slate-800 border rounded-lg p-6">
-            <h3 className="text-xl font-semibold mb-4 flex items-center">
-              <div className="p-2 rounded-md bg-amber-100 dark:bg-amber-900 mr-3">
-                <BrainCircuit className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
-              Updated Requirement Details
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Project Name</h4>
-                <p className="text-lg font-medium">{project.project_name}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Company</h4>
-                <p>{project.company_name || "Not specified"}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Industry</h4>
-                <p className="capitalize">{project.industry_type}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Project Idea</h4>
-                <p className="text-sm whitespace-pre-line border-l-2 border-amber-200 dark:border-amber-800 pl-3 py-1">
-                  {project.project_idea}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-6 flex flex-col justify-center items-center text-center">
-            <div className="inline-flex p-4 rounded-full bg-amber-100 dark:bg-amber-900 mb-4">
-              <BrainCircuit className="h-12 w-12 text-amber-600 dark:text-amber-400" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Ready to Generate Updated Analysis</h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              Your requirement has been modified and needs to be re-analyzed.
-              Click the button below to generate an updated AI-powered overview.
-            </p>
-            <Button 
-              onClick={triggerAnalysis}
-              size="lg" 
-              className="bg-primary hover:bg-primary/90 text-white w-full max-w-xs"
-            >
-              <BrainCircuit className="h-5 w-5 mr-2" />
-              Analyze Requirement
-            </Button>
-          </div>
-        </div>
-      )}
+          <TabsContent value="overview" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Requirement Details</CardTitle>
+                <CardDescription>
+                  Basic information about this product requirement
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                      Project Name
+                    </h3>
+                    <p className="text-base font-medium">
+                      {project.project_name}
+                    </p>
+                  </div>
 
-      {project && project.status === "Completed" && (
-        <RequirementAnalysisView
-          project={project}
-          analysis={analysis}
-          loading={loading}
-          onRefresh={handleRefreshAnalysis}
-        />
-      )}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                      Company
+                    </h3>
+                    <p className="text-base">
+                      {project.company_name || "Not specified"}
+                    </p>
+                  </div>
 
-      {/* Market Analysis Generation Card (only show if not already in progress) */}
-      {project && project.status === "Completed" && !analysisInProgress && (
-        <div className="mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
-          <h3 className="text-lg font-medium mb-2">Generate Market Analysis</h3>
-          <p className="text-muted-foreground mb-4">
-            Use AI to analyze market trends, competition, and opportunities for
-            your project.
-          </p>
-          <Button
-            onClick={navigateToMarketSense}
-            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-          >
-            <Play className="h-4 w-4 mr-2" />
-            MarketSense AI
-          </Button>
-        </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                      Industry
+                    </h3>
+                    <p className="text-base capitalize">
+                      {project.industry_type}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                      Status
+                    </h3>
+                    <p className="text-base">
+                      {getStatusBadge(project.status)}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator className="my-4" />
+
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                    Project Idea
+                  </h3>
+                  <div className="mt-2 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+                    <p className="whitespace-pre-line text-sm">
+                      {project.project_idea}
+                    </p>
+                  </div>
+                </div>
+
+                {(project.status === "Draft" ||
+                  project.status === "Re_Draft") && (
+                  <div className="mt-6 pt-4 border-t">
+                    <Button
+                      onClick={triggerAnalysis}
+                      className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white"
+                    >
+                      <BrainCircuit className="h-4 w-4 mr-2" />
+                      Analyze with AI
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Generate an AI-powered analysis of this requirement
+                      including problem statement, solution, and key features.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {project.status === "Completed" && (
+              <Card className="border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-950/30 dark:to-slate-900">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BarChart className="h-5 w-5 text-blue-600" />
+                    Market Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Generate AI-powered market insights for this requirement
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm mb-4">
+                    Use MarketSense AI to analyze market trends, competition,
+                    and opportunities for your project.
+                  </p>
+                  <Button
+                    onClick={navigateToMarketSense}
+                    disabled={analysisInProgress}
+                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 gap-1.5"
+                  >
+                    <ArrowUpRight className="h-4 w-4" />
+                    Launch MarketSense
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="analysis">
+            {project.status === "Completed" && (
+              <RequirementAnalysisView
+                project={project}
+                analysis={analysis}
+                loading={loading}
+                onRefresh={handleRefreshAnalysis}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

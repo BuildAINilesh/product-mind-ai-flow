@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -16,6 +15,7 @@ import MarketAnalysisContent from "./MarketAnalysisContent";
 import MarketAnalysisCardHeader from "./MarketAnalysisCardHeader";
 import MarketAnalysisAlert from "./MarketAnalysisAlert";
 import ValidatorButton from "./ValidatorButton";
+import { AICard } from "@/components/ui/ai-elements";
 import type { ProcessStep } from "./MarketAnalysisProgress";
 
 interface MarketAnalysisDetailProps {
@@ -44,9 +44,9 @@ export const MarketAnalysisDetail = ({
   }
 
   return (
-    <Card>
+    <AICard className="backdrop-blur-md bg-white/60">
       <CardHeader className="pb-2">
-        <MarketAnalysisCardHeader 
+        <MarketAnalysisCardHeader
           requirement={requirement}
           marketAnalysis={marketAnalysis}
           analysisInProgress={analysisInProgress}
@@ -84,7 +84,7 @@ export const MarketAnalysisDetail = ({
           <ValidatorButton requirement={requirement} />
         </CardFooter>
       )}
-    </Card>
+    </AICard>
   );
 };
 

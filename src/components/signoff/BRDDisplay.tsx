@@ -153,17 +153,47 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
   const renderStatusBadge = (status: string) => {
     const normalizedStatus = status.toLowerCase();
     if (normalizedStatus === "signed_off") {
-      return <Badge variant="success">Signed Off</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <span className="text-sm font-medium">Completed</span>
+        </div>
+      );
     } else if (normalizedStatus === "draft") {
-      return <Badge variant="warning">Draft</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+          <span className="text-sm font-medium">Draft</span>
+        </div>
+      );
     } else if (normalizedStatus === "rejected") {
-      return <Badge variant="destructive">Rejected</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+          <span className="text-sm font-medium">Rejected</span>
+        </div>
+      );
     } else if (normalizedStatus === "ready") {
-      return <Badge variant="secondary">Under Review</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <span className="text-sm font-medium">Re-Draft</span>
+        </div>
+      );
     } else if (normalizedStatus === "error") {
-      return <Badge variant="destructive">Error</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+          <span className="text-sm font-medium">Error</span>
+        </div>
+      );
     }
-    return <Badge variant="secondary">{status}</Badge>;
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+        <span className="text-sm font-medium">{status}</span>
+      </div>
+    );
   };
 
   // Convert text to bullet points
