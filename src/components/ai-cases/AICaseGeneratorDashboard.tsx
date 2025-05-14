@@ -27,6 +27,7 @@ interface AICaseGeneratorDashboardProps {
   caseGeneratorItems: ForgeFlowItem[];
   loading: boolean;
   dataFetchAttempted: boolean;
+  hideMetrics?: boolean;
 }
 
 // Simple animated count-up hook
@@ -34,7 +35,7 @@ function useCountUp(end: number, duration = 800) {
   const [count, setCount] = React.useState(0);
   const ref = useRef<number>();
   useEffect(() => {
-    let start = 0;
+    const start = 0;
     const step = (timestamp: number) => {
       if (!ref.current) ref.current = timestamp;
       const progress = Math.min((timestamp - ref.current) / duration, 1);
@@ -75,11 +76,13 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
   caseGeneratorItems,
   loading,
   dataFetchAttempted,
+  hideMetrics = false,
 }) => {
   console.log("AICaseGeneratorDashboard rendering with props:", {
     itemsCount: caseGeneratorItems.length,
     loading,
     dataFetchAttempted,
+    hideMetrics,
   });
 
   // Calculate summary statistics
@@ -105,93 +108,146 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
 
   // Status badge renderer
   const renderStatusBadge = (status: string) => {
-    if (!status) return (
-      <Badge variant="secondary">Pending</Badge>
-    );
+    if (!status)
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+          <span className="text-sm font-medium">Pending</span>
+        </div>
+      );
+
     const s = status.toLowerCase();
     if (s === "completed") {
       return (
-        <Badge className="bg-green-500/90 text-white flex items-center gap-1 px-3 py-1 rounded-full shadow">
-          {statusIcon(s)} Completed
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <span className="text-sm font-medium">Completed</span>
+        </div>
       );
     } else if (s === "in-progress") {
       return (
-        <Badge className="bg-yellow-400/90 text-white flex items-center gap-1 px-3 py-1 rounded-full shadow">
-          {statusIcon(s)} In Progress
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+          <span className="text-sm font-medium">In Progress</span>
+        </div>
       );
     } else if (s === "failed") {
       return (
-        <Badge className="bg-red-500/90 text-white flex items-center gap-1 px-3 py-1 rounded-full shadow">
-          {statusIcon(s)} Failed
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+          <span className="text-sm font-medium">Failed</span>
+        </div>
       );
     } else if (s === "draft") {
       return (
-        <Badge className="bg-gray-300/90 text-gray-700 flex items-center gap-1 px-3 py-1 rounded-full shadow">
-          Draft
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+          <span className="text-sm font-medium">Draft</span>
+        </div>
+      );
+    } else if (s === "re-draft") {
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <span className="text-sm font-medium">Re-Draft</span>
+        </div>
       );
     }
-    return <Badge variant="secondary">{status}</Badge>;
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+        <span className="text-sm font-medium">{status}</span>
+      </div>
+    );
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-purple-100 animate-gradient-x p-6">
       <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-slate-900 mb-1 tracking-tight drop-shadow-lg">AI Case Generator</h1>
-        <p className="text-lg text-slate-500">AI-powered generation of user stories, use cases, and test cases for your requirements</p>
+        <h1 className="text-4xl font-extrabold text-slate-900 mb-1 tracking-tight drop-shadow-lg">
+          AI Case Generator
+        </h1>
+        <p className="text-lg text-slate-500">
+          AI-powered generation of user stories, use cases, and test cases for
+          your requirements
+        </p>
       </div>
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 justify-items-center">
-        {/* Total Requirements */}
-        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-blue-400 transition-all duration-200 group animate-fadeIn max-w-xs w-full mx-auto">
-          <div className="flex items-center gap-4 mb-3">
-            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow group-hover:scale-100 transition">
-              <SearchIcon className="h-6 w-6 text-white" />
-            </span>
-            <span className="text-base font-semibold text-slate-700">Total Requirements</span>
-          </div>
-          <h2 className="text-3xl font-extrabold text-blue-900 animate-countup">{totalCount}</h2>
-        </Card>
-        {/* User Stories */}
-        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-purple-400 transition-all duration-200 group animate-fadeIn max-w-xs w-full mx-auto">
-          <div className="flex items-center gap-4 mb-3">
-            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 shadow group-hover:scale-100 transition">
-              <BookIcon className="h-6 w-6 text-white" />
-            </span>
-            <span className="text-base font-semibold text-slate-700">User Stories</span>
-          </div>
-          <h2 className="text-3xl font-extrabold text-purple-900 animate-countup">{userStoriesCount}</h2>
-        </Card>
-        {/* Use Cases */}
-        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-green-400 transition-all duration-200 group animate-fadeIn max-w-xs w-full mx-auto">
-          <div className="flex items-center gap-4 mb-3">
-            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow group-hover:scale-100 transition">
-              <CodeIcon className="h-6 w-6 text-white" />
-            </span>
-            <span className="text-base font-semibold text-slate-700">Use Cases</span>
-          </div>
-          <h2 className="text-3xl font-extrabold text-green-900 animate-countup">{useCasesCount}</h2>
-        </Card>
-        {/* Test Cases */}
-        <Card className="p-4 rounded-xl shadow-md bg-white/60 backdrop-blur-md border border-slate-200 hover:shadow-lg hover:border-orange-400 transition-all duration-200 group animate-fadeIn max-w-xs w-full mx-auto">
-          <div className="flex items-center gap-4 mb-3">
-            <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 shadow group-hover:scale-100 transition">
-              <TestTubeIcon className="h-6 w-6 text-white" />
-            </span>
-            <span className="text-base font-semibold text-slate-700">Test Cases</span>
-          </div>
-          <h2 className="text-3xl font-extrabold text-orange-900 animate-countup">{testCasesCount}</h2>
-        </Card>
-      </div>
+
+      {/* Stats Cards - Only show if hideMetrics is false */}
+      {!hideMetrics && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 justify-items-center">
+          {/* Total Requirements */}
+          <Card className="p-6 rounded-lg shadow-sm bg-white max-w-xs w-full mx-auto">
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Total Requirements
+                </h3>
+                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600">
+                  <SearchIcon className="h-3.5 w-3.5 text-white" />
+                </span>
+              </div>
+              <h2 className="text-3xl font-bold">{totalCount}</h2>
+            </div>
+          </Card>
+
+          {/* User Stories */}
+          <Card className="p-6 rounded-lg shadow-sm bg-white max-w-xs w-full mx-auto">
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  User Stories
+                </h3>
+                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-purple-400 to-purple-600">
+                  <BookIcon className="h-3.5 w-3.5 text-white" />
+                </span>
+              </div>
+              <h2 className="text-3xl font-bold">{userStoriesCount}</h2>
+            </div>
+          </Card>
+
+          {/* Use Cases */}
+          <Card className="p-6 rounded-lg shadow-sm bg-white max-w-xs w-full mx-auto">
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Use Cases
+                </h3>
+                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-green-400 to-green-600">
+                  <CodeIcon className="h-3.5 w-3.5 text-white" />
+                </span>
+              </div>
+              <h2 className="text-3xl font-bold">{useCasesCount}</h2>
+            </div>
+          </Card>
+
+          {/* Test Cases */}
+          <Card className="p-6 rounded-lg shadow-sm bg-white max-w-xs w-full mx-auto">
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Test Cases
+                </h3>
+                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600">
+                  <TestTubeIcon className="h-3.5 w-3.5 text-white" />
+                </span>
+              </div>
+              <h2 className="text-3xl font-bold">{testCasesCount}</h2>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Table Section */}
       <div className="bg-white/80 rounded-3xl shadow-2xl p-10 animate-fadeIn">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-1">Case Generator Analysis</h2>
-            <p className="text-slate-500">View and manage your AI-powered requirement analysis</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-1">
+              Case Generator Analysis
+            </h2>
+            <p className="text-slate-500">
+              View and manage your AI-powered requirement analysis
+            </p>
           </div>
           <div className="relative w-full md:w-96">
             <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
@@ -217,29 +273,57 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
             <Table className="min-w-full rounded-2xl overflow-hidden">
               <TableHeader className="bg-slate-50 sticky top-0 z-10">
                 <TableRow>
-                  <TableHead className="whitespace-nowrap">Requirement ID</TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    Requirement ID
+                  </TableHead>
                   <TableHead className="whitespace-nowrap">Project</TableHead>
                   <TableHead className="whitespace-nowrap">Industry</TableHead>
                   <TableHead className="whitespace-nowrap">Created</TableHead>
-                  <TableHead className="whitespace-nowrap">User Stories</TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    User Stories
+                  </TableHead>
                   <TableHead className="whitespace-nowrap">Use Cases</TableHead>
-                  <TableHead className="whitespace-nowrap">Test Cases</TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    Test Cases
+                  </TableHead>
                   <TableHead className="whitespace-nowrap">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {caseGeneratorItems.map((item, idx) => (
-                  <TableRow key={item.id} className="hover:bg-blue-100/60 transition-all duration-200 cursor-pointer animate-fadeIn" style={{ animationDelay: `${idx * 40}ms` }}>
-                    <TableCell className="whitespace-nowrap font-mono text-blue-900 font-semibold">{item.reqId || "N/A"}</TableCell>
+                  <TableRow
+                    key={item.id}
+                    className="hover:bg-blue-100/60 transition-all duration-200 cursor-pointer animate-fadeIn"
+                    style={{ animationDelay: `${idx * 40}ms` }}
+                  >
+                    <TableCell className="whitespace-nowrap font-mono text-blue-900 font-semibold">
+                      {item.reqId || "N/A"}
+                    </TableCell>
                     <TableCell className="max-w-[180px] truncate font-semibold text-slate-800 flex items-center gap-3">
-                      <span className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-lg shadow ${projectColors[idx % projectColors.length]}`}>{item.projectName?.[0] || "P"}</span>
+                      <span
+                        className={`h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-lg shadow ${
+                          projectColors[idx % projectColors.length]
+                        }`}
+                      >
+                        {item.projectName?.[0] || "P"}
+                      </span>
                       {item.projectName}
                     </TableCell>
-                    <TableCell className="capitalize text-slate-700">{item.industry}</TableCell>
-                    <TableCell className="whitespace-nowrap text-slate-500">{item.created}</TableCell>
-                    <TableCell>{renderStatusBadge(item.userStoriesStatus)}</TableCell>
-                    <TableCell>{renderStatusBadge(item.useCasesStatus)}</TableCell>
-                    <TableCell>{renderStatusBadge(item.testCasesStatus)}</TableCell>
+                    <TableCell className="capitalize text-slate-700">
+                      {item.industry}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-slate-500">
+                      {item.created}
+                    </TableCell>
+                    <TableCell>
+                      {renderStatusBadge(item.userStoriesStatus)}
+                    </TableCell>
+                    <TableCell>
+                      {renderStatusBadge(item.useCasesStatus)}
+                    </TableCell>
+                    <TableCell>
+                      {renderStatusBadge(item.testCasesStatus)}
+                    </TableCell>
                     <TableCell>
                       <Link
                         to={`/dashboard/ai-cases?requirementId=${item.requirementId}`}

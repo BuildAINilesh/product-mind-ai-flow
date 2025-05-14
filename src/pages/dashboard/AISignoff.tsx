@@ -15,6 +15,14 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
+  ArrowRight,
+  Clock,
+  BarChart3,
+  FileCheck,
+  FileQuestion,
+  FileCheck2,
+  FileClock,
+  FileX,
 } from "lucide-react";
 import { NotFoundDisplay } from "@/components/market-sense/NotFoundDisplay";
 import { useSignoff } from "@/hooks/useSignoff";
@@ -42,6 +50,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import BrdPdfDocument from "@/components/signoff/BrdPdfDocument";
+import { Separator } from "@/components/ui/separator";
+import { LucideIcon } from "lucide-react";
+import { capitalizeWords } from "@/utils/formatters";
 
 const AISignoff = () => {
   const [searchParams] = useSearchParams();
@@ -58,6 +69,18 @@ const AISignoff = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modify the state to include isLoading flag for metrics
+  const [statusCounts, setStatusCounts] = useState({
+    draft: 0,
+    ready: 0,
+    signed_off: 0,
+    rejected: 0,
+    isLoading: true,
+  });
+
+  // Add state for the active filter
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   console.log("AISignoff - received requirementId:", requirementId);
 
@@ -77,6 +100,95 @@ const AISignoff = () => {
     console.log("AISignoff component mounted, refreshing data");
     refreshData();
   }, [refreshData]);
+
+  // Replace the previous useEffect with this one to fetch counts from the database
+  useEffect(() => {
+    const fetchStatusCounts = async () => {
+      try {
+        setStatusCounts((prev) => ({ ...prev, isLoading: true }));
+
+        console.log(
+          "Fetching all records from requirement_brd table for counting"
+        );
+
+        // Get all records at once and count in memory
+        const { data: allRecords, error: fetchError } = await supabase
+          .from("requirement_brd")
+          .select("*");
+
+        if (fetchError) {
+          console.error("Error fetching all records:", fetchError);
+
+          // Fallback to counting from signoffItems
+          const counts = countFromSignoffItems();
+          setStatusCounts({
+            ...counts,
+            isLoading: false,
+          });
+          return;
+        }
+
+        console.log(
+          `Successfully fetched ${
+            allRecords?.length || 0
+          } records from requirement_brd`
+        );
+
+        // Count different statuses
+        const counts = {
+          draft: 0,
+          ready: 0,
+          signed_off: 0,
+          rejected: 0,
+        };
+
+        if (allRecords && allRecords.length > 0) {
+          // Log all unique statuses to debug
+          const uniqueStatuses = [
+            ...new Set(
+              allRecords.map((record) =>
+                (record.status || "").toLowerCase().trim()
+              )
+            ),
+          ];
+          console.log("Unique status values in database:", uniqueStatuses);
+
+          // Count by status
+          allRecords.forEach((record) => {
+            const status = (record.status || "").toLowerCase().trim();
+
+            if (status === "draft") {
+              counts.draft++;
+            } else if (status === "ready") {
+              counts.ready++;
+            } else if (status === "signed_off") {
+              counts.signed_off++;
+            } else if (status === "rejected") {
+              counts.rejected++;
+            }
+          });
+        }
+
+        console.log("Final counts from database:", counts);
+
+        setStatusCounts({
+          ...counts,
+          isLoading: false,
+        });
+      } catch (error) {
+        console.error("Error in fetchStatusCounts:", error);
+
+        // Fallback to counting from signoffItems
+        const counts = countFromSignoffItems();
+        setStatusCounts({
+          ...counts,
+          isLoading: false,
+        });
+      }
+    };
+
+    fetchStatusCounts();
+  }, [user, signoffItems]);
 
   // Fetch BRD data when requirementId is available or signoffDetails change
   useEffect(() => {
@@ -561,17 +673,47 @@ const AISignoff = () => {
 
     const normalizedStatus = status.toLowerCase();
     if (normalizedStatus === "approved" || normalizedStatus === "signed_off") {
-      return <Badge variant="success">Approved</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <span className="text-sm font-medium">Completed</span>
+        </div>
+      );
     } else if (normalizedStatus === "pending" || normalizedStatus === "draft") {
-      return <Badge variant="warning">Pending</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+          <span className="text-sm font-medium">Draft</span>
+        </div>
+      );
     } else if (normalizedStatus === "rejected") {
-      return <Badge variant="destructive">Rejected</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+          <span className="text-sm font-medium">Rejected</span>
+        </div>
+      );
     } else if (normalizedStatus === "review" || normalizedStatus === "ready") {
-      return <Badge variant="secondary">Under Review</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <span className="text-sm font-medium">Re-Draft</span>
+        </div>
+      );
     } else if (normalizedStatus === "error") {
-      return <Badge variant="destructive">Error</Badge>;
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+          <span className="text-sm font-medium">Error</span>
+        </div>
+      );
     }
-    return <Badge variant="secondary">{status}</Badge>;
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+        <span className="text-sm font-medium">{status}</span>
+      </div>
+    );
   };
 
   // Check if the BRD can be generated
@@ -583,6 +725,153 @@ const AISignoff = () => {
 
     const status = signoffDetails.status.toLowerCase();
     return status === "draft" || status === "error";
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Update the StatusMetricCard to include loading state
+  const StatusMetricCard = ({
+    title,
+    count,
+    icon: Icon,
+    colorClass,
+    description,
+    isLoading,
+    filterKey,
+    isActive,
+    onClick,
+  }: {
+    title: string;
+    count: number;
+    icon: LucideIcon;
+    colorClass: {
+      bg: string;
+      text: string;
+      border: string;
+    };
+    description: string;
+    isLoading: boolean;
+    filterKey: string;
+    isActive: boolean;
+    onClick: (key: string) => void;
+  }) => (
+    <Card
+      className={`p-6 rounded-lg shadow-sm bg-white ${
+        isActive ? `ring-2 ring-primary/50` : ""
+      } max-w-xs w-full mx-auto cursor-pointer`}
+      onClick={() => onClick(filterKey)}
+    >
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+          <span
+            className={`flex items-center justify-center h-6 w-6 rounded-full ${colorClass.bg}`}
+          >
+            <Icon className={`h-3.5 w-3.5 ${colorClass.text}`} />
+          </span>
+        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-9">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <h2 className="text-3xl font-bold">{count}</h2>
+        )}
+      </div>
+    </Card>
+  );
+
+  // Add function to handle metric card clicks
+  const handleMetricCardClick = (status: string) => {
+    if (activeFilter === status) {
+      setActiveFilter(null); // Toggle off the filter if clicked again
+    } else {
+      setActiveFilter(status);
+    }
+  };
+
+  // Add function to filter signoff items based on status
+  const getFilteredSignoffItems = () => {
+    if (!activeFilter || !signoffItems || signoffItems.length === 0) {
+      return signoffItems;
+    }
+
+    return signoffItems.filter((item) => {
+      const status = item.status?.toLowerCase() || "";
+      return status === activeFilter.toLowerCase();
+    });
+  };
+
+  // Add back the countFromSignoffItems function
+  const countFromSignoffItems = () => {
+    const counts = {
+      draft: 0,
+      ready: 0,
+      signed_off: 0,
+      rejected: 0,
+    };
+
+    console.log("Attempting to count from signoffItems:", {
+      itemCount: signoffItems?.length || 0,
+      sampleItems: signoffItems?.slice(0, 3),
+    });
+
+    if (signoffItems && signoffItems.length > 0) {
+      // Extract and normalize all statuses for debugging
+      const allStatuses = signoffItems.map((item) => ({
+        original: item.status,
+        normalized: (item.status || "").toLowerCase().trim(),
+      }));
+
+      // Find unique status values
+      const uniqueStatuses = [...new Set(allStatuses.map((s) => s.normalized))];
+      console.log("Unique status values in signoffItems:", uniqueStatuses);
+
+      // Count by normalized status
+      signoffItems.forEach((item) => {
+        const status = (item.status || "").toLowerCase().trim();
+
+        if (status === "draft") {
+          counts.draft++;
+        } else if (
+          status === "ready" ||
+          status === "review" ||
+          status === "under review"
+        ) {
+          counts.ready++;
+        } else if (status === "signed_off" || status === "approved") {
+          counts.signed_off++;
+        } else if (status === "rejected") {
+          counts.rejected++;
+        }
+
+        // If no match, log the unusual status
+        if (
+          status !== "draft" &&
+          status !== "ready" &&
+          status !== "review" &&
+          status !== "under review" &&
+          status !== "signed_off" &&
+          status !== "approved" &&
+          status !== "rejected"
+        ) {
+          console.log(
+            `Unrecognized status: "${status}" (original: "${item.status}")`
+          );
+        }
+      });
+    }
+
+    console.log("Final counts from signoffItems:", counts);
+    return counts;
   };
 
   // Render appropriate view based on requirementId
@@ -625,16 +914,21 @@ const AISignoff = () => {
 
           {/* Sign-off Dialog */}
           <Dialog open={signOffDialogOpen} onOpenChange={setSignOffDialogOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Approve BRD</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-xl font-semibold">
+                  Approve BRD
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground">
                   This BRD will be approved and marked as signed off.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-3 py-4">
-                <div className="space-y-1">
-                  <label htmlFor="comment" className="text-sm font-medium">
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="comment"
+                    className="text-sm font-medium text-foreground"
+                  >
                     Approver Comments (Optional)
                   </label>
                   <Textarea
@@ -642,16 +936,17 @@ const AISignoff = () => {
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Add any comments about your approval..."
-                    className="h-24"
+                    className="h-32 resize-none border-border"
                   />
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setSignOffDialogOpen(false)}
                   disabled={isSubmitting}
+                  className="border-border"
                 >
                   Cancel
                 </Button>
@@ -659,7 +954,7 @@ const AISignoff = () => {
                   type="button"
                   onClick={handleSignOffBRD}
                   disabled={isSubmitting}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   {isSubmitting ? (
                     <>
@@ -679,37 +974,41 @@ const AISignoff = () => {
 
           {/* Rejection Dialog */}
           <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Reject BRD</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-xl font-semibold text-foreground">
+                  Reject BRD
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground">
                   Please provide a reason for rejecting this BRD.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-3 py-4">
-                <div className="space-y-1">
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
                   <label
                     htmlFor="rejection-reason"
-                    className="text-sm font-medium"
+                    className="text-sm font-medium text-foreground flex items-center"
                   >
-                    Rejection Reason <span className="text-red-500">*</span>
+                    Rejection Reason{" "}
+                    <span className="text-red-500 ml-1">*</span>
                   </label>
                   <Textarea
                     id="rejection-reason"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Explain why this BRD needs revision..."
-                    className="h-24"
+                    className="h-32 resize-none border-border"
                     required
                   />
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setRejectDialogOpen(false)}
                   disabled={isSubmitting}
+                  className="border-border"
                 >
                   Cancel
                 </Button>
@@ -717,7 +1016,7 @@ const AISignoff = () => {
                   type="button"
                   onClick={handleRejectBRD}
                   disabled={isSubmitting || !commentText.trim()}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-red-600 hover:bg-red-700 text-white"
                 >
                   {isSubmitting ? (
                     <>
@@ -740,55 +1039,77 @@ const AISignoff = () => {
 
     // Default view showing requirement info and BRD generation button
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">AI Signoff Details</h1>
-          <p className="text-slate-500">
-            Review and manage AI signoff for this requirement
-          </p>
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              AI Signoff Details
+            </h1>
+            <p className="text-muted-foreground">
+              Review and manage AI signoff for this requirement
+            </p>
+          </div>
+          <div>{renderStatusBadge(signoffDetails?.status || "Pending")}</div>
         </div>
 
+        <Separator className="my-6" />
+
         {/* Requirement Info Card */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-xl">Requirement Information</CardTitle>
-              {renderStatusBadge(signoffDetails?.status || "Pending")}
-            </div>
+        <Card className="overflow-hidden border-border shadow-sm">
+          <CardHeader className="bg-background/50 pb-2">
+            <CardTitle className="flex items-center text-xl font-semibold">
+              <FileText className="h-5 w-5 text-primary mr-2" />
+              Requirement Information
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center">
-                <FileText className="h-5 w-5 text-slate-400 mr-2" />
-                <span className="font-medium mr-2">ID:</span>
-                <span>{requirement?.req_id || "N/A"}</span>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-muted-foreground mb-1">
+                    Requirement ID
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {requirement?.req_id || "N/A"}
+                  </span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-muted-foreground mb-1">
+                    Project Name
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {requirement?.project_name || "N/A"}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <Calendar className="h-5 w-5 text-slate-400 mr-2" />
-                <span className="font-medium mr-2">Created:</span>
-                <span>
-                  {requirement?.created_at
-                    ? new Date(requirement.created_at).toLocaleDateString()
-                    : "N/A"}
-                </span>
-              </div>
-              <div className="flex items-center">
-                <User className="h-5 w-5 text-slate-400 mr-2" />
-                <span className="font-medium mr-2">Project:</span>
-                <span>{requirement?.project_name || "N/A"}</span>
-              </div>
-              <div className="flex items-center">
-                <Building className="h-5 w-5 text-slate-400 mr-2" />
-                <span className="font-medium mr-2">Industry:</span>
-                <span>{requirement?.industry_type || "N/A"}</span>
+
+              <div className="space-y-4">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-muted-foreground mb-1">
+                    Created Date
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {formatDate(requirement?.created_at)}
+                  </span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-muted-foreground mb-1">
+                    Industry
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {capitalizeWords(requirement?.industry_type) || "N/A"}
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-end">
+          <CardFooter className="bg-background/50 flex justify-end pt-4 pb-4 border-t border-border">
             <Button
               onClick={handleGenerateBRD}
               disabled={isGeneratingBRD || !canGenerateBRD()}
-              className="bg-gradient-to-r from-primary to-blue-700 hover:opacity-90"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all"
             >
               {isGeneratingBRD ? (
                 <>
@@ -806,34 +1127,55 @@ const AISignoff = () => {
         </Card>
 
         {/* Signoff Details */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Signoff Details</CardTitle>
+        <Card className="overflow-hidden border-border shadow-sm">
+          <CardHeader className="bg-background/50 pb-2">
+            <CardTitle className="flex items-center text-xl font-semibold">
+              <ClipboardCheck className="h-5 w-5 text-primary mr-2" />
+              Signoff Details
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {signoffDetails ? (
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <ClipboardCheck className="h-5 w-5 text-slate-400 mr-2" />
-                  <span className="font-medium mr-2">Status:</span>
-                  {renderStatusBadge(signoffDetails.status)}
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-center">
+                    <span className="font-medium mr-2">Status:</span>
+                    {renderStatusBadge(signoffDetails.status)}
+                  </div>
+
+                  {signoffDetails.status === "signed_off" && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <User className="h-4 w-4 mr-1" />
+                      <span>
+                        Signed off by{" "}
+                        {signoffDetails.reviewer_comments ? "Admin" : "Unknown"}{" "}
+                        on {formatDate(signoffDetails.updated_at)}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
                 {signoffDetails.reviewer_comments && (
-                  <div>
-                    <h4 className="font-medium mb-2">Reviewer Comments:</h4>
-                    <p className="bg-slate-50 p-3 rounded-md border border-slate-200">
-                      {signoffDetails.reviewer_comments}
-                    </p>
+                  <div className="mt-4">
+                    <h4 className="font-medium mb-2 text-foreground">
+                      Reviewer Comments:
+                    </h4>
+                    <div className="bg-muted/30 p-4 rounded-md border border-border">
+                      <p className="text-foreground">
+                        {signoffDetails.reviewer_comments}
+                      </p>
+                    </div>
                   </div>
                 )}
+
                 {!signoffDetails.reviewer_comments && (
-                  <div className="text-slate-500 italic">
+                  <div className="text-muted-foreground italic">
                     No reviewer comments available.
                   </div>
                 )}
               </div>
             ) : (
-              <Alert>
+              <Alert className="bg-amber-50 text-amber-800 border-amber-200">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>No Signoff Data Available</AlertTitle>
                 <AlertDescription>
@@ -843,6 +1185,76 @@ const AISignoff = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* AI Analysis Summary Card - Only show if we have signoff details */}
+        {signoffDetails && (
+          <Card className="overflow-hidden border-border shadow-sm">
+            <CardHeader className="bg-background/50 pb-2">
+              <CardTitle className="flex items-center text-xl font-semibold">
+                <BarChart3 className="h-5 w-5 text-primary mr-2" />
+                AI Analysis Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-muted/30 p-4 rounded-md border border-border">
+                  <div className="text-sm font-medium text-muted-foreground mb-1">
+                    Confidence Score
+                  </div>
+                  <div className="text-2xl font-semibold text-foreground">
+                    {signoffDetails.signoff_score
+                      ? `${Math.round(signoffDetails.signoff_score * 100)}%`
+                      : "N/A"}
+                  </div>
+                </div>
+
+                <div className="bg-muted/30 p-4 rounded-md border border-border">
+                  <div className="text-sm font-medium text-muted-foreground mb-1">
+                    Test Cases
+                  </div>
+                  <div className="text-2xl font-semibold text-foreground">
+                    {brdData?.test_cases?.length || "0"}
+                  </div>
+                </div>
+
+                <div className="bg-muted/30 p-4 rounded-md border border-border">
+                  <div className="text-sm font-medium text-muted-foreground mb-1">
+                    Processing Time
+                  </div>
+                  <div className="text-2xl font-semibold text-foreground">
+                    {signoffDetails.created_at && signoffDetails.updated_at
+                      ? `${Math.round(
+                          (new Date(signoffDetails.updated_at).getTime() -
+                            new Date(signoffDetails.created_at).getTime()) /
+                            1000
+                        )}s`
+                      : "N/A"}
+                  </div>
+                </div>
+              </div>
+
+              {signoffDetails.status === "ready" && (
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    onClick={openSignOffDialog}
+                    className="mr-2 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Approve BRD
+                  </Button>
+                  <Button
+                    onClick={openRejectDialog}
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Reject BRD
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   } else {
@@ -852,11 +1264,113 @@ const AISignoff = () => {
       signoffItems.length
     );
     return (
-      <AISignoffDashboard
-        signoffItems={signoffItems}
-        loading={loading}
-        dataFetchAttempted={dataFetchAttempted}
-      />
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            AI Signoff Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Monitor the status of your BRDs across all projects
+          </p>
+        </div>
+
+        {/* Status Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 justify-items-center">
+          <StatusMetricCard
+            title="Draft"
+            count={statusCounts.draft}
+            icon={FileClock}
+            isLoading={statusCounts.isLoading}
+            filterKey="draft"
+            isActive={activeFilter === "draft"}
+            onClick={handleMetricCardClick}
+            colorClass={{
+              bg: "bg-gradient-to-br from-amber-400 to-amber-600",
+              text: "text-white",
+              border: "border-amber-300",
+            }}
+            description="BRDs being prepared"
+          />
+          <StatusMetricCard
+            title="Ready for Review"
+            count={statusCounts.ready}
+            icon={FileQuestion}
+            isLoading={statusCounts.isLoading}
+            filterKey="ready"
+            isActive={activeFilter === "ready"}
+            onClick={handleMetricCardClick}
+            colorClass={{
+              bg: "bg-gradient-to-br from-blue-400 to-blue-600",
+              text: "text-white",
+              border: "border-blue-300",
+            }}
+            description="Awaiting approval"
+          />
+          <StatusMetricCard
+            title="Approved"
+            count={statusCounts.signed_off}
+            icon={FileCheck2}
+            isLoading={statusCounts.isLoading}
+            filterKey="signed_off"
+            isActive={activeFilter === "signed_off"}
+            onClick={handleMetricCardClick}
+            colorClass={{
+              bg: "bg-gradient-to-br from-green-400 to-green-600",
+              text: "text-white",
+              border: "border-green-300",
+            }}
+            description="Successfully signed off"
+          />
+          <StatusMetricCard
+            title="Rejected"
+            count={statusCounts.rejected}
+            icon={FileX}
+            isLoading={statusCounts.isLoading}
+            filterKey="rejected"
+            isActive={activeFilter === "rejected"}
+            onClick={handleMetricCardClick}
+            colorClass={{
+              bg: "bg-gradient-to-br from-red-400 to-red-600",
+              text: "text-white",
+              border: "border-red-300",
+            }}
+            description="Needs revision"
+          />
+        </div>
+
+        {/* Show filter indicator if filter is active */}
+        {activeFilter && (
+          <div className="flex items-center justify-between bg-muted/30 p-3 rounded-md border border-border">
+            <div className="flex items-center">
+              <span className="text-sm text-muted-foreground mr-2">
+                Filtered by status:
+              </span>
+              <Badge>
+                {activeFilter.charAt(0).toUpperCase() +
+                  activeFilter.slice(1).replace("_", " ")}
+              </Badge>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveFilter(null)}
+              className="h-8 px-2"
+            >
+              Clear filter
+            </Button>
+          </div>
+        )}
+
+        {/* Signoff items table */}
+        <div className="bg-white/80 rounded-3xl shadow-2xl p-6 md:p-10 animate-fadeIn">
+          <AISignoffDashboard
+            signoffItems={getFilteredSignoffItems()}
+            loading={loading}
+            dataFetchAttempted={dataFetchAttempted}
+            hideMetrics={true}
+          />
+        </div>
+      </div>
     );
   }
 };

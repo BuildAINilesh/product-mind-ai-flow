@@ -9,8 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { capitalizeWords } from "@/utils/formatters";
 
 interface ValidationItem {
   id: string;
@@ -79,17 +81,41 @@ const ValidationDashboardList = ({
     });
   };
 
-  // Get status badge class
-  const getStatusBadgeClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-      case "analyzing":
-      case "processing":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-      case "draft":
-      default:
-        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+  // Render status badge with icon
+  const renderStatusBadge = (status: string) => {
+    const normalizedStatus = status.toLowerCase();
+
+    if (normalizedStatus === "completed") {
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <span className="text-sm font-medium">Completed</span>
+        </div>
+      );
+    } else if (
+      normalizedStatus === "analyzing" ||
+      normalizedStatus === "processing"
+    ) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <span className="text-sm font-medium">{status}</span>
+        </div>
+      );
+    } else if (normalizedStatus === "draft") {
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+          <span className="text-sm font-medium">Draft</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+          <span className="text-sm font-medium">{status}</span>
+        </div>
+      );
     }
   };
 
@@ -97,8 +123,12 @@ const ValidationDashboardList = ({
     <div className="rounded-3xl shadow-2xl bg-white/80 p-0 animate-fadeIn">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4 px-2 pt-2">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-1">Validation Analysis</h2>
-          <p className="text-slate-500">View and manage your AI-powered requirement validation analysis</p>
+          <h2 className="text-2xl font-bold text-slate-900 mb-1">
+            Validation Analysis
+          </h2>
+          <p className="text-slate-500">
+            View and manage your AI-powered requirement validation analysis
+          </p>
         </div>
         <div className="relative w-full md:w-96">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
@@ -134,7 +164,9 @@ const ValidationDashboardList = ({
                 <TableRow
                   key={validation.id}
                   className="hover:bg-indigo-50/60 transition cursor-pointer"
-                  onClick={() => handleViewValidation(validation.requirements?.id || "")}
+                  onClick={() =>
+                    handleViewValidation(validation.requirements?.id || "")
+                  }
                 >
                   <TableCell className="font-medium text-base">
                     {validation.requirements?.req_id || "N/A"}
@@ -143,17 +175,14 @@ const ValidationDashboardList = ({
                     {validation.requirements?.project_name || "Unknown Project"}
                   </TableCell>
                   <TableCell className="text-base">
-                    {validation.requirements?.industry_type || "N/A"}
+                    {capitalizeWords(validation.requirements?.industry_type) ||
+                      "N/A"}
                   </TableCell>
-                  <TableCell className="text-base">{formatDate(validation.created_at)}</TableCell>
                   <TableCell className="text-base">
-                    <div
-                      className={`text-xs font-medium px-2 py-1 rounded-full inline-flex ${getStatusBadgeClass(
-                        validation.status
-                      )}`}
-                    >
-                      {validation.status}
-                    </div>
+                    {formatDate(validation.created_at)}
+                  </TableCell>
+                  <TableCell className="text-base">
+                    {renderStatusBadge(validation.status)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -182,7 +211,10 @@ const ValidationDashboardList = ({
               ? "Try adjusting your search to find what you're looking for."
               : "You haven't validated any requirements yet. Go to a requirement and start the validation process."}
           </p>
-          <Button onClick={handleNavigateToRequirements} className="rounded-full px-6 py-2 text-base">
+          <Button
+            onClick={handleNavigateToRequirements}
+            className="rounded-full px-6 py-2 text-base"
+          >
             Browse Requirements
           </Button>
         </div>
