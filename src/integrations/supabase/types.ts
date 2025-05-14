@@ -622,6 +622,39 @@ export type Database = {
           }
         ];
       };
+      waitlist: {
+        Row: {
+          id: string;
+          full_name: string;
+          email: string;
+          company: string | null;
+          job_title: string | null;
+          interest: string | null;
+          created_at: string;
+          contacted: boolean;
+        };
+        Insert: {
+          id?: string;
+          full_name: string;
+          email: string;
+          company?: string | null;
+          job_title?: string | null;
+          interest?: string | null;
+          created_at?: string;
+          contacted?: boolean;
+        };
+        Update: {
+          id?: string;
+          full_name?: string;
+          email?: string;
+          company?: string | null;
+          job_title?: string | null;
+          interest?: string | null;
+          created_at?: string;
+          contacted?: boolean;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
