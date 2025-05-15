@@ -138,7 +138,7 @@ const AISignoffDashboard: React.FC<AISignoffDashboardProps> = ({
       return (
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-          <span className="text-sm font-medium">Re-Draft</span>
+          <span className="text-sm font-medium">Ready for Review</span>
         </div>
       );
     } else if (status === "error") {
@@ -250,9 +250,11 @@ const AISignoffDashboard: React.FC<AISignoffDashboardProps> = ({
           </div>
         ) : !dataFetchAttempted || signoffItems.length === 0 ? (
           <EmptyState
-            title="No signoffs yet"
-            description="Select a requirement to begin the signoff process."
-            icon={<FileText className="h-12 w-12" />}
+            title="No signoff data found"
+            description="You haven't created any requirements yet. Start by creating a requirement, then complete it to see it here for signoff."
+            icon={<FileText className="h-8 w-8 text-slate-400" />}
+            actionLabel="Create Requirement"
+            actionLink="/dashboard/requirements/new"
           />
         ) : (
           <div className="overflow-x-auto animate-fadeIn">

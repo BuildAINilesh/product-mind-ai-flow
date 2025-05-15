@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useFetchAllMarketAnalyses } from "./useFetchAllMarketAnalyses";
 import { useFetchRequirementData } from "./useFetchRequirementData";
 import { useAnalysisProgress } from "./useAnalysisProgress";
 import { useGenerateAnalysis } from "./useGenerateAnalysis";
+import { toast } from "sonner";
 
 export * from "./types";
 
@@ -18,6 +18,7 @@ export const useMarketAnalysis = (requirementId: string | null) => {
     setAnalysisInProgress,
     updateStepStatus,
     checkOngoingAnalysisProcess,
+    resetAnalysisProgress,
   } = useAnalysisProgress(requirementId, null);
 
   // Get requirement data
@@ -34,9 +35,7 @@ export const useMarketAnalysis = (requirementId: string | null) => {
   } = useFetchRequirementData(requirementId, checkOngoingAnalysisProcess);
 
   // Get market analyses for overview
-  const {
-    allMarketAnalyses,
-  } = useFetchAllMarketAnalyses(requirementId);
+  const { allMarketAnalyses } = useFetchAllMarketAnalyses(requirementId);
 
   // Initialize the generate analysis function
   const { generateAnalysis: runGenerateAnalysis } = useGenerateAnalysis(
@@ -51,9 +50,29 @@ export const useMarketAnalysis = (requirementId: string | null) => {
 
   // Wrapper for generate analysis to update the UI with new data
   const generateAnalysis = async () => {
-    const newAnalysis = await runGenerateAnalysis();
-    if (newAnalysis) {
-      setMarketAnalysis(newAnalysis);
+    console.log("generateAnalysis called in useMarketAnalysis hook");
+
+    // Make sure we have a requirementId
+    if (!requirementId) {
+      console.error("No requirementId provided to generateAnalysis");
+      toast.error("Missing requirement ID. Cannot generate analysis.");
+      return;
+    }
+
+    try {
+      console.log("Calling runGenerateAnalysis...");
+      const newAnalysis = await runGenerateAnalysis();
+      console.log("runGenerateAnalysis returned:", newAnalysis);
+
+      if (newAnalysis) {
+        setMarketAnalysis(newAnalysis);
+      }
+
+      return newAnalysis;
+    } catch (error) {
+      console.error("Error in generateAnalysis wrapper:", error);
+      toast.error("Failed to generate market analysis. Please try again.");
+      return null;
     }
   };
 
@@ -74,6 +93,7 @@ export const useMarketAnalysis = (requirementId: string | null) => {
     setAnalysisInProgress,
     generateAnalysis,
     updateStepStatus,
+    resetAnalysisProgress,
   };
 };
 

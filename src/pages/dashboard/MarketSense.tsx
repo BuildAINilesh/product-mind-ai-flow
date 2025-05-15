@@ -22,6 +22,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AICard, AIGradientText } from "@/components/ui/ai-elements";
+import {
+  ANALYSIS_STATUS_KEY,
+  ANALYSIS_STEPS_KEY,
+  ANALYSIS_CURRENT_STEP_KEY,
+} from "@/hooks/useMarketAnalysis";
 
 const MarketSense = () => {
   const [searchParams] = useSearchParams();
@@ -46,7 +51,57 @@ const MarketSense = () => {
     currentStep,
     progressSteps,
     generateAnalysis,
+    resetAnalysisProgress,
+    setAnalysisInProgress,
   } = useMarketAnalysis(requirementId);
+
+  // Function to force reset the analysis state (for emergency use)
+  const forceResetAnalysis = async () => {
+    if (!requirementId) return;
+
+    try {
+      // Clear localStorage
+      localStorage.removeItem(ANALYSIS_STATUS_KEY + requirementId);
+      localStorage.removeItem(ANALYSIS_STEPS_KEY + requirementId);
+      localStorage.removeItem(ANALYSIS_CURRENT_STEP_KEY + requirementId);
+
+      // Reset UI state
+      setAnalysisInProgress(false);
+
+      // Reset database state if needed
+      await supabase
+        .from("requirement_flow_tracking")
+        .update({
+          market_sense_status: "not_started",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("requirement_id", requirementId);
+
+      // Reload the page to get a fresh state
+      window.location.reload();
+
+      toast.success("Analysis state has been reset");
+    } catch (error) {
+      console.error("Error forcing reset:", error);
+      toast.error("Could not reset analysis state");
+    }
+  };
+
+  // Pass the enhanced generateAnalysis function that handles errors
+  const handleGenerateAnalysis = async () => {
+    try {
+      // First reset any existing progress
+      resetAnalysisProgress();
+
+      // Then generate the analysis
+      return await generateAnalysis();
+    } catch (error) {
+      console.error("Error in generateAnalysis:", error);
+      // Force reset if there's an error
+      await forceResetAnalysis();
+      return null;
+    }
+  };
 
   // If we're loading and no data fetch has been attempted yet, show a loading indicator
   if (loading && !dataFetchAttempted) {
@@ -81,6 +136,9 @@ const MarketSense = () => {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+        <Button variant="outline" onClick={forceResetAnalysis}>
+          Reset Analysis State
+        </Button>
       </div>
     );
   }
@@ -135,12 +193,23 @@ const MarketSense = () => {
             </span>
           )}
         </h1>
-        <Button
-          variant="outline"
-          onClick={() => (window.location.href = "/dashboard/market-sense")}
-        >
-          Back to All
-        </Button>
+        <div className="flex gap-2">
+          {analysisInProgress && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={forceResetAnalysis}
+            >
+              Reset
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => (window.location.href = "/dashboard/market-sense")}
+          >
+            Back to All
+          </Button>
+        </div>
       </div>
 
       <Separator className="my-4" />
@@ -154,7 +223,8 @@ const MarketSense = () => {
         analysisInProgress={analysisInProgress}
         progressSteps={progressSteps}
         currentStep={currentStep}
-        onGenerateAnalysis={generateAnalysis}
+        onGenerateAnalysis={handleGenerateAnalysis}
+        resetAnalysisProgress={resetAnalysisProgress}
       />
     </div>
   );

@@ -58,23 +58,46 @@ export const useSignoff = (requirementId?: string | null) => {
       console.log("Fetching signoff items at:", new Date().toISOString());
 
       try {
-        // Try a basic query first just to check connection
-        const { data: testData, error: testError } = await supabase
-          .from("requirements")
-          .select("id")
-          .limit(1);
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-        if (testError) {
-          console.error("Database connection test failed:", testError);
-          throw testError;
+        if (userError || !user) {
+          console.log("No authenticated user found");
+          setSignoffItems([]);
+          setDataFetchAttempted(true);
+          setLoading(false);
+          return;
         }
 
-        console.log("Database connection test successful");
+        // First get user's requirements
+        const { data: userRequirements, error: userReqError } = await supabase
+          .from("requirements")
+          .select("id")
+          .eq("user_id", user.id);
+
+        if (
+          userReqError ||
+          !userRequirements ||
+          userRequirements.length === 0
+        ) {
+          console.log("User has no requirements");
+          setSignoffItems([]);
+          setDataFetchAttempted(true);
+          setLoading(false);
+          return;
+        }
+
+        // Get requirement IDs for this user
+        const userRequirementIds = userRequirements.map((req) => req.id);
 
         // Now fetch brd data directly - try simpler approach with minimal data
         const result = await supabase
           .from("requirement_brd")
-          .select("id, requirement_id, status, created_at");
+          .select("id, requirement_id, status, created_at")
+          .in("requirement_id", userRequirementIds);
 
         if (result.error) {
           console.error("Error fetching requirement_brd:", result.error);
@@ -85,14 +108,14 @@ export const useSignoff = (requirementId?: string | null) => {
 
         // If we have results, try to get the requirement data for each
         if (result.data && result.data.length > 0) {
-          // Get all requirement IDs
-          const reqIds = result.data.map((item) => item.requirement_id);
-
           // Fetch requirement details
           const reqResult = await supabase
             .from("requirements")
             .select("id, req_id, project_name, industry_type")
-            .in("id", reqIds);
+            .in(
+              "id",
+              result.data.map((item) => item.requirement_id)
+            );
 
           if (reqResult.error) {
             console.error("Error fetching requirements:", reqResult.error);
@@ -111,17 +134,19 @@ export const useSignoff = (requirementId?: string | null) => {
             reqMap[req.id] = req;
           });
 
-          // Format the data
-          const formatted = result.data.map((item) => ({
-            id: item.id,
-            requirementId: item.requirement_id,
-            reqId: reqMap[item.requirement_id]?.req_id || null,
-            projectName: reqMap[item.requirement_id]?.project_name || "Unknown",
-            industry: reqMap[item.requirement_id]?.industry_type || "Unknown",
-            created: new Date(item.created_at).toLocaleDateString(),
-            status: item.status || "draft",
-            reviewerComments: null,
-          }));
+          // Format the data but filter out any with missing requirement data
+          const formatted = result.data
+            .filter((item) => reqMap[item.requirement_id]) // Only include BRDs with valid requirements
+            .map((item) => ({
+              id: item.id,
+              requirementId: item.requirement_id,
+              reqId: reqMap[item.requirement_id]?.req_id || "",
+              projectName: reqMap[item.requirement_id]?.project_name || "",
+              industry: reqMap[item.requirement_id]?.industry_type || "",
+              created: new Date(item.created_at).toLocaleDateString(),
+              status: item.status || "draft",
+              reviewerComments: null,
+            }));
 
           setSignoffItems(formatted);
         } else {
@@ -140,6 +165,7 @@ export const useSignoff = (requirementId?: string | null) => {
           description: errorMessage,
           variant: "destructive",
         });
+        setSignoffItems([]);
       } finally {
         setLoading(false);
       }

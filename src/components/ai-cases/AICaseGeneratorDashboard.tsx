@@ -163,16 +163,6 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-purple-100 animate-gradient-x p-6">
-      <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-slate-900 mb-1 tracking-tight drop-shadow-lg">
-          AI Case Generator
-        </h1>
-        <p className="text-lg text-slate-500">
-          AI-powered generation of user stories, use cases, and test cases for
-          your requirements
-        </p>
-      </div>
-
       {/* Stats Cards - Only show if hideMetrics is false */}
       {!hideMetrics && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 justify-items-center">
@@ -264,9 +254,11 @@ const AICaseGeneratorDashboard: React.FC<AICaseGeneratorDashboardProps> = ({
           </div>
         ) : dataFetchAttempted && caseGeneratorItems.length === 0 ? (
           <EmptyState
-            title="No case analysis yet"
-            description="Select a requirement to generate user stories, use cases, and test cases."
-            icon={<CodeIcon className="h-12 w-12" />}
+            title="No case analysis found"
+            description="You haven't created any requirements to analyze yet. Start by creating a requirement and then generate cases for it."
+            icon={<CodeIcon className="h-8 w-8 text-slate-400" />}
+            actionLabel="Create Requirement"
+            actionLink="/dashboard/requirements/new"
           />
         ) : (
           <div className="overflow-x-auto animate-fadeIn">

@@ -1,17 +1,17 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
-const openAiApiKey = Deno.env.get('OPENAI_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 // Sleep function to pause execution
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Function to summarize content using OpenAI
 async function summarizeContent(content: string, url: string) {
@@ -19,7 +19,13 @@ async function summarizeContent(content: string, url: string) {
     console.error("OpenAI API Key is missing");
     return null;
   }
-  
+
+  // Check if content is too short for meaningful summarization
+  if (!content || content.length < 100) {
+    console.error("Content is too short for summarization");
+    return "Content was too short for meaningful summarization.";
+  }
+
   try {
     const prompt = `
     You are an expert summarizer. Your task is to create a detailed and comprehensive summary of the following content from ${url}. 
@@ -39,19 +45,21 @@ async function summarizeContent(content: string, url: string) {
     
     Summary:`;
 
-    console.log(`Sending ${Math.round(content.length / 1000)}KB of content to OpenAI for summarization`);
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    console.log(
+      `Sending ${Math.round(
+        content.length / 1000
+      )}KB of content to OpenAI for summarization`
+    );
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${openAiApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${openAiApiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
         max_tokens: 2000,
       }),
@@ -72,14 +80,19 @@ async function summarizeContent(content: string, url: string) {
 }
 
 // Exponential backoff retry function for API calls
-async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 5, initialBackoffMs = 1000) {
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 5,
+  initialBackoffMs = 1000
+) {
   let retries = 0;
   let backoffMs = initialBackoffMs;
-  
+
   while (true) {
     try {
       const response = await fetch(url, options);
-      
+
       // If rate limited, wait and retry
       if (response.status === 429) {
         const errorText = await response.text();
@@ -89,39 +102,46 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 5,
         } catch (e) {
           errorData = { error: errorText };
         }
-        
-        const retryAfterMs = errorData.error && errorData.error.includes("retry after") 
-          ? parseInt(errorData.error.match(/retry after (\d+)s/)?.[1] || "60") * 1000 
-          : backoffMs;
-        
-        console.log(`Rate limited. Waiting for ${retryAfterMs/1000}s before retry.`);
-        
+
+        const retryAfterMs =
+          errorData.error && errorData.error.includes("retry after")
+            ? parseInt(
+                errorData.error.match(/retry after (\d+)s/)?.[1] || "60"
+              ) * 1000
+            : backoffMs;
+
+        console.log(
+          `Rate limited. Waiting for ${retryAfterMs / 1000}s before retry.`
+        );
+
         if (retries >= maxRetries) {
           console.error(`Maximum retries (${maxRetries}) reached. Giving up.`);
           return {
             response,
-            error: `Rate limit reached after ${maxRetries} retries. Please try again later.`
+            error: `Rate limit reached after ${maxRetries} retries. Please try again later.`,
           };
         }
-        
+
         // Wait for the specified time
         await sleep(retryAfterMs);
         retries++;
         backoffMs *= 2; // Exponential backoff
         continue;
       }
-      
+
       return { response, error: null };
     } catch (error) {
       if (retries >= maxRetries) {
         console.error(`Maximum retries (${maxRetries}) reached. Giving up.`);
-        return { 
-          response: null, 
-          error: `Network error after ${maxRetries} retries: ${error.message}`
+        return {
+          response: null,
+          error: `Network error after ${maxRetries} retries: ${error.message}`,
         };
       }
-      
-      console.error(`Fetch error: ${error.message}. Retrying in ${backoffMs/1000}s...`);
+
+      console.error(
+        `Fetch error: ${error.message}. Retrying in ${backoffMs / 1000}s...`
+      );
       await sleep(backoffMs);
       retries++;
       backoffMs *= 2; // Exponential backoff
@@ -133,143 +153,161 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 5,
 async function processPendingSummaries(requirementId: string, batchSize = 3) {
   try {
     console.log(`Processing summaries for requirement: ${requirementId}`);
-    
+
     // Fetch pending summary items
-    const { response: pendingResponse, error: pendingError } = await fetchWithRetry(
-      `${supabaseUrl}/rest/v1/scraped_research_data?requirement_id=eq.${requirementId}&status=eq.pending_summary&select=*&limit=${batchSize}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'apikey': `${supabaseServiceKey}`,
-          'Content-Type': 'application/json'
+    const { response: pendingResponse, error: pendingError } =
+      await fetchWithRetry(
+        `${supabaseUrl}/rest/v1/scraped_research_data?requirement_id=eq.${requirementId}&status=eq.scraped&select=*&limit=${batchSize}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${supabaseServiceKey}`,
+            apikey: `${supabaseServiceKey}`,
+            "Content-Type": "application/json",
+          },
         }
-      }
-    );
-    
+      );
+
     if (pendingError || !pendingResponse?.ok) {
-      throw new Error(`Failed to fetch pending summaries: ${pendingError || pendingResponse?.statusText}`);
+      throw new Error(
+        `Failed to fetch pending summaries: ${
+          pendingError || pendingResponse?.statusText
+        }`
+      );
     }
-    
+
     const pendingItems = await pendingResponse.json();
-    console.log(`Found ${pendingItems.length} pending summary items`);
-    
+    console.log(
+      `Found ${pendingItems.length} items with status "scraped" ready for summarization`
+    );
+
     if (pendingItems.length === 0) {
       return {
         success: true,
-        message: "No pending summaries found",
+        message: "No content found with status 'scraped' for summarization",
         processed: 0,
         summarized: 0,
-        errors: 0
+        errors: 0,
       };
     }
-    
+
     let summarizedCount = 0;
     let errorCount = 0;
-    
+
     // Process each pending summary item with delay between items to avoid rate limiting
     for (const item of pendingItems) {
       try {
         console.log(`Generating summary for content from URL: ${item.url}`);
         const summary = await summarizeContent(item.raw_content, item.url);
-        
+
         if (summary) {
           console.log(`Summary generated successfully for ${item.url}`);
-          
+
           // Update the item with the summary
-          const { response: updateResponse, error: updateError } = await fetchWithRetry(
-            `${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${item.id}`,
-            {
-              method: 'PATCH',
-              headers: {
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-                'apikey': `${supabaseServiceKey}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
-              },
-              body: JSON.stringify({
-                summary: summary,
-                status: 'summarized'
-              })
-            }
-          );
-          
+          const { response: updateResponse, error: updateError } =
+            await fetchWithRetry(
+              `${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${item.id}`,
+              {
+                method: "PATCH",
+                headers: {
+                  Authorization: `Bearer ${supabaseServiceKey}`,
+                  apikey: `${supabaseServiceKey}`,
+                  "Content-Type": "application/json",
+                  Prefer: "return=representation",
+                },
+                body: JSON.stringify({
+                  summary: summary,
+                  status: "summarized",
+                }),
+              }
+            );
+
           if (updateError || !updateResponse?.ok) {
-            console.error(`Error updating summary for ${item.url}: ${updateError || updateResponse?.statusText}`);
+            console.error(
+              `Error updating summary for ${item.url}: ${
+                updateError || updateResponse?.statusText
+              }`
+            );
             errorCount++;
             continue;
           }
-          
+
           summarizedCount++;
         } else {
           console.warn(`Failed to generate summary for ${item.url}`);
-          
+
           // Update status to error
-          await fetch(`${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${item.id}`,
+          await fetch(
+            `${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${item.id}`,
             {
-              method: 'PATCH',
+              method: "PATCH",
               headers: {
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-                'apikey': `${supabaseServiceKey}`,
-                'Content-Type': 'application/json'
+                Authorization: `Bearer ${supabaseServiceKey}`,
+                apikey: `${supabaseServiceKey}`,
+                "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                status: 'error'
-              })
+                status: "error",
+              }),
             }
           );
-          
+
           errorCount++;
         }
-        
+
         // Add a larger delay between summarization requests to avoid OpenAI rate limiting
         // This is key to ensuring all summaries get processed
-        console.log("Waiting 3 seconds before processing next item to avoid rate limits...");
+        console.log(
+          "Waiting 3 seconds before processing next item to avoid rate limits..."
+        );
         await sleep(3000);
       } catch (itemError) {
         console.error(`Error processing item ${item.id}: ${itemError.message}`);
         errorCount++;
-        
+
         // Update status to error
-        await fetch(`${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${item.id}`,
+        await fetch(
+          `${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${item.id}`,
           {
-            method: 'PATCH',
+            method: "PATCH",
             headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': `${supabaseServiceKey}`,
-              'Content-Type': 'application/json'
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              apikey: `${supabaseServiceKey}`,
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              status: 'error'
-            })
+              status: "error",
+            }),
           }
         );
       }
     }
-    
+
     // Check if there are more pending summaries
     const { response: countResponse } = await fetchWithRetry(
-      `${supabaseUrl}/rest/v1/scraped_research_data?requirement_id=eq.${requirementId}&status=eq.pending_summary&select=count`,
+      `${supabaseUrl}/rest/v1/scraped_research_data?requirement_id=eq.${requirementId}&status=eq.scraped&select=count`,
       {
-        method: 'HEAD',
+        method: "HEAD",
         headers: {
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'apikey': `${supabaseServiceKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'count=exact'
-        }
+          Authorization: `Bearer ${supabaseServiceKey}`,
+          apikey: `${supabaseServiceKey}`,
+          "Content-Type": "application/json",
+          Prefer: "count=exact",
+        },
       }
     );
-    
-    const remainingCount = parseInt(countResponse?.headers.get('content-range')?.split('/')[1] || '0');
-    
+
+    const remainingCount = parseInt(
+      countResponse?.headers.get("content-range")?.split("/")[1] || "0"
+    );
+
     return {
       success: true,
       message: `Processed ${pendingItems.length} items, successfully summarized ${summarizedCount} items`,
       processed: pendingItems.length,
       summarized: summarizedCount,
       errors: errorCount,
-      remaining: remainingCount
+      remaining: remainingCount,
     };
   } catch (error) {
     console.error(`Error processing pending summaries: ${error.message}`);
@@ -278,70 +316,215 @@ async function processPendingSummaries(requirementId: string, batchSize = 3) {
       message: `Error processing pending summaries: ${error.message}`,
       processed: 0,
       summarized: 0,
-      errors: 1
+      errors: 1,
     };
   }
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { requirementId } = await req.json();
-    
-    if (!requirementId) {
-      throw new Error("Required field 'requirementId' is missing");
+    const body = await req.json();
+    const { requirementId, sourceId } = body;
+
+    if (!requirementId && !sourceId) {
+      throw new Error("Either 'requirementId' or 'sourceId' is required");
     }
-    
+
     if (!openAiApiKey) {
-      throw new Error("OpenAI API Key is missing. Please set it in the Supabase Edge Function Secrets.");
+      throw new Error(
+        "OpenAI API Key is missing. Please set it in the Supabase Edge Function Secrets."
+      );
     }
-    
-    console.log(`Processing summaries for requirement: ${requirementId}`);
-    console.log(`Using OpenAI API Key: ${openAiApiKey ? "Available (masked)" : "Missing"}`);
-    
-    // Reduce batch size to 3 to avoid rate limits
-    const result = await processPendingSummaries(requirementId, 3);
-    
-    // Query the total summarized count
-    const { response: summaryCountResponse } = await fetchWithRetry(
-      `${supabaseUrl}/rest/v1/scraped_research_data?requirement_id=eq.${requirementId}&status=eq.summarized&select=id`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'apikey': `${supabaseServiceKey}`,
-          'Content-Type': 'application/json'
-        }
+
+    let result;
+
+    // If sourceId is provided, process just that single source
+    if (sourceId) {
+      console.log(`Processing single source with ID: ${sourceId}`);
+
+      // Fetch the source data
+      const { response: sourceResponse, error: sourceError } =
+        await fetchWithRetry(
+          `${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${sourceId}&select=*`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              apikey: `${supabaseServiceKey}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+      if (sourceError || !sourceResponse?.ok) {
+        throw new Error(
+          `Failed to fetch source data: ${
+            sourceError || sourceResponse?.statusText
+          }`
+        );
       }
-    );
-    
-    let totalSummarizedCount = 0;
-    if (summaryCountResponse?.ok) {
-      const summaryData = await summaryCountResponse.json();
-      totalSummarizedCount = summaryData.length;
+
+      const sourceData = await sourceResponse.json();
+
+      if (sourceData.length === 0) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Source with ID ${sourceId} not found`,
+          }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const source = sourceData[0];
+
+      // Check if content is available
+      if (!source.raw_content) {
+        // If no content, mark as error with explanation
+        await fetch(
+          `${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${sourceId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              apikey: `${supabaseServiceKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              status: "error",
+              summary: "No content available to summarize",
+            }),
+          }
+        );
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Source ${sourceId} has no content to summarize`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Generate summary
+      console.log(
+        `Generating summary for source ${sourceId} with URL: ${source.url}`
+      );
+      const summary = await summarizeContent(source.raw_content, source.url);
+
+      if (summary) {
+        // Update with summary
+        await fetch(
+          `${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${sourceId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              apikey: `${supabaseServiceKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              summary: summary,
+              status: "summarized",
+            }),
+          }
+        );
+
+        result = {
+          success: true,
+          message: `Successfully summarized source ${sourceId}`,
+          sourceId: sourceId,
+        };
+      } else {
+        // Mark as error
+        await fetch(
+          `${supabaseUrl}/rest/v1/scraped_research_data?id=eq.${sourceId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              apikey: `${supabaseServiceKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              status: "error",
+              summary: "Failed to generate summary",
+            }),
+          }
+        );
+
+        result = {
+          success: false,
+          message: `Failed to generate summary for source ${sourceId}`,
+          sourceId: sourceId,
+        };
+      }
+    } else {
+      // Process in batch mode for the requirement
+      console.log(`Processing summaries for requirement: ${requirementId}`);
+      console.log(
+        `Using OpenAI API Key: ${
+          openAiApiKey ? "Available (masked)" : "Missing"
+        }`
+      );
+
+      // Reduce batch size to 3 to avoid rate limits
+      result = await processPendingSummaries(requirementId, 3);
+
+      // Query the total summarized count
+      const { response: summaryCountResponse } = await fetchWithRetry(
+        `${supabaseUrl}/rest/v1/scraped_research_data?requirement_id=eq.${requirementId}&status=eq.summarized&select=id`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${supabaseServiceKey}`,
+            apikey: `${supabaseServiceKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      let totalSummarizedCount = 0;
+      if (summaryCountResponse?.ok) {
+        const summaryData = await summaryCountResponse.json();
+        totalSummarizedCount = summaryData.length;
+      }
+
+      result = {
+        ...result,
+        totalSummarized: totalSummarizedCount,
+      };
     }
-    
-    return new Response(JSON.stringify({ 
-      ...result,
-      totalSummarized: totalSummarizedCount
-    }), {
+
+    return new Response(JSON.stringify(result), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-    
   } catch (error) {
     console.error("Error in summarize-research-content function:", error);
-    
-    return new Response(JSON.stringify({ 
-      success: false, 
-      message: error.message || "An error occurred while summarizing research content" 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message:
+          error.message ||
+          "An error occurred while summarizing research content",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });

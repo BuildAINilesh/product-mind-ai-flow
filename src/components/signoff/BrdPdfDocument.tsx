@@ -190,6 +190,13 @@ const styles = StyleSheet.create({
   ready: {
     backgroundColor: "#6B7280",
   },
+  pageNumber: {
+    position: "absolute",
+    bottom: 30,
+    right: 30,
+    fontSize: 8,
+    color: "#999",
+  },
 });
 
 interface BrdPdfDocumentProps {
@@ -216,6 +223,7 @@ const ensureArray = (value: string | string[] | undefined | null): string[] => {
     }
   }
 
+  // Split by newlines or bullet points
   return value.split(/\n|•/).filter((item: string) => item.trim().length > 0);
 };
 
@@ -235,6 +243,18 @@ const getFormattedTestType = (testType: string): string => {
 
   // Default to Functional if unknown
   return "Functional";
+};
+
+// Helper function to format text content from various formats
+const formatTextContent = (content: string | undefined | null): string => {
+  if (!content) return "Not available";
+
+  if (typeof content === "string") {
+    // Remove any HTML tags that might be present
+    return content.replace(/<[^>]*>?/gm, "");
+  }
+
+  return "Not available";
 };
 
 // Main PDF Document Component
@@ -280,6 +300,14 @@ export const BrdPdfDocument: React.FC<BrdPdfDocumentProps> = ({
     }
   };
 
+  // Ensure user stories, use cases, and risks are properly formatted as arrays
+  const userStories = ensureArray(brdData.user_stories_summary);
+  const useCases = ensureArray(brdData.use_cases_summary);
+  const risksAndMitigations = ensureArray(brdData.risks_and_mitigations);
+  const keyFeatures = ensureArray(brdData.key_features);
+  const businessGoals = ensureArray(brdData.business_goals);
+  const targetAudience = ensureArray(brdData.target_audience);
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -305,44 +333,58 @@ export const BrdPdfDocument: React.FC<BrdPdfDocumentProps> = ({
         {/* Project Overview */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Project Overview</Text>
-          <Text style={styles.content}>{brdData.project_overview}</Text>
+          <Text style={styles.content}>
+            {formatTextContent(brdData.project_overview)}
+          </Text>
         </View>
 
         {/* Problem Statement */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Problem Statement</Text>
-          <Text style={styles.content}>{brdData.problem_statement}</Text>
+          <Text style={styles.content}>
+            {formatTextContent(brdData.problem_statement)}
+          </Text>
         </View>
 
         {/* Proposed Solution */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Proposed Solution</Text>
-          <Text style={styles.content}>{brdData.proposed_solution}</Text>
+          <Text style={styles.content}>
+            {formatTextContent(brdData.proposed_solution)}
+          </Text>
         </View>
 
         {/* Key Features */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Key Features</Text>
           <View style={styles.bulletPoints}>
-            {ensureArray(brdData.key_features).map((feature, index) => (
-              <View key={`feature-${index}`} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{feature}</Text>
-              </View>
-            ))}
+            {keyFeatures.length > 0 ? (
+              keyFeatures.map((feature, index) => (
+                <View key={`feature-${index}`} style={styles.bullet}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletText}>{feature}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.content}>No key features specified</Text>
+            )}
           </View>
         </View>
 
         {/* Business Goals */}
-        <View style={styles.section}>
+        <View style={styles.section} break>
           <Text style={styles.sectionTitle}>Business Goals</Text>
           <View style={styles.bulletPoints}>
-            {ensureArray(brdData.business_goals).map((goal, index) => (
-              <View key={`goal-${index}`} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{goal}</Text>
-              </View>
-            ))}
+            {businessGoals.length > 0 ? (
+              businessGoals.map((goal, index) => (
+                <View key={`goal-${index}`} style={styles.bullet}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletText}>{goal}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.content}>No business goals specified</Text>
+            )}
           </View>
         </View>
 
@@ -350,37 +392,49 @@ export const BrdPdfDocument: React.FC<BrdPdfDocumentProps> = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Target Audience</Text>
           <View style={styles.bulletPoints}>
-            {ensureArray(brdData.target_audience).map((audience, index) => (
-              <View key={`audience-${index}`} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{audience}</Text>
-              </View>
-            ))}
+            {targetAudience.length > 0 ? (
+              targetAudience.map((audience, index) => (
+                <View key={`audience-${index}`} style={styles.bullet}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletText}>{audience}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.content}>No target audience specified</Text>
+            )}
           </View>
         </View>
 
         {/* Market Research Summary */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Market Research Summary</Text>
-          <Text style={styles.content}>{brdData.market_research_summary}</Text>
+          <Text style={styles.content}>
+            {formatTextContent(brdData.market_research_summary)}
+          </Text>
         </View>
 
         {/* Validation Summary */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Validation Summary</Text>
-          <Text style={styles.content}>{brdData.validation_summary}</Text>
+          <Text style={styles.content}>
+            {formatTextContent(brdData.validation_summary)}
+          </Text>
         </View>
 
         {/* User Stories Summary */}
-        <View style={styles.section}>
+        <View style={styles.section} break>
           <Text style={styles.sectionTitle}>User Stories</Text>
           <View style={styles.bulletPoints}>
-            {brdData.user_stories_summary.map((story, index) => (
-              <View key={`story-${index}`} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{story}</Text>
-              </View>
-            ))}
+            {userStories.length > 0 ? (
+              userStories.map((story, index) => (
+                <View key={`story-${index}`} style={styles.bullet}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletText}>{story}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.content}>No user stories available</Text>
+            )}
           </View>
         </View>
 
@@ -388,12 +442,16 @@ export const BrdPdfDocument: React.FC<BrdPdfDocumentProps> = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Use Cases</Text>
           <View style={styles.bulletPoints}>
-            {brdData.use_cases_summary.map((useCase, index) => (
-              <View key={`usecase-${index}`} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{useCase}</Text>
-              </View>
-            ))}
+            {useCases.length > 0 ? (
+              useCases.map((useCase, index) => (
+                <View key={`usecase-${index}`} style={styles.bullet}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletText}>{useCase}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.content}>No use cases available</Text>
+            )}
           </View>
         </View>
 
@@ -470,19 +528,23 @@ export const BrdPdfDocument: React.FC<BrdPdfDocumentProps> = ({
             <View style={styles.testCaseStats}>
               <View style={styles.testCase}>
                 <Text style={styles.testLabel}>Total Tests</Text>
-                <Text style={styles.testCount}>{brdData.total_tests}</Text>
+                <Text style={styles.testCount}>{brdData.total_tests || 0}</Text>
               </View>
               <View style={styles.testCase}>
                 <Text style={styles.testLabel}>Functional</Text>
-                <Text style={styles.testCount}>{brdData.functional_tests}</Text>
+                <Text style={styles.testCount}>
+                  {brdData.functional_tests || 0}
+                </Text>
               </View>
               <View style={styles.testCase}>
                 <Text style={styles.testLabel}>Edge Cases</Text>
-                <Text style={styles.testCount}>{brdData.edge_tests}</Text>
+                <Text style={styles.testCount}>{brdData.edge_tests || 0}</Text>
               </View>
               <View style={styles.testCase}>
                 <Text style={styles.testLabel}>Negative</Text>
-                <Text style={styles.testCount}>{brdData.negative_tests}</Text>
+                <Text style={styles.testCount}>
+                  {brdData.negative_tests || 0}
+                </Text>
               </View>
             </View>
           )}
@@ -492,34 +554,44 @@ export const BrdPdfDocument: React.FC<BrdPdfDocumentProps> = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Risks & Mitigations</Text>
           <View style={styles.bulletPoints}>
-            {brdData.risks_and_mitigations.map((risk, index) => (
-              <View key={`risk-${index}`} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{risk}</Text>
-              </View>
-            ))}
+            {risksAndMitigations.length > 0 ? (
+              risksAndMitigations.map((risk, index) => (
+                <View key={`risk-${index}`} style={styles.bullet}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletText}>{risk}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.content}>
+                No risks and mitigations identified
+              </Text>
+            )}
           </View>
         </View>
 
         {/* Final Recommendation */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Final Recommendation</Text>
-          <Text style={styles.content}>{brdData.final_recommendation}</Text>
+          <Text style={styles.content}>
+            {formatTextContent(brdData.final_recommendation)}
+          </Text>
         </View>
 
         {/* AI Confidence */}
         <View style={styles.section}>
-          <Text>AI Signoff Confidence: {brdData.ai_signoff_confidence}%</Text>
+          <Text>
+            AI Signoff Confidence: {brdData.ai_signoff_confidence || 0}%
+          </Text>
           <View style={styles.confidenceIndicator}>
             <View
               style={{
                 backgroundColor:
-                  brdData.ai_signoff_confidence >= 80
+                  (brdData.ai_signoff_confidence || 0) >= 80
                     ? "#10B981"
-                    : brdData.ai_signoff_confidence >= 60
+                    : (brdData.ai_signoff_confidence || 0) >= 60
                     ? "#F59E0B"
                     : "#EF4444",
-                width: `${brdData.ai_signoff_confidence}%`,
+                width: `${brdData.ai_signoff_confidence || 0}%`,
                 height: "100%",
               }}
             />
