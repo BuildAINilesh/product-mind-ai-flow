@@ -60,12 +60,62 @@ const RequirementValidator = () => {
       try {
         setStatusCounts((prev) => ({ ...prev, isLoading: true }));
 
-        console.log("Fetching validation records for counting");
+        console.log("Fetching user-specific validation records for counting");
 
-        // Get all records at once and count in memory
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.log("No user found, showing empty state");
+          setStatusCounts({
+            total: 0,
+            draft: 0,
+            completed: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Get all requirements for current user only
+        const { data: userRequirements, error: userReqError } = await supabase
+          .from("requirements")
+          .select("id")
+          .eq("user_id", user.id);
+
+        if (userReqError) {
+          console.error("Error fetching user requirements:", userReqError);
+          setStatusCounts({
+            total: 0,
+            draft: 0,
+            completed: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // If user has no requirements, return zeros
+        if (!userRequirements || userRequirements.length === 0) {
+          console.log("User has no requirements, showing empty state");
+          setStatusCounts({
+            total: 0,
+            draft: 0,
+            completed: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Get requirement IDs for this user
+        const userRequirementIds = userRequirements.map((req) => req.id);
+
+        // Get all validation records for this user's requirements only
         const { data: allRecords, error: fetchError } = await supabase
           .from("requirement_validation")
-          .select("*");
+          .select("*")
+          .in("requirement_id", userRequirementIds);
 
         if (fetchError) {
           console.error("Error fetching validation records:", fetchError);
@@ -81,7 +131,7 @@ const RequirementValidator = () => {
         console.log(
           `Successfully fetched ${
             allRecords?.length || 0
-          } records from requirement_validation`
+          } validation records for this user`
         );
 
         // Count metrics
@@ -104,7 +154,7 @@ const RequirementValidator = () => {
           });
         }
 
-        console.log("Final counts from database:", counts);
+        console.log("Final counts from database for this user:", counts);
 
         setStatusCounts({
           ...counts,

@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "http/": "https://deno.land/std@0.168.0/http/",
+    "jszip": "https://esm.sh/jszip@3.10.1"
+  }
+}

@@ -26,6 +26,13 @@ export const MarketAnalysisCardHeader = ({
 }: MarketAnalysisCardHeaderProps) => {
   const isMobile = useIsMobile();
 
+  // Debug information
+  console.log("MarketAnalysisCardHeader render:", {
+    hasMarketTrends: !!marketAnalysis?.market_trends,
+    analysisInProgress,
+    hasRequirementAnalysis: !!requirementAnalysis,
+  });
+
   // Get status badge based on the status
   const getStatusBadge = (status: string | undefined) => {
     if (!status) {
@@ -94,16 +101,35 @@ export const MarketAnalysisCardHeader = ({
         </CardDescription>
       </div>
 
-      {!marketAnalysis?.market_trends && !analysisInProgress && (
-        <Button
-          onClick={onGenerateAnalysis}
-          disabled={!requirementAnalysis}
-          className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-          size={isMobile ? "sm" : "default"}
-        >
-          <Lightbulb className="mr-2 h-4 w-4" />
-          {isMobile ? "Generate" : "Generate Market Analysis"}
-        </Button>
+      {/* Always show the button unless analysis is in progress or already completed */}
+      {(!marketAnalysis?.market_trends ||
+        marketAnalysis.market_trends === "") &&
+        !analysisInProgress && (
+          <Button
+            onClick={onGenerateAnalysis}
+            disabled={false}
+            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 z-10"
+            size={isMobile ? "sm" : "default"}
+            title={
+              !requirementAnalysis
+                ? "Warning: Requirement analysis data is missing, but you can still generate market analysis"
+                : "Generate market analysis for this requirement"
+            }
+          >
+            <Lightbulb className="mr-2 h-4 w-4" />
+            {isMobile ? "Generate" : "Generate Market Analysis"}
+          </Button>
+        )}
+
+      {/* Show fallback button if other conditions are blocking the main button */}
+      {((marketAnalysis?.market_trends &&
+        marketAnalysis.market_trends !== "") ||
+        analysisInProgress === true) && (
+        <div className="text-sm text-gray-500 italic">
+          {analysisInProgress
+            ? "Analysis in progress..."
+            : "Analysis already exists. To regenerate, reset the market analysis first."}
+        </div>
       )}
     </div>
   );

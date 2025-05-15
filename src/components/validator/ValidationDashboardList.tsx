@@ -209,13 +209,13 @@ const ValidationDashboardList = ({
           <p className="max-w-md mx-auto mb-6">
             {searchQuery
               ? "Try adjusting your search to find what you're looking for."
-              : "You haven't validated any requirements yet. Go to a requirement and start the validation process."}
+              : "You haven't created any requirements to validate yet. Start by creating a requirement and then validate it."}
           </p>
           <Button
             onClick={handleNavigateToRequirements}
             className="rounded-full px-6 py-2 text-base"
           >
-            Browse Requirements
+            Create Requirement
           </Button>
         </div>
       )}

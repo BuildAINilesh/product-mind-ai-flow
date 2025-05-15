@@ -108,21 +108,68 @@ const AISignoff = () => {
         setStatusCounts((prev) => ({ ...prev, isLoading: true }));
 
         console.log(
-          "Fetching all records from requirement_brd table for counting"
+          "Fetching user-specific records from requirement_brd table for counting"
         );
 
-        // Get all records at once and count in memory
+        if (!user || !user.id) {
+          console.log("No user found, showing empty state");
+          setStatusCounts({
+            draft: 0,
+            ready: 0,
+            signed_off: 0,
+            rejected: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Get all records for current user only
+        const { data: userRequirements, error: userReqError } = await supabase
+          .from("requirements")
+          .select("id")
+          .eq("user_id", user.id);
+
+        if (userReqError) {
+          console.error("Error fetching user requirements:", userReqError);
+          setStatusCounts({
+            draft: 0,
+            ready: 0,
+            signed_off: 0,
+            rejected: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // If user has no requirements, return zeros
+        if (!userRequirements || userRequirements.length === 0) {
+          console.log("User has no requirements, showing empty state");
+          setStatusCounts({
+            draft: 0,
+            ready: 0,
+            signed_off: 0,
+            rejected: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Get requirement IDs for this user
+        const userRequirementIds = userRequirements.map((req) => req.id);
+
+        // Get BRDs for only this user's requirements
         const { data: allRecords, error: fetchError } = await supabase
           .from("requirement_brd")
-          .select("*");
+          .select("*")
+          .in("requirement_id", userRequirementIds);
 
         if (fetchError) {
-          console.error("Error fetching all records:", fetchError);
-
-          // Fallback to counting from signoffItems
-          const counts = countFromSignoffItems();
+          console.error("Error fetching user BRDs:", fetchError);
           setStatusCounts({
-            ...counts,
+            draft: 0,
+            ready: 0,
+            signed_off: 0,
+            rejected: 0,
             isLoading: false,
           });
           return;
@@ -131,7 +178,7 @@ const AISignoff = () => {
         console.log(
           `Successfully fetched ${
             allRecords?.length || 0
-          } records from requirement_brd`
+          } BRD records for this user`
         );
 
         // Count different statuses
@@ -143,16 +190,6 @@ const AISignoff = () => {
         };
 
         if (allRecords && allRecords.length > 0) {
-          // Log all unique statuses to debug
-          const uniqueStatuses = [
-            ...new Set(
-              allRecords.map((record) =>
-                (record.status || "").toLowerCase().trim()
-              )
-            ),
-          ];
-          console.log("Unique status values in database:", uniqueStatuses);
-
           // Count by status
           allRecords.forEach((record) => {
             const status = (record.status || "").toLowerCase().trim();
@@ -169,7 +206,7 @@ const AISignoff = () => {
           });
         }
 
-        console.log("Final counts from database:", counts);
+        console.log("Final counts from database for this user:", counts);
 
         setStatusCounts({
           ...counts,
@@ -177,11 +214,11 @@ const AISignoff = () => {
         });
       } catch (error) {
         console.error("Error in fetchStatusCounts:", error);
-
-        // Fallback to counting from signoffItems
-        const counts = countFromSignoffItems();
         setStatusCounts({
-          ...counts,
+          draft: 0,
+          ready: 0,
+          signed_off: 0,
+          rejected: 0,
           isLoading: false,
         });
       }
@@ -574,6 +611,19 @@ const AISignoff = () => {
 
       if (error) throw error;
 
+      // Also update the requirement status to Completed
+      const { error: reqUpdateError } = await supabase
+        .from("requirements")
+        .update({
+          status: "Completed",
+          last_updated: new Date().toISOString(),
+        })
+        .eq("id", requirementId);
+
+      if (reqUpdateError) {
+        console.error("Error updating requirement status:", reqUpdateError);
+      }
+
       toast({
         title: "Success",
         description: "BRD signed off successfully",
@@ -697,7 +747,7 @@ const AISignoff = () => {
       return (
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-          <span className="text-sm font-medium">Re-Draft</span>
+          <span className="text-sm font-medium">Ready for Review</span>
         </div>
       );
     } else if (normalizedStatus === "error") {
@@ -711,7 +761,7 @@ const AISignoff = () => {
     return (
       <div className="flex items-center gap-1.5">
         <div className="w-2 h-2 rounded-full bg-slate-500"></div>
-        <span className="text-sm font-medium">{status}</span>
+        <span className="text-sm font-medium">{capitalizeWords(status)}</span>
       </div>
     );
   };
@@ -808,70 +858,6 @@ const AISignoff = () => {
       const status = item.status?.toLowerCase() || "";
       return status === activeFilter.toLowerCase();
     });
-  };
-
-  // Add back the countFromSignoffItems function
-  const countFromSignoffItems = () => {
-    const counts = {
-      draft: 0,
-      ready: 0,
-      signed_off: 0,
-      rejected: 0,
-    };
-
-    console.log("Attempting to count from signoffItems:", {
-      itemCount: signoffItems?.length || 0,
-      sampleItems: signoffItems?.slice(0, 3),
-    });
-
-    if (signoffItems && signoffItems.length > 0) {
-      // Extract and normalize all statuses for debugging
-      const allStatuses = signoffItems.map((item) => ({
-        original: item.status,
-        normalized: (item.status || "").toLowerCase().trim(),
-      }));
-
-      // Find unique status values
-      const uniqueStatuses = [...new Set(allStatuses.map((s) => s.normalized))];
-      console.log("Unique status values in signoffItems:", uniqueStatuses);
-
-      // Count by normalized status
-      signoffItems.forEach((item) => {
-        const status = (item.status || "").toLowerCase().trim();
-
-        if (status === "draft") {
-          counts.draft++;
-        } else if (
-          status === "ready" ||
-          status === "review" ||
-          status === "under review"
-        ) {
-          counts.ready++;
-        } else if (status === "signed_off" || status === "approved") {
-          counts.signed_off++;
-        } else if (status === "rejected") {
-          counts.rejected++;
-        }
-
-        // If no match, log the unusual status
-        if (
-          status !== "draft" &&
-          status !== "ready" &&
-          status !== "review" &&
-          status !== "under review" &&
-          status !== "signed_off" &&
-          status !== "approved" &&
-          status !== "rejected"
-        ) {
-          console.log(
-            `Unrecognized status: "${status}" (original: "${item.status}")`
-          );
-        }
-      });
-    }
-
-    console.log("Final counts from signoffItems:", counts);
-    return counts;
   };
 
   // Render appropriate view based on requirementId

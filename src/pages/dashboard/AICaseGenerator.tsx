@@ -128,12 +128,67 @@ const AICaseGenerator = () => {
       try {
         setStatusCounts((prev) => ({ ...prev, isLoading: true }));
 
-        console.log("Fetching case generator records for counting");
+        console.log(
+          "Fetching user-specific case generator records for counting"
+        );
 
-        // Get all records at once and count in memory
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.log("No user found, showing empty state");
+          setStatusCounts({
+            requirements: 0,
+            completedUserStories: 0,
+            completedUseCases: 0,
+            completedTestCases: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Get all requirements for current user only
+        const { data: userRequirements, error: userReqError } = await supabase
+          .from("requirements")
+          .select("id")
+          .eq("user_id", user.id);
+
+        if (userReqError) {
+          console.error("Error fetching user requirements:", userReqError);
+          setStatusCounts({
+            requirements: 0,
+            completedUserStories: 0,
+            completedUseCases: 0,
+            completedTestCases: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // If user has no requirements, return zeros
+        if (!userRequirements || userRequirements.length === 0) {
+          console.log("User has no requirements, showing empty state");
+          setStatusCounts({
+            requirements: 0,
+            completedUserStories: 0,
+            completedUseCases: 0,
+            completedTestCases: 0,
+            isLoading: false,
+          });
+          return;
+        }
+
+        // Get requirement IDs for this user
+        const userRequirementIds = userRequirements.map((req) => req.id);
+
+        // Get all case generator records for this user's requirements
         const { data: allRecords, error: fetchError } = await supabase
           .from("case_generator")
-          .select("*");
+          .select("*")
+          .in("requirement_id", userRequirementIds);
 
         if (fetchError) {
           console.error("Error fetching case generator records:", fetchError);
@@ -150,7 +205,7 @@ const AICaseGenerator = () => {
         console.log(
           `Successfully fetched ${
             allRecords?.length || 0
-          } records from case_generator`
+          } case generator records for this user`
         );
 
         // Count metrics
@@ -178,7 +233,7 @@ const AICaseGenerator = () => {
           });
         }
 
-        console.log("Final counts from database:", counts);
+        console.log("Final counts from database for this user:", counts);
 
         setStatusCounts({
           ...counts,

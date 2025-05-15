@@ -655,6 +655,59 @@ export type Database = {
         };
         Relationships: [];
       };
+      requirement_flow_tracking: {
+        Row: {
+          id: string;
+          requirement_id: string;
+          current_stage: string;
+          requirement_capture_status: string;
+          analysis_status: string | null;
+          market_sense_status: string | null;
+          validator_status: string | null;
+          case_generator_status: string | null;
+          brd_status: string | null;
+          is_completed: boolean;
+          created_at: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          requirement_id: string;
+          current_stage?: string;
+          requirement_capture_status?: string;
+          analysis_status?: string | null;
+          market_sense_status?: string | null;
+          validator_status?: string | null;
+          case_generator_status?: string | null;
+          brd_status?: string | null;
+          is_completed?: boolean;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          requirement_id?: string;
+          current_stage?: string;
+          requirement_capture_status?: string;
+          analysis_status?: string | null;
+          market_sense_status?: string | null;
+          validator_status?: string | null;
+          case_generator_status?: string | null;
+          brd_status?: string | null;
+          is_completed?: boolean;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "requirement_flow_tracking_requirement_id_fkey";
+            columns: ["requirement_id"];
+            isOneToOne: false;
+            referencedRelation: "requirements";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

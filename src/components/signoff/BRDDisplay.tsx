@@ -177,7 +177,7 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
       return (
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-          <span className="text-sm font-medium">Re-Draft</span>
+          <span className="text-sm font-medium">Ready for Review</span>
         </div>
       );
     } else if (normalizedStatus === "error") {
@@ -277,19 +277,6 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
             </div>
             <div className="flex items-center gap-2">
               {renderStatusBadge(brdData.status)}
-              <Badge
-                variant={
-                  brdData.ai_signoff_confidence >= 80
-                    ? "success"
-                    : brdData.ai_signoff_confidence >= 60
-                    ? "secondary"
-                    : "warning"
-                }
-                className="flex items-center gap-1"
-              >
-                <ThumbsUp className="h-3 w-3" />
-                {brdData.ai_signoff_confidence}% AI Confidence
-              </Badge>
             </div>
           </div>
         </CardHeader>
@@ -381,24 +368,11 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
                 {formatAsBulletPoints(brdData.key_features).map(
                   (feature, index) => (
                     <li key={index} className="text-slate-700">
-                      {typeof feature === "string" && feature.length > 200
-                        ? feature.substring(0, 200) + "..."
-                        : feature}
+                      {feature}
                     </li>
                   )
                 )}
               </ul>
-              {formatAsBulletPoints(brdData.key_features).some(
-                (f) => typeof f === "string" && f.length > 200
-              ) && (
-                <div className="mt-3 text-xs text-amber-600">
-                  <span className="flex items-center">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Some feature descriptions were truncated due to excessive
-                    length.
-                  </span>
-                </div>
-              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -415,23 +389,11 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
                 {formatAsBulletPoints(brdData.business_goals).map(
                   (goal, index) => (
                     <li key={index} className="text-slate-700">
-                      {typeof goal === "string" && goal.length > 200
-                        ? goal.substring(0, 200) + "..."
-                        : goal}
+                      {goal}
                     </li>
                   )
                 )}
               </ul>
-              {formatAsBulletPoints(brdData.business_goals).some(
-                (g) => typeof g === "string" && g.length > 200
-              ) && (
-                <div className="mt-3 text-xs text-amber-600">
-                  <span className="flex items-center">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Some goals were truncated due to excessive length.
-                  </span>
-                </div>
-              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -448,24 +410,11 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
                 {formatAsBulletPoints(brdData.target_audience).map(
                   (audience, index) => (
                     <li key={index} className="text-slate-700">
-                      {typeof audience === "string" && audience.length > 200
-                        ? audience.substring(0, 200) + "..."
-                        : audience}
+                      {audience}
                     </li>
                   )
                 )}
               </ul>
-              {formatAsBulletPoints(brdData.target_audience).some(
-                (a) => typeof a === "string" && a.length > 200
-              ) && (
-                <div className="mt-3 text-xs text-amber-600">
-                  <span className="flex items-center">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Some audience entries were truncated due to excessive
-                    length.
-                  </span>
-                </div>
-              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -482,24 +431,11 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
                 {formatAsBulletPoints(brdData.market_research_summary).map(
                   (item, index) => (
                     <li key={index} className="text-slate-700">
-                      {typeof item === "string" && item.length > 200
-                        ? item.substring(0, 200) + "..."
-                        : item}
+                      {item}
                     </li>
                   )
                 )}
               </ul>
-              {formatAsBulletPoints(brdData.market_research_summary).some(
-                (m) => typeof m === "string" && m.length > 200
-              ) && (
-                <div className="mt-3 text-xs text-amber-600">
-                  <span className="flex items-center">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Some market research entries were truncated due to excessive
-                    length.
-                  </span>
-                </div>
-              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -670,24 +606,9 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
                 </div>
                 <ul className="list-disc pl-5 space-y-2 text-amber-800">
                   {brdData.risks_and_mitigations.map((risk, index) => (
-                    <li key={index}>
-                      {typeof risk === "string" && risk.length > 200
-                        ? risk.substring(0, 200) + "..."
-                        : risk}
-                    </li>
+                    <li key={index}>{risk}</li>
                   ))}
                 </ul>
-                {brdData.risks_and_mitigations.some(
-                  (r) => typeof r === "string" && r.length > 200
-                ) && (
-                  <div className="mt-3 text-xs text-amber-700">
-                    <span className="flex items-center">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      Some risk descriptions were truncated due to excessive
-                      length.
-                    </span>
-                  </div>
-                )}
               </div>
             </AccordionContent>
           </AccordionItem>

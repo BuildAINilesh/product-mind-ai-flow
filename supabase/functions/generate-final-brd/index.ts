@@ -300,7 +300,7 @@ serve(async (req) => {
     // Update the requirement status
     await supabase
       .from("requirements")
-      .update({ status: "BRD Generated" })
+      .update({ status: "Completed" })
       .eq("id", projectId);
 
     return new Response(
