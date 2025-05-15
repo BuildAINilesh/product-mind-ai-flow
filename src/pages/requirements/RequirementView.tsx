@@ -80,96 +80,60 @@ const RequirementView = () => {
     }
   };
 
-  // Separate function to fetch analysis data
+  // Improved function to fetch analysis data
   const fetchAnalysisData = async () => {
     try {
       if (!id) return;
 
-      console.log(
-        "Fetching analysis data for requirement ID:",
-        id,
-        "with type:",
-        typeof id
-      );
+      console.log("Fetching analysis data for requirement ID:", id);
+      setAnalysisLoading(true);
 
-      // First attempt: Try listing all records from the table to see what's there
-      console.log(
-        "DEBUG: Fetching ALL records from requirement_analysis table to inspect"
-      );
-      const { data: allRecords, error: listError } = await supabase
-        .from("requirement_analysis")
-        .select("id, requirement_id")
-        .limit(10);
-
-      console.log("All requirement_analysis records (first 10):", allRecords);
-      console.log("List error (if any):", listError);
-
-      // Second attempt: Try with explicit casting for UUID if that's the issue
-      console.log("Executing regular query with the requirement ID");
+      // First try direct query
       const { data: analysisData, error: analysisError } = await supabase
         .from("requirement_analysis")
         .select("*")
         .eq("requirement_id", id)
-        .maybeSingle();
-
-      // Log raw response before error handling
-      console.log("Raw Supabase response:", {
-        data: analysisData,
-        error: analysisError,
-      });
+        .single();
 
       if (analysisError) {
-        console.error("Error fetching analysis:", analysisError);
-        toast({
-          title: "Warning",
-          description: "Could not load analysis data.",
-          variant: "destructive",
-        });
-      } else {
-        console.log("Analysis data fetched from Supabase:", analysisData);
+        console.error("Error with single query:", analysisError);
 
-        // If null, try a different approach with a broader search
-        if (!analysisData) {
-          console.log(
-            "No analysis data found. Trying broader search without maybeSingle..."
-          );
-          const { data: allMatches, error: matchError } = await supabase
-            .from("requirement_analysis")
-            .select("*")
-            .eq("requirement_id", id);
+        // Try without single() to see if multiple records exist
+        const { data: multipleData, error: multipleError } = await supabase
+          .from("requirement_analysis")
+          .select("*")
+          .eq("requirement_id", id);
 
-          console.log(
-            "All potential matches:",
-            allMatches,
-            "Error:",
-            matchError
-          );
-
-          // Also try with a textual LIKE search in case of format issues
-          console.log("Trying with partial ID match (LIKE query)...");
-          // Extract first part of UUID for partial matching
-          const partialId = id.toString().substring(0, 8);
-          const { data: likeMatches, error: likeError } = await supabase
-            .from("requirement_analysis")
-            .select("*")
-            .like("requirement_id", `${partialId}%`);
-
-          console.log("Partial ID matches:", likeMatches, "Error:", likeError);
-
-          // If we found something with the broader search, use it
-          if (allMatches && allMatches.length > 0) {
-            console.log("Found match using broader search!");
-            setAnalysis(allMatches[0]);
-          } else if (likeMatches && likeMatches.length > 0) {
-            console.log("Found match using LIKE search!");
-            setAnalysis(likeMatches[0]);
-          }
-        } else {
-          setAnalysis(analysisData);
+        if (multipleError) {
+          console.error("Error with multiple query:", multipleError);
+          throw multipleError;
         }
+
+        if (multipleData && multipleData.length > 0) {
+          console.log(
+            "Found analysis with multiple results, using first one:",
+            multipleData[0]
+          );
+          setAnalysis(multipleData[0]);
+          return;
+        }
+      } else if (analysisData) {
+        console.log("Analysis data fetched successfully:", analysisData);
+        setAnalysis(analysisData);
+        return;
       }
+
+      console.log("No analysis data found with direct query");
+      setAnalysis(null);
     } catch (error) {
       console.error("Error in fetchAnalysisData:", error);
+      toast({
+        title: "Warning",
+        description: "Could not load analysis data.",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalysisLoading(false);
     }
   };
 
@@ -183,10 +147,7 @@ const RequirementView = () => {
   useEffect(() => {
     // When project is updated and status changes to "Completed"
     if (project?.status === "Completed") {
-      // Fetch analysis data if it's not already loaded
-      if (!analysis) {
-        fetchAnalysisData();
-      }
+      fetchAnalysisData();
     }
   }, [project?.status]);
 
@@ -246,9 +207,6 @@ const RequirementView = () => {
         if (data && data.success) {
           console.log("Analysis completed successfully via edge function");
           analysisSuccessful = true;
-
-          // Fetch the newly created analysis data
-          await fetchAnalysisData();
         } else {
           errorMessage = data?.error || "Unknown error during analysis";
           console.error("Edge function returned error:", errorMessage);
@@ -291,8 +249,11 @@ const RequirementView = () => {
           })
           .eq("requirement_id", id);
 
-        // Fetch the fresh analysis data
-        await fetchAnalysisData();
+        // Give a small delay to ensure DB writes are complete before fetching
+        setTimeout(async () => {
+          // Fetch the fresh analysis data
+          await fetchAnalysisData();
+        }, 1000);
       } else {
         toast({
           title: "Analysis Failed",
@@ -501,7 +462,7 @@ const RequirementView = () => {
               <RequirementAnalysisView
                 project={project}
                 analysis={analysis}
-                loading={loading}
+                loading={analysisLoading}
                 onRefresh={handleRefreshAnalysis}
               />
             </div>
