@@ -1,16 +1,16 @@
-
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
-import { useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 const DashboardLayout = () => {
   const location = useLocation();
   const path = location.pathname;
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -38,9 +38,15 @@ const DashboardLayout = () => {
     <div className="min-h-screen bg-background flex">
       <DashboardSidebar 
         isOpen={isMobile ? sidebarOpen : true} 
-        onToggle={() => setSidebarOpen(!sidebarOpen)} 
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onCollapsedChange={setSidebarCollapsed}
       />
-      <div className={`flex-1 flex flex-col ${isMobile ? 'ml-0' : 'ml-0 md:ml-64'}`}>
+      <div 
+        className={cn(
+          "flex-1 flex flex-col transition-all duration-300",
+          isMobile ? "ml-0" : sidebarCollapsed ? "ml-16" : "ml-64"
+        )}
+      >
         <DashboardHeader 
           title={getTitle()} 
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
