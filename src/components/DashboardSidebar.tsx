@@ -1,3 +1,4 @@
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -14,7 +15,9 @@ import {
   Layers,
   Network,
   CircuitBoard,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { AIGradientText } from "./ui/ai-elements";
 import { Button } from "./ui/button";
@@ -26,9 +29,10 @@ type NavItemProps = {
   href: string;
   isActive?: boolean;
   onClick?: () => void;
+  isCollapsed?: boolean;
 };
 
-const NavItem = ({ icon, label, href, isActive, onClick }: NavItemProps) => (
+const NavItem = ({ icon, label, href, isActive, onClick, isCollapsed }: NavItemProps) => (
   <Link
     to={href}
     className={cn(
@@ -47,7 +51,7 @@ const NavItem = ({ icon, label, href, isActive, onClick }: NavItemProps) => (
     >
       {icon}
     </div>
-    <span>{label}</span>
+    {!isCollapsed && <span>{label}</span>}
     {isActive && (
       <span className="absolute inset-y-0 left-0 w-0.5 bg-sidebar-primary" />
     )}
@@ -57,12 +61,43 @@ const NavItem = ({ icon, label, href, isActive, onClick }: NavItemProps) => (
 interface DashboardSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-const DashboardSidebar = ({ isOpen, onToggle }: DashboardSidebarProps) => {
+const DashboardSidebar = ({ isOpen, onToggle, onCollapsedChange }: DashboardSidebarProps) => {
   const location = useLocation();
   const currentPath = location.pathname;
   const isMobile = useIsMobile();
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isHovering, setIsHovering] = React.useState(false);
+  const [hoverTimeout, setHoverTimeout] = React.useState<number | null>(null);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeout) {
+      window.clearTimeout(hoverTimeout);
+      setHoverTimeout(null);
+    }
+    setIsHovering(true);
+  };
+
+  const handleMouseLeave = () => {
+    const timeout = window.setTimeout(() => {
+      setIsHovering(false);
+    }, 300) as unknown as number;
+    setHoverTimeout(timeout);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (hoverTimeout) {
+        window.clearTimeout(hoverTimeout);
+      }
+    };
+  }, [hoverTimeout]);
+
+  React.useEffect(() => {
+    onCollapsedChange?.(isCollapsed);
+  }, [isCollapsed, onCollapsedChange]);
 
   const navItems = [
     {
@@ -186,20 +221,44 @@ const DashboardSidebar = ({ isOpen, onToggle }: DashboardSidebarProps) => {
   }
 
   // Desktop sidebar
+  const effectiveCollapsed = isCollapsed && !isHovering;
+  
   return (
-    <aside className="bg-sidebar w-64 min-h-screen flex flex-col fixed left-0 top-0 z-30 hidden md:flex">
+    <aside 
+      className={cn(
+        "bg-sidebar min-h-screen flex flex-col fixed left-0 top-0 z-30 hidden md:flex transition-all duration-300",
+        effectiveCollapsed ? "w-16" : "w-64"
+      )}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_50%,_rgba(29,78,216,0.15),_transparent_80%)]"></div>
-        <div className="relative p-4 flex items-center">
-          <div className="w-8 h-8 bg-gradient-to-br from-sidebar-primary to-secondary rounded-lg flex items-center justify-center relative overflow-hidden">
-            <span className="text-white font-bold text-lg relative z-10">
-              P
-            </span>
-            <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_70%_70%,_rgba(255,255,255,0.2),_transparent_70%)]"></div>
+        <div className="relative p-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-sidebar-primary to-secondary rounded-lg flex items-center justify-center relative overflow-hidden">
+              <span className="text-white font-bold text-lg relative z-10">
+                P
+              </span>
+              <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_70%_70%,_rgba(255,255,255,0.2),_transparent_70%)]"></div>
+            </div>
+            {!effectiveCollapsed && (
+              <span className="ml-2 font-bold text-xl text-sidebar-foreground">
+                Product<AIGradientText>Mind</AIGradientText>
+              </span>
+            )}
           </div>
-          <span className="ml-2 font-bold text-xl text-sidebar-foreground">
-            Product<AIGradientText>Mind</AIGradientText>
-          </span>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={cn(
+              "text-sidebar-foreground transition-opacity duration-200",
+              effectiveCollapsed && !isHovering ? "opacity-0" : "opacity-100"
+            )}
+          >
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </Button>
         </div>
       </div>
 
@@ -216,6 +275,7 @@ const DashboardSidebar = ({ isOpen, onToggle }: DashboardSidebarProps) => {
                   ? currentPath === item.href
                   : currentPath.startsWith(item.href)
               }
+              isCollapsed={effectiveCollapsed}
             />
           ))}
         </nav>
@@ -230,6 +290,7 @@ const DashboardSidebar = ({ isOpen, onToggle }: DashboardSidebarProps) => {
               label={item.label}
               href={item.href}
               isActive={currentPath === item.href}
+              isCollapsed={effectiveCollapsed}
             />
           ))}
         </nav>
