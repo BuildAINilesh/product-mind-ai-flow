@@ -25,6 +25,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Function to remove Markdown formatting
+function removeMarkdown(text: string): string {
+  return text
+    .replace(/^#{1,6}\s+/gm, "") // Remove headings
+    .replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold
+    .replace(/\*(.*?)\*/g, "$1") // Remove italics
+    .replace(/__(.*?)__/g, "$1") // Remove underline
+    .replace(/~~(.*?)~~/g, "$1") // Remove strikethrough
+    .replace(/`(.*?)`/g, "$1") // Remove inline code
+    .replace(/^\s*[-+*]\s+/gm, "• ") // Convert bullet points to a simple bullet character
+    .replace(/^\s*\d+\.\s+/gm, "$& ") // Keep numbered lists but ensure proper spacing
+    .replace(/\n{3,}/g, "\n\n") // Normalize multiple newlines
+    .trim();
+}
+
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
@@ -338,8 +353,13 @@ If you have a specific topic or expected content in mind, or if you can provide 
     Your tasks:
     1. Extract all key information, focusing on main topics, key points, and significant details
     2. Provide a comprehensive, well-structured summary that captures the essence of the document
-    3. Format your summary with clear headings and bullet points when appropriate
-    4. If there are any tables or structured data, describe their contents clearly
+    3. Format your response in plain text without any Markdown formatting
+    4. DO NOT use hashtags (#) for headings - use plain text with UPPERCASE for section titles
+    5. DO NOT use asterisks (*) or underscores (_) for emphasis - use plain text
+    6. If there are lists, use simple dashes (-) or numbers (1.) with proper spacing
+    7. If there are any tables or structured data, describe their contents clearly
+    
+    IMPORTANT: The summary should be formatted in plain text only, without any Markdown syntax.
     
     NOTE: The reader has not seen the document, so make your summary informative and standalone.
     `;
@@ -361,7 +381,7 @@ If you have a specific topic or expected content in mind, or if you can provide 
             {
               role: "system",
               content:
-                "You are an expert document analyst that extracts key information from documents and produces clear, comprehensive summaries.",
+                "You are an expert document analyst that extracts key information from documents and produces clear, comprehensive summaries in plain text format. Never use Markdown formatting in your responses.",
             },
             {
               role: "user",
