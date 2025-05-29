@@ -135,9 +135,7 @@ serve(async (req) => {
 
     // Create the prompt for OpenAI with research snippets
     const prompt = `
-    You are acting as an expert Market Research Analyst.
-
-    Based on the provided project details and research snippets from trusted sources, create a comprehensive market analysis using the exact JSON structure requested.
+    You are an expert Market Research Analyst tasked with delivering a comprehensive and detailed market analysis based on the provided project details and research snippets.
 
     Project Details:
     Project Name: ${projectData.project_name}
@@ -153,43 +151,33 @@ serve(async (req) => {
     ${researchSnippets}
     ${
       usingFallbackData
-        ? "(NOTE: This analysis is using fallback data as specific research data could not be retrieved.)"
+        ? "(Note: This analysis utilizes general industry knowledge due to the absence of specific research data.)"
         : ""
     }
 
     Instructions:
-    - ${
-      usingFallbackData
-        ? "This analysis is using general industry knowledge due to lack of specific research data"
-        : "Use the research snippets to inform your analysis where available"
-    }
-    - Analyze the market potential for this product/service
-    - Identify relevant market trends and opportunities
-    - Research competitive landscape in this industry
-    - Provide insights directly from the research data when possible
-    - Reference specific data points from research when applicable
-    - For any gaps in research, use your general market knowledge
-    - Keep each section concise (4-5 lines) and actionable
-    - Use bullet points where appropriate
-
-    Based on the project details and research snippets above, generate a market analysis in valid JSON format that matches the following structure:
+    - Leverage the research snippets to inform your analysis. If specific data is unavailable, apply general industry knowledge.
+    - Provide an in-depth examination for each section, incorporating relevant data, trends, and insights.
+    - Ensure each section contains substantial information, aiming for multiple detailed paragraphs where appropriate.
+    - Avoid using markdown formatting (e.g., no asterisks '*', hashes '#', or other markdown symbols). Present all text in plain format to ensure compatibility with frontend rendering.
+    - Structure your response strictly as a valid JSON object matching the following schema:
 
     {
-      "market_trends": string describing 3-5 current trends in this market,
-      "demand_insights": string with analysis of potential demand and customer needs,
-      "top_competitors": string listing typical competitors in this space and their strengths,
-      "market_gap_opportunity": string identifying the specific gap or opportunity this project addresses,
-      "swot_analysis": string with brief SWOT analysis relevant to market position,
+      "market_trends": string describing 3-5 current trends in this market with detailed analysis,
+      "demand_insights": string with comprehensive examination of potential demand and customer needs,
+      "top_competitors": string with in-depth overview of typical competitors in this space and their strengths,
+      "market_gap_opportunity": string identifying specific gaps or opportunities this project addresses,
+      "swot_analysis": string with thorough SWOT analysis relevant to market position,
       "industry_benchmarks": string with 2-3 key performance indicators typical for this industry,
       "confidence_score": number (0-100) indicating confidence level of this analysis
     }
 
-    Your confidence score should reflect the quality and relevance of the research snippets provided (${
+    The confidence_score should reflect the quality and relevance of the research snippets provided (${
       usingFallbackData
-        ? "this should be lower due to using fallback data"
+        ? "assign a lower score as we're relying on general industry knowledge"
         : "higher score for more relevant research"
     }).
-    Ensure the response is a valid JSON object that can be parsed.
+    Ensure the JSON object is properly formatted and can be parsed without errors.
     `;
 
     // Call OpenAI API to generate the analysis
