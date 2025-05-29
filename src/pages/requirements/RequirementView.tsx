@@ -224,23 +224,16 @@ const RequirementView = () => {
           description: "AI analysis has been successfully completed!",
         });
 
-        // Update the project status to "Analysis Complete"
-        const { data: updatedProject } = await supabase
+        // Step 1: Update the project status in the database
+        await supabase
           .from("requirements")
           .update({
             status: "Completed",
             last_updated: new Date().toISOString(),
           })
-          .eq("id", id)
-          .select()
-          .single();
+          .eq("id", id);
 
-        // Update local state with the updated project data
-        if (updatedProject) {
-          setProject(updatedProject);
-        }
-
-        // Update the flow tracking to show analysis is complete
+        // Step 2: Update the flow tracking
         await supabase
           .from("requirement_flow_tracking")
           .update({
@@ -249,11 +242,30 @@ const RequirementView = () => {
           })
           .eq("requirement_id", id);
 
-        // Give a small delay to ensure DB writes are complete before fetching
-        setTimeout(async () => {
-          // Fetch the fresh analysis data
-          await fetchAnalysisData();
-        }, 1000);
+        // Step 3: Fetch fresh project data and update state
+        const { data: freshProject } = await supabase
+          .from("requirements")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (freshProject) {
+          setProject(freshProject);
+
+          // Step 4: Add a small delay before fetching analysis to ensure DB consistency
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          // Step 5: Fetch and set fresh analysis data
+          const { data: freshAnalysis } = await supabase
+            .from("requirement_analysis")
+            .select("*")
+            .eq("requirement_id", id)
+            .single();
+
+          if (freshAnalysis) {
+            setAnalysis(freshAnalysis);
+          }
+        }
       } else {
         toast({
           title: "Analysis Failed",
