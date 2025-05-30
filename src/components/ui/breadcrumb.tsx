@@ -1,115 +1,303 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { ChevronRight, MoreHorizontal } from "lucide-react"
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { ChevronRight, Home } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
+interface BreadcrumbProps {
+  className?: string;
+}
 
-const Breadcrumb = React.forwardRef<
-  HTMLElement,
-  React.ComponentPropsWithoutRef<"nav"> & {
-    separator?: React.ReactNode
+interface BreadcrumbItem {
+  text: string;
+  path: string;
+  isLast: boolean;
+}
+
+interface NavigationHistoryItem {
+  path: string;
+  text: string;
+}
+
+interface ParentFlow {
+  parent: string;
+  children: string[];
+  childLabels: Record<string, string>;
+  displayName: string;
+  fullPath: string[];
+  alternateFullPath?: string[];
+  marketSensePath?: string[];
+  validatorPath?: string[];
+  aiCasesPath?: string[];
+  newRequirementPath?: string[];
+  requirementsPath?: string[];
+}
+
+interface ChildFlow {
+  parent: string;
+  displayName: string;
+  group?: string;
+  children?: string[];
+  childLabels?: Record<string, string>;
+  fullPath: string[];
+  alternateFullPath?: string[];
+  marketSensePath?: string[];
+  validatorPath?: string[];
+  aiCasesPath?: string[];
+  newRequirementPath?: string[];
+  requirementsPath?: string[];
+}
+
+type NavigationFlow = ParentFlow | ChildFlow;
+
+// Define the navigation flow relationships
+const navigationFlows: Record<string, NavigationFlow> = {
+  requirements: {
+    parent: "dashboard",
+    children: ["new-requirement", "analysis"],
+    childLabels: {
+      "new-requirement": "New Requirement",
+      "analysis": "Analysis"
+    },
+    displayName: "Requirements",
+    fullPath: ["dashboard", "requirements"]
+  },
+  "new-requirement": {
+    parent: "requirements",
+    children: ["analysis", "signoff"],
+    childLabels: {
+      "analysis": "Analysis",
+      "signoff": "Smart Signoff"
+    },
+    displayName: "New Requirement",
+    fullPath: ["dashboard", "requirements", "new-requirement"]
+  },
+  "analysis": {
+    parent: "new-requirement",
+    children: ["market-sense", "validator", "ai-cases", "signoff"],
+    childLabels: {
+      "market-sense": "Market Sense",
+      "validator": "AI Validator",
+      "ai-cases": "AI Cases",
+      "signoff": "Smart Signoff"
+    },
+    displayName: "Analysis",
+    fullPath: ["dashboard", "requirements", "new-requirement", "analysis"]
+  },
+  "market-sense": {
+    parent: "dashboard",
+    children: ["validator", "signoff"],
+    childLabels: {
+      "validator": "AI Validator",
+      "signoff": "Smart Signoff"
+    },
+    displayName: "Market Sense",
+    fullPath: ["dashboard", "market-sense"],
+    alternateFullPath: ["dashboard", "requirements", "new-requirement", "analysis", "market-sense"],
+    requirementsPath: ["dashboard", "requirements", "market-sense"]
+  },
+  validator: {
+    parent: "dashboard",
+    children: ["ai-cases", "signoff"],
+    childLabels: {
+      "ai-cases": "AI Cases",
+      "signoff": "Smart Signoff"
+    },
+    displayName: "AI Validator",
+    fullPath: ["dashboard", "validator"],
+    alternateFullPath: ["dashboard", "requirements", "new-requirement", "analysis", "market-sense", "validator"],
+    marketSensePath: ["dashboard", "market-sense", "validator"],
+    requirementsPath: ["dashboard", "requirements", "validator"]
+  },
+  "ai-cases": {
+    parent: "dashboard",
+    children: ["signoff"],
+    childLabels: {
+      "signoff": "Smart Signoff"
+    },
+    displayName: "AI Cases",
+    fullPath: ["dashboard", "ai-cases"],
+    alternateFullPath: ["dashboard", "requirements", "new-requirement", "analysis", "market-sense", "validator", "ai-cases"],
+    marketSensePath: ["dashboard", "market-sense", "validator", "ai-cases"],
+    validatorPath: ["dashboard", "validator", "ai-cases"],
+    requirementsPath: ["dashboard", "requirements", "ai-cases"]
+  },
+  signoff: {
+    parent: "dashboard",
+    displayName: "Smart Signoff",
+    group: "analysis",
+    fullPath: ["dashboard", "signoff"],
+    alternateFullPath: ["dashboard", "requirements", "new-requirement", "analysis", "market-sense", "validator", "ai-cases", "signoff"],
+    marketSensePath: ["dashboard", "market-sense", "validator", "ai-cases", "signoff"],
+    validatorPath: ["dashboard", "validator", "ai-cases", "signoff"],
+    aiCasesPath: ["dashboard", "ai-cases", "signoff"],
+    newRequirementPath: ["dashboard", "requirements", "new-requirement", "signoff"],
+    requirementsPath: ["dashboard", "requirements", "signoff"]
   }
->(({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />)
-Breadcrumb.displayName = "Breadcrumb"
+};
 
-const BreadcrumbList = React.forwardRef<
-  HTMLOListElement,
-  React.ComponentPropsWithoutRef<"ol">
->(({ className, ...props }, ref) => (
-  <ol
-    ref={ref}
-    className={cn(
-      "flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5",
-      className
-    )}
-    {...props}
-  />
-))
-BreadcrumbList.displayName = "BreadcrumbList"
+const isChildFlow = (flow: NavigationFlow | undefined): flow is ChildFlow => {
+  return flow !== undefined && 'group' in flow;
+};
 
-const BreadcrumbItem = React.forwardRef<
-  HTMLLIElement,
-  React.ComponentPropsWithoutRef<"li">
->(({ className, ...props }, ref) => (
-  <li
-    ref={ref}
-    className={cn("inline-flex items-center gap-1.5", className)}
-    {...props}
-  />
-))
-BreadcrumbItem.displayName = "BreadcrumbItem"
+const isParentFlow = (flow: NavigationFlow | undefined): flow is ParentFlow => {
+  return flow !== undefined && 'children' in flow;
+};
 
-const BreadcrumbLink = React.forwardRef<
-  HTMLAnchorElement,
-  React.ComponentPropsWithoutRef<"a"> & {
-    asChild?: boolean
+const formatSegmentText = (segment: string): string => {
+  return segment
+    .split("-")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const NAVIGATION_HISTORY_KEY = 'navigationHistory';
+const WORKFLOW_CONTEXT_KEY = 'workflowContext';
+
+export const Breadcrumb = ({ className }: BreadcrumbProps) => {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const [navigationHistory, setNavigationHistory] = useState<NavigationHistoryItem[]>([]);
+  const pathSegments = location.pathname.split("/").filter(Boolean);
+
+  useEffect(() => {
+    try {
+      const storedHistory = sessionStorage.getItem(NAVIGATION_HISTORY_KEY);
+      const currentHistory: NavigationHistoryItem[] = storedHistory ? JSON.parse(storedHistory) : [];
+      
+      const currentSegment = pathSegments[pathSegments.length - 1];
+      const flowInfo = navigationFlows[currentSegment];
+      const currentPath = location.pathname;
+      const requirementId = searchParams.get('requirementId');
+      
+      let newHistory: NavigationHistoryItem[] = [];
+
+      if (currentPath === '/dashboard') {
+        newHistory = [{
+          path: '/dashboard',
+          text: 'Dashboard'
+        }];
+      } else {
+        // Start with Dashboard
+        newHistory = [{
+          path: '/dashboard',
+          text: 'Dashboard'
+        }];
+
+        // Always add Requirements as the second level
+        newHistory.push({
+          path: '/dashboard/requirements',
+          text: 'Requirements'
+        });
+
+        // Add the current section based on the workflow
+        if (currentSegment === 'market-sense') {
+          newHistory.push({
+            path: '/dashboard/market-sense' + location.search,
+            text: 'Market Sense'
+          });
+        } else if (currentSegment === 'validator') {
+          // For validator, include market-sense in the path
+          newHistory.push({
+            path: '/dashboard/market-sense' + location.search,
+            text: 'Market Sense'
+          });
+          newHistory.push({
+            path: '/dashboard/validator' + location.search,
+            text: 'AI Validator'
+          });
+        } else if (currentSegment === 'ai-cases') {
+          // For AI Cases, include the full path
+          newHistory.push({
+            path: '/dashboard/market-sense' + location.search,
+            text: 'Market Sense'
+          });
+          newHistory.push({
+            path: '/dashboard/validator' + location.search,
+            text: 'AI Validator'
+          });
+          newHistory.push({
+            path: '/dashboard/ai-cases' + location.search,
+            text: 'AI Cases'
+          });
+        } else if (currentSegment === 'signoff') {
+          // For Signoff, include the full path
+          newHistory.push({
+            path: '/dashboard/market-sense' + location.search,
+            text: 'Market Sense'
+          });
+          newHistory.push({
+            path: '/dashboard/validator' + location.search,
+            text: 'AI Validator'
+          });
+          newHistory.push({
+            path: '/dashboard/ai-cases' + location.search,
+            text: 'AI Cases'
+          });
+          newHistory.push({
+            path: currentPath + location.search,
+            text: 'Smart Signoff'
+          });
+        }
+
+        // If we have a requirement ID, add it to all paths except dashboard
+        if (requirementId) {
+          newHistory = newHistory.map((item, index) => {
+            if (index === 0) return item; // Skip dashboard
+            return {
+              ...item,
+              path: item.path.includes('?') ? item.path : `${item.path}?requirementId=${requirementId}`
+            };
+          });
+        }
+      }
+
+      sessionStorage.setItem(NAVIGATION_HISTORY_KEY, JSON.stringify(newHistory));
+      setNavigationHistory(newHistory);
+    } catch (error) {
+      console.error('Error managing navigation history:', error);
+    }
+  }, [location.pathname, location.search]);
+
+  // Don't show breadcrumb on dashboard
+  if (pathSegments.length === 1 && pathSegments[0] === "dashboard") {
+    return null;
   }
->(({ asChild, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : "a"
 
   return (
-    <Comp
-      ref={ref}
-      className={cn("transition-colors hover:text-foreground", className)}
-      {...props}
-    />
-  )
-})
-BreadcrumbLink.displayName = "BreadcrumbLink"
-
-const BreadcrumbPage = React.forwardRef<
-  HTMLSpanElement,
-  React.ComponentPropsWithoutRef<"span">
->(({ className, ...props }, ref) => (
-  <span
-    ref={ref}
-    role="link"
-    aria-disabled="true"
-    aria-current="page"
-    className={cn("font-normal text-foreground", className)}
-    {...props}
-  />
-))
-BreadcrumbPage.displayName = "BreadcrumbPage"
-
-const BreadcrumbSeparator = ({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<"li">) => (
-  <li
-    role="presentation"
-    aria-hidden="true"
-    className={cn("[&>svg]:size-3.5", className)}
-    {...props}
-  >
-    {children ?? <ChevronRight />}
-  </li>
-)
-BreadcrumbSeparator.displayName = "BreadcrumbSeparator"
-
-const BreadcrumbEllipsis = ({
-  className,
-  ...props
-}: React.ComponentProps<"span">) => (
-  <span
-    role="presentation"
-    aria-hidden="true"
-    className={cn("flex h-9 w-9 items-center justify-center", className)}
-    {...props}
-  >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More</span>
-  </span>
-)
-BreadcrumbEllipsis.displayName = "BreadcrumbElipssis"
-
-export {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-  BreadcrumbEllipsis,
-}
+    <nav 
+      aria-label="Breadcrumb"
+      className={cn(
+        "flex items-center space-x-1 text-sm text-muted-foreground overflow-x-auto scrollbar-none",
+        "min-h-[32px] px-2 py-1 bg-background/95 backdrop-blur-sm rounded-md",
+        "border border-border/50 shadow-sm",
+        className
+      )}
+    >
+      <Link 
+        to="/dashboard"
+        className="flex items-center hover:text-foreground transition-colors min-w-fit"
+      >
+        <Home size={16} className="shrink-0" />
+        <span className="sr-only">Home</span>
+      </Link>
+      
+      {navigationHistory.slice(1).map((item, index) => (
+        <React.Fragment key={item.path}>
+          <ChevronRight size={14} className="shrink-0 text-muted-foreground/50" />
+          <div className="flex items-center min-w-fit">
+            {index === navigationHistory.length - 2 ? (
+              <span className="text-foreground font-medium">{item.text}</span>
+            ) : (
+              <Link
+                to={item.path}
+                className="hover:text-foreground transition-colors"
+              >
+                {item.text}
+              </Link>
+            )}
+          </div>
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+};
