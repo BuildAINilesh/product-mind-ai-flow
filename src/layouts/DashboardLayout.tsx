@@ -1,9 +1,11 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import { useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 const DashboardLayout = () => {
   const location = useLocation();
@@ -52,7 +54,10 @@ const DashboardLayout = () => {
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         />
         <main className="flex-1 p-3 md:p-6 overflow-auto">
-          <Outlet />
+          <div className="space-y-4">
+            <Breadcrumb />
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
