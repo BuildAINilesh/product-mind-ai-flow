@@ -1,4 +1,3 @@
-
 // Types for the case generator hook and associated data
 
 // Type for the dashboard item
@@ -20,6 +19,16 @@ export interface UserStory {
   content: string;
   status: string;
   actor?: string;
+}
+
+// Database user story structure
+export interface DatabaseUserStory {
+  id: string;
+  requirement_id: string;
+  actor: string;
+  story: string;
+  acceptance_criteria: any; // jsonb field
+  created_at: string;
 }
 
 export interface UseCase {

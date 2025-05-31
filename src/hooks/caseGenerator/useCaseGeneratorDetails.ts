@@ -6,12 +6,13 @@ import {
   getCaseGeneratorData,
   generateCaseGeneratorElements,
 } from "@/services/caseGeneratorService";
-import { Requirement, UserStory, UseCase, TestCase, StatusData } from "./types";
+import { getUserStoriesForRequirement, DatabaseUserStory } from "@/services/userStoriesService";
+import { Requirement, UseCase, TestCase, StatusData } from "./types";
 import { formatRequirement } from "./utils";
 
 export const useCaseGeneratorDetails = (requirementId: string | null) => {
   const [requirement, setRequirement] = useState<Requirement | null>(null);
-  const [userStories, setUserStories] = useState<UserStory[]>([]);
+  const [userStories, setUserStories] = useState<DatabaseUserStory[]>([]);
   const [useCases, setUseCases] = useState<UseCase[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [isRequirementLoading, setIsRequirementLoading] = useState<boolean>(false);
@@ -35,12 +36,10 @@ export const useCaseGeneratorDetails = (requirementId: string | null) => {
         
         if (reqData) {
           console.log("Successfully found requirement:", reqData);
-          // Use our helper function to format the requirement
           setRequirement(formatRequirement(reqData));
         } else {
           console.log("Could not find requirement directly, trying to find via case_generator table");
           
-          // If we couldn't find the requirement directly, try to find information from case_generator table
           if (supabase) {
             const { data: caseGenData, error: caseGenError } = await supabase
               .from("case_generator")
@@ -64,7 +63,6 @@ export const useCaseGeneratorDetails = (requirementId: string | null) => {
             } else if (caseGenData && caseGenData.requirements) {
               console.log("Found requirement via case_generator join:", caseGenData.requirements);
               
-              // Create a standardized requirement object from the join result using our helper function
               if (typeof caseGenData.requirements === 'object') {
                 const reqData = {
                   id: requirementId,
@@ -77,11 +75,20 @@ export const useCaseGeneratorDetails = (requirementId: string | null) => {
           }
         }
 
+        // Fetch user stories from database
+        try {
+          const dbUserStories = await getUserStoriesForRequirement(requirementId);
+          setUserStories(dbUserStories);
+          console.log("Fetched user stories from database:", dbUserStories);
+        } catch (error) {
+          console.error("Error fetching user stories:", error);
+          setUserStories([]);
+        }
+
         // Fetch case generator data for this requirement
         const caseGeneratorData = await getCaseGeneratorData(requirementId);
 
         if (caseGeneratorData) {
-          setUserStories(caseGeneratorData.userStories || []);
           setUseCases(caseGeneratorData.useCases || []);
           setTestCases(caseGeneratorData.testCases || []);
           
@@ -119,12 +126,25 @@ export const useCaseGeneratorDetails = (requirementId: string | null) => {
       );
 
       // After successful generation, refresh the data
+      if (type === "userStories" || !type) {
+        // Refresh user stories from database
+        try {
+          const dbUserStories = await getUserStoriesForRequirement(requirementId);
+          setUserStories(dbUserStories);
+        } catch (error) {
+          console.error("Error refreshing user stories:", error);
+        }
+      }
+
       const caseGeneratorData = await getCaseGeneratorData(requirementId);
 
       if (caseGeneratorData) {
-        setUserStories(caseGeneratorData.userStories || []);
-        setUseCases(caseGeneratorData.useCases || []);
-        setTestCases(caseGeneratorData.testCases || []);
+        if (type === "useCases" || !type) {
+          setUseCases(caseGeneratorData.useCases || []);
+        }
+        if (type === "testCases" || !type) {
+          setTestCases(caseGeneratorData.testCases || []);
+        }
         
         // Update status data
         if (caseGeneratorData.statusData) {

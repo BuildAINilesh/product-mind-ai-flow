@@ -1,9 +1,11 @@
+
 import React, { useState } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Tabs } from "@/components/ui/tabs";
 import Loader from "@/components/shared/Loader";
 import RequirementDetails from "./RequirementDetails";
-import { UserStory, UseCase, TestCase } from "@/hooks/caseGenerator";
+import { UseCase, TestCase } from "@/hooks/caseGenerator";
+import { DatabaseUserStory } from "@/services/userStoriesService";
 import AICaseGeneratorHeader from "./header/AICaseGeneratorHeader";
 import AICaseTabNavigation from "./tabs/AICaseTabNavigation";
 import AICaseTabContent from "./tabs/AICaseTabContent";
@@ -19,7 +21,7 @@ interface AICaseGeneratorDetailsProps {
     description: string;
     req_id?: string;
   } | null;
-  userStories: UserStory[];
+  userStories: DatabaseUserStory[];
   useCases: UseCase[];
   testCases: TestCase[];
   isRequirementLoading: boolean;

@@ -1,17 +1,17 @@
+
 import React from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import CaseContentTab from "../CaseContentTab";
-import { BookIcon, CodeIcon, TestTubeIcon } from "lucide-react";
+import CasePendingGeneration from "../CasePendingGeneration";
+import DatabaseUserStoryCard from "../DatabaseUserStoryCard";
+import { UseCase, TestCase, StatusData } from "@/hooks/caseGenerator";
+import { DatabaseUserStory } from "@/services/userStoriesService";
 
 interface AICaseTabContentProps {
-  userStories: Array<{ id: string; content: string; status: string; actor?: string }>;
-  useCases: Array<{ id: string; content: string; status: string }>;
-  testCases: Array<{ id: string; content: string; status: string }>;
-  statusData: {
-    userStoriesStatus: string;
-    useCasesStatus: string;
-    testCasesStatus: string;
-  };
+  userStories: DatabaseUserStory[];
+  useCases: UseCase[];
+  testCases: TestCase[];
+  statusData: StatusData;
   isGenerating: boolean;
   handleGenerateClick: (
     type?: "userStories" | "useCases" | "testCases"
@@ -28,38 +28,52 @@ const AICaseTabContent: React.FC<AICaseTabContentProps> = ({
 }) => {
   return (
     <>
-      <TabsContent value="userStories" className="mt-4">
-        <CaseContentTab
-          title="User Stories"
-          icon={BookIcon}
-          status={statusData.userStoriesStatus}
-          items={userStories}
-          type="userStories"
-          isGenerating={isGenerating}
-          onGenerate={() => handleGenerateClick("userStories")}
-        />
+      {/* User Stories Tab */}
+      <TabsContent value="userStories" className="space-y-4">
+        {userStories.length > 0 ? (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">User Stories</h3>
+              <span className="text-sm text-slate-500">
+                {userStories.length} {userStories.length === 1 ? 'story' : 'stories'}
+              </span>
+            </div>
+            {userStories.map((userStory, index) => (
+              <DatabaseUserStoryCard
+                key={userStory.id}
+                userStory={userStory}
+                index={index}
+              />
+            ))}
+          </div>
+        ) : (
+          <CasePendingGeneration
+            type="userStories"
+            status={statusData.userStoriesStatus}
+            isGenerating={isGenerating}
+            onGenerate={() => handleGenerateClick("userStories")}
+          />
+        )}
       </TabsContent>
 
-      <TabsContent value="useCases" className="mt-4">
+      {/* Use Cases Tab */}
+      <TabsContent value="useCases" className="space-y-4">
         <CaseContentTab
-          title="Use Cases"
-          icon={CodeIcon}
-          status={statusData.useCasesStatus}
           items={useCases}
           type="useCases"
-          isGenerating={isGenerating && statusData.userStoriesStatus === "Completed"}
+          status={statusData.useCasesStatus}
+          isGenerating={isGenerating}
           onGenerate={() => handleGenerateClick("useCases")}
         />
       </TabsContent>
 
-      <TabsContent value="testCases" className="mt-4">
+      {/* Test Cases Tab */}
+      <TabsContent value="testCases" className="space-y-4">
         <CaseContentTab
-          title="Test Cases"
-          icon={TestTubeIcon}
-          status={statusData.testCasesStatus}
           items={testCases}
           type="testCases"
-          isGenerating={isGenerating && statusData.useCasesStatus === "Completed"}
+          status={statusData.testCasesStatus}
+          isGenerating={isGenerating}
           onGenerate={() => handleGenerateClick("testCases")}
         />
       </TabsContent>

@@ -1,6 +1,7 @@
 
 import { useCaseGeneratorDashboard } from "./useCaseGeneratorDashboard";
 import { useCaseGeneratorDetails } from "./useCaseGeneratorDetails";
+import { DatabaseUserStory } from "@/services/userStoriesService";
 import type {
   ForgeFlowItem,
   Requirement,
@@ -62,6 +63,7 @@ export type {
   UseCase,
   TestCase,
   StatusData,
+  DatabaseUserStory,
 };
 
 export { useCaseGeneratorDashboard, useCaseGeneratorDetails };
