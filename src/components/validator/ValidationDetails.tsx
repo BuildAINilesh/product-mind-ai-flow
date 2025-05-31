@@ -37,6 +37,14 @@ interface ValidationDataType {
   readiness_score: number | null;
   validation_verdict: string | null;
   status: string | null;
+  created_at: string;
+  updated_at: string;
+  requirements?: {
+    req_id: string;
+    project_name: string;
+    industry_type: string;
+    id: string;
+  } | null;
 }
 
 interface ValidationDetailsProps {

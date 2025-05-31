@@ -1,7 +1,6 @@
-
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Navbar from "@/components/Navbar";
+import { Card, CardContent, CardHeader } from "../src/components/ui/card";
+import { Button } from "../src/components/ui/button";
+import Navbar from "../src/components/Navbar";
 
 const Career = () => {
   const positions = [
@@ -9,20 +8,22 @@ const Career = () => {
       title: "Senior Frontend Engineer",
       location: "Remote",
       type: "Full-time",
-      description: "Join our team to build the next generation of product development tools"
+      description:
+        "Join our team to build the next generation of product development tools",
     },
     {
       title: "Product Manager",
       location: "San Francisco, CA",
       type: "Full-time",
-      description: "Shape the future of our product and work with cutting-edge AI technology"
+      description:
+        "Shape the future of our product and work with cutting-edge AI technology",
     },
     {
       title: "AI/ML Engineer",
       location: "Remote",
       type: "Full-time",
-      description: "Develop AI models for product analysis and automation"
-    }
+      description: "Develop AI models for product analysis and automation",
+    },
   ];
 
   const benefits = [
@@ -31,7 +32,7 @@ const Career = () => {
     "Health, dental, and vision insurance",
     "Unlimited PTO",
     "Professional development budget",
-    "Home office setup allowance"
+    "Home office setup allowance",
   ];
 
   return (
@@ -39,9 +40,7 @@ const Career = () => {
       <Navbar />
       <div className="container mx-auto px-4 pt-24 pb-16">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl font-bold mb-6">
-            Join Our Team
-          </h1>
+          <h1 className="text-4xl font-bold mb-6">Join Our Team</h1>
           <p className="text-muted-foreground text-lg">
             Help us revolutionize product development with AI
           </p>

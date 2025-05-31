@@ -1,18 +1,20 @@
+import {
+  RequirementAnalysisData,
+  MarketAnalysisData,
+} from "@/hooks/useMarketAnalysis";
 
-import { RequirementAnalysisData, MarketAnalysisData } from "@/hooks/useMarketAnalysis";
-
-export interface ValidationItem {
+export interface ValidationData {
   id: string;
   requirement_id: string;
-  readiness_score: number | null;
-  created_at: string;
-  updated_at: string;
-  status: string;
-  validation_verdict: string | null;
   validation_summary: string | null;
   strengths: string[] | null;
   risks: string[] | null;
   recommendations: string[] | null;
+  readiness_score: number | null;
+  validation_verdict: string | null;
+  status: string | null;
+  created_at: string;
+  updated_at: string;
   requirements?: {
     req_id: string;
     project_name: string;
@@ -21,12 +23,15 @@ export interface ValidationItem {
   } | null;
 }
 
+// Alias for backward compatibility
+export type ValidationItem = ValidationData;
+
 export interface ValidationHookState {
-  validations: ValidationItem[];
+  validations: ValidationData[];
   loading: boolean;
   requirement: any;
   requirementAnalysis: RequirementAnalysisData | null;
-  validationData: ValidationItem | null;
+  validationData: ValidationData | null;
   isRequirementLoading: boolean;
   isValidating: boolean;
   dataFetchAttempted: boolean;

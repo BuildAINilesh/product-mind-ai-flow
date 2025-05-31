@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { completeValidator } from "@/services/requirementFlowService";
+import { ValidationData } from "./types";
 
 // Define interface for the requirement
 interface Requirement {
@@ -10,21 +11,6 @@ interface Requirement {
   user_id: string;
   project_name?: string;
   [key: string]: string | number | boolean | null | undefined;
-}
-
-// Define interface for validation data
-interface ValidationData {
-  id: string;
-  requirement_id: string;
-  validation_summary: string | null;
-  strengths: string[] | null;
-  risks: string[] | null;
-  recommendations: string[] | null;
-  readiness_score: number | null;
-  validation_verdict: string | null;
-  status: string | null;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export const useValidationProcess = (

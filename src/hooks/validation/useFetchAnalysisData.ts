@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ValidationData } from "./types";
 
 // Define proper types
 interface RequirementAnalysis {
@@ -9,21 +10,6 @@ interface RequirementAnalysis {
   problem_statement: string | null;
   proposed_solution: string | null;
   key_features: string | null;
-  [key: string]: any;
-}
-
-interface ValidationData {
-  id: string;
-  requirement_id: string;
-  validation_summary: string | null;
-  strengths: string[] | null;
-  risks: string[] | null;
-  recommendations: string[] | null;
-  readiness_score: number | null;
-  validation_verdict: string | null;
-  status: string | null;
-  created_at: string;
-  updated_at: string;
   [key: string]: any;
 }
 

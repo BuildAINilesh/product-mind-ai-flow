@@ -19,25 +19,13 @@ import {
 } from "@/components/ui/table";
 import { AICard, AIGradientText } from "@/components/ui/ai-elements";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ValidationData } from "@/hooks/validation/types";
 
 // Define proper interfaces for the props
 interface Requirement {
   id: string;
   req_id?: string;
   project_name?: string;
-  user_id: string;
-}
-
-interface ValidationData {
-  id: string;
-  requirement_id: string;
-  validation_summary: string | null;
-  strengths: string[] | null;
-  risks: string[] | null;
-  recommendations: string[] | null;
-  readiness_score: number | null;
-  validation_verdict: string | null;
-  status: string | null;
 }
 
 interface ValidationRisksRecommendationsProps {

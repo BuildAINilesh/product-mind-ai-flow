@@ -19,28 +19,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ValidationData } from "@/hooks/validation/types";
 
-// Define types for validation data
+// Define types for requirement data
 interface RequirementType {
   id: string;
   req_id?: string;
   project_name?: string;
 }
 
-interface ValidationDataType {
-  id: string;
-  requirement_id: string;
-  validation_summary: string | null;
-  strengths: string[] | null;
-  risks: string[] | null;
-  recommendations: string[] | null;
-  readiness_score: number | null;
-  validation_verdict: string | null;
-  status: string | null;
-}
-
 interface ValidationResultSummaryProps {
-  validationData: ValidationDataType;
+  validationData: ValidationData;
   requirement?: RequirementType;
   summaryOnly?: boolean;
   strengthsOnly?: boolean;
