@@ -37,7 +37,12 @@ export function useValidation(requirementId: string | null) {
     error: validationProcessError,
     handleValidate: processValidation,
     setError: setValidationProcessError
-  } = useValidationProcess((data) => setValidationData(data), fetchValidations);
+  } = useValidationProcess((data) => {
+    // Fix the type issue by ensuring we call setValidationData properly
+    if (data) {
+      setValidationData(data);
+    }
+  }, fetchValidations);
 
   // Combine errors from different sources
   const [error, setError] = useState<string | null>(null);

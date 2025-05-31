@@ -25,20 +25,20 @@ import Logout from "./pages/Logout";
 
 // Dashboard
 import DashboardLayout from "./layouts/DashboardLayout";
-import Dashboard from "./pages/dashboard/Dashboard";
-import RequirementsList from "./pages/requirements/RequirementsList";
-import RequirementView from "./pages/requirements/RequirementView";
-import NewRequirement from "./pages/requirements/NewRequirement";
-import EditRequirement from "./pages/requirements/EditRequirement";
-import MarketSense from "./pages/dashboard/MarketSense";
-import RequirementValidator from "./pages/dashboard/RequirementValidator";
-import AICaseGenerator from "./pages/dashboard/AICaseGenerator";
-import AISignoff from "./pages/dashboard/AISignoff";
-import Profile from "./pages/dashboard/Profile";
+import Dashboard from "../pages/dashboard/Dashboard";
+import RequirementsList from "../pages/requirements/RequirementsList";
+import RequirementView from "../pages/requirements/RequirementView";
+import NewRequirement from "../pages/requirements/NewRequirement";
+import EditRequirement from "../pages/requirements/EditRequirement";
+import MarketSense from "../pages/dashboard/MarketSense";
+import RequirementValidator from "../pages/dashboard/RequirementValidator";
+import AICaseGenerator from "../pages/dashboard/AICaseGenerator";
+import AISignoff from "../pages/dashboard/AISignoff";
+import Profile from "../pages/dashboard/Profile";
 
 // Add imports for Settings and Support
-import Settings from "./pages/dashboard/Settings";
-import Support from "./pages/dashboard/Support";
+import Settings from "../pages/dashboard/Settings";
+import Support from "../pages/dashboard/Support";
 
 const queryClient = new QueryClient();
 

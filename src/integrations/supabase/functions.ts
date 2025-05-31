@@ -1,48 +1,37 @@
 
-import { Database } from "./types";
+import { createClient } from '@supabase/supabase-js'
 
-// Define the custom RPC functions
-export interface CustomFunctions {
-  complete_requirement_capture: (args: { req_id: string }) => void;
-  complete_analysis: (args: { req_id: string }) => void;
-  complete_market_sense: (args: { req_id: string }) => void;
-  complete_validator: (args: { req_id: string }) => void;
-  complete_case_generator: (args: { req_id: string }) => void;
-  complete_brd: (args: { req_id: string }) => void;
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
 }
 
-// Extend the Supabase client type to include our custom RPC functions
-declare module "@supabase/supabase-js" {
-  export interface SupabaseClient<
-    Database = any,
-    SchemaName extends string & keyof Database = "public" extends keyof Database
-      ? "public"
-      : string & keyof Database,
-    Schema extends Record<string, any> = Database[SchemaName] extends Record<
-      string,
-      any
-    >
-      ? Database[SchemaName]
-      : any
-  > {
-    rpc<
-      FunctionName extends string,
-      Args extends Record<string, any> = Record<string, any>,
-      Result = Args extends Record<string, any> ? any : any
-    >(
-      fn: FunctionName,
-      args?: FunctionName extends keyof CustomFunctions
-        ? Parameters<CustomFunctions[FunctionName]>[0]
-        : Args,
-      options?: {
-        head?: boolean;
-        count?: null | "exact" | "planned" | "estimated";
-      }
-    ): FunctionName extends keyof CustomFunctions
-      ? Promise<
-          | { data: ReturnType<CustomFunctions[FunctionName]>; error: null }
-          | { data: null; error: any }
-        >
-      : Promise<{ data: Result; error: null } | { data: null; error: any }>;
+// Create a single client instance with consistent type parameters
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Export the client type for consistency
+export type SupabaseClient = typeof supabase
+
+// Function to invoke Supabase Edge Functions
+export const invokeFunction = async (functionName: string, body?: any) => {
+  try {
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (error) {
+      throw error
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error(`Error invoking function ${functionName}:`, error)
+    return { data: null, error }
   }
 }
