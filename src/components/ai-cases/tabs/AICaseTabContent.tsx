@@ -6,6 +6,7 @@ import CasePendingGeneration from "../CasePendingGeneration";
 import DatabaseUserStoryCard from "../DatabaseUserStoryCard";
 import { UseCase, TestCase, StatusData } from "@/hooks/caseGenerator";
 import { DatabaseUserStory } from "@/services/userStoriesService";
+import { FileText, FileQuestion, ClipboardList } from "lucide-react";
 
 interface AICaseTabContentProps {
   userStories: DatabaseUserStory[];
@@ -48,7 +49,8 @@ const AICaseTabContent: React.FC<AICaseTabContentProps> = ({
           </div>
         ) : (
           <CasePendingGeneration
-            type="userStories"
+            icon={FileText}
+            title="User Stories"
             status={statusData.userStoriesStatus}
             isGenerating={isGenerating}
             onGenerate={() => handleGenerateClick("userStories")}
@@ -59,6 +61,8 @@ const AICaseTabContent: React.FC<AICaseTabContentProps> = ({
       {/* Use Cases Tab */}
       <TabsContent value="useCases" className="space-y-4">
         <CaseContentTab
+          title="Use Cases"
+          icon={FileQuestion}
           items={useCases}
           type="useCases"
           status={statusData.useCasesStatus}
@@ -70,6 +74,8 @@ const AICaseTabContent: React.FC<AICaseTabContentProps> = ({
       {/* Test Cases Tab */}
       <TabsContent value="testCases" className="space-y-4">
         <CaseContentTab
+          title="Test Cases"
+          icon={ClipboardList}
           items={testCases}
           type="testCases"
           status={statusData.testCasesStatus}
