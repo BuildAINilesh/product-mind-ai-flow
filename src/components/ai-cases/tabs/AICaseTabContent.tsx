@@ -32,20 +32,31 @@ const AICaseTabContent: React.FC<AICaseTabContentProps> = ({
       {/* User Stories Tab */}
       <TabsContent value="userStories" className="space-y-4">
         {userStories.length > 0 ? (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">User Stories</h3>
-              <span className="text-sm text-slate-500">
-                {userStories.length} {userStories.length === 1 ? 'story' : 'stories'}
-              </span>
+          <div className="space-y-6">
+            <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">User Stories</h3>
+                <p className="text-sm text-slate-600">
+                  Generated user stories with actors and acceptance criteria
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-blue-600">{userStories.length}</span>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">
+                  {userStories.length === 1 ? 'Story' : 'Stories'}
+                </p>
+              </div>
             </div>
-            {userStories.map((userStory, index) => (
-              <DatabaseUserStoryCard
-                key={userStory.id}
-                userStory={userStory}
-                index={index}
-              />
-            ))}
+            
+            <div className="grid gap-4">
+              {userStories.map((userStory, index) => (
+                <DatabaseUserStoryCard
+                  key={userStory.id}
+                  userStory={userStory}
+                  index={index}
+                />
+              ))}
+            </div>
           </div>
         ) : (
           <CasePendingGeneration

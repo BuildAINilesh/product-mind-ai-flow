@@ -12,6 +12,8 @@ export interface DatabaseUserStory {
 
 export const getUserStoriesForRequirement = async (requirementId: string): Promise<DatabaseUserStory[]> => {
   try {
+    console.log("Fetching user stories for requirement:", requirementId);
+    
     const { data, error } = await supabase
       .from("user_stories")
       .select("*")
@@ -23,6 +25,7 @@ export const getUserStoriesForRequirement = async (requirementId: string): Promi
       throw error;
     }
 
+    console.log("Fetched user stories:", data);
     return data || [];
   } catch (error) {
     console.error("Error in getUserStoriesForRequirement:", error);
