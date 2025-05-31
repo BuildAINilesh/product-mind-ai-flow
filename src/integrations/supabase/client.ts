@@ -3,8 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import "./functions"; // Import our function type extensions
 
-const SUPABASE_URL = "https://nbjajaafqswspkytekun.supabase.co";
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://nbjajaafqswspkytekun.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iamFqYWFmcXN3c3BreXRla3VuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MzQ4NDksImV4cCI6MjA2MTMxMDg0OX0.nIAVpdp1Ted4N0SWNnRVzYa1v3_koDB2sRRLr7P_pVU";
 
 // Import the supabase client like this:

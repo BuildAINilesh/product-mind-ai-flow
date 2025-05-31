@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light" | "system";
@@ -24,11 +23,19 @@ export function ThemeProvider({
   children,
   defaultTheme = "system",
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem("theme") as Theme) || defaultTheme
-  );
+  const [theme, setTheme] = useState<Theme>(defaultTheme);
 
   useEffect(() => {
+    // Initialize theme from localStorage on client-side
+    const storedTheme = localStorage.getItem("theme") as Theme;
+    if (storedTheme) {
+      setTheme(storedTheme);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
 
@@ -47,7 +54,9 @@ export function ThemeProvider({
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem("theme", theme);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("theme", theme);
+      }
       setTheme(theme);
     },
   };

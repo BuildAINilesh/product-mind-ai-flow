@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
@@ -9,8 +10,8 @@ import { useAuth } from "@/hooks/use-auth";
 const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
-  const location = useLocation();
-  const isHome = location.pathname === "/";
+  const router = useRouter();
+  const isHome = router.pathname === "/";
 
   return (
     <header
@@ -22,7 +23,7 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
       )}
     >
       <div className="container mx-auto flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
+        <Link href="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center relative overflow-hidden">
             <span className="text-white font-bold text-lg relative z-10">
               P
@@ -37,19 +38,19 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
           <Link
-            to="/"
+            href="/"
             className="text-foreground/90 hover:text-foreground transition-colors"
           >
             Home
           </Link>
           <Link
-            to="/features"
+            href="/features"
             className="text-foreground/90 hover:text-foreground transition-colors"
           >
             Features
           </Link>
           <Link
-            to="/about"
+            href="/about"
             className="text-foreground/90 hover:text-foreground transition-colors"
           >
             About
@@ -59,18 +60,18 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
         <div className="hidden md:flex items-center space-x-4">
           {user ? (
             <Button variant="ghost" asChild>
-              <Link to="/logout">Sign Out</Link>
+              <Link href="/logout">Sign Out</Link>
             </Button>
           ) : (
             <>
               <Button variant="ghost" asChild>
-                <Link to="/login">Sign In</Link>
+                <Link href="/login">Sign In</Link>
               </Button>
               <Button
                 asChild
                 className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
               >
-                <Link to="/waitlist">Get Started</Link>
+                <Link href="/waitlist">Get Started</Link>
               </Button>
             </>
           )}
@@ -91,21 +92,21 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
         <div className="md:hidden absolute top-16 left-0 right-0 bg-background border-b border-border animate-fade-in">
           <div className="container mx-auto p-4 flex flex-col space-y-4">
             <Link
-              to="/"
+              href="/"
               className="p-2 hover:bg-accent rounded-md"
               onClick={() => setIsOpen(false)}
             >
               Home
             </Link>
             <Link
-              to="/features"
+              href="/features"
               className="p-2 hover:bg-accent rounded-md"
               onClick={() => setIsOpen(false)}
             >
               Features
             </Link>
             <Link
-              to="/about"
+              href="/about"
               className="p-2 hover:bg-accent rounded-md"
               onClick={() => setIsOpen(false)}
             >
@@ -114,14 +115,14 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
             <div className="pt-2 flex flex-col space-y-2">
               {user ? (
                 <Button variant="outline" asChild className="w-full">
-                  <Link to="/logout" onClick={() => setIsOpen(false)}>
+                  <Link href="/logout" onClick={() => setIsOpen(false)}>
                     Sign Out
                   </Link>
                 </Button>
               ) : (
                 <>
                   <Button variant="outline" asChild className="w-full">
-                    <Link to="/login" onClick={() => setIsOpen(false)}>
+                    <Link href="/login" onClick={() => setIsOpen(false)}>
                       Sign In
                     </Link>
                   </Button>
@@ -129,7 +130,7 @@ const Navbar = ({ transparent = false }: { transparent?: boolean }) => {
                     asChild
                     className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
                   >
-                    <Link to="/waitlist" onClick={() => setIsOpen(false)}>
+                    <Link href="/waitlist" onClick={() => setIsOpen(false)}>
                       Get Started
                     </Link>
                   </Button>

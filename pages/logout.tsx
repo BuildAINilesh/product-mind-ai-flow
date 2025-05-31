@@ -1,27 +1,15 @@
 
-import { useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import React from 'react';
 
 const Logout = () => {
-  const { signOut } = useAuth();
-
-  useEffect(() => {
-    const performLogout = async () => {
-      try {
-        await signOut();
-        // Note: we don't need to redirect here, as the AuthProvider will
-        // handle the redirection on SIGNED_OUT event
-      } catch (error) {
-        console.error("Error during logout:", error);
-      }
-    };
-
-    performLogout();
-  }, [signOut]);
-
-  // Return null instead of immediately redirecting
-  // Let the auth state change handle the navigation
-  return null;
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="max-w-md w-full space-y-8">
+        <h2 className="text-3xl font-bold text-center">Logged Out</h2>
+        <p className="text-center text-gray-600">You have been successfully logged out</p>
+      </div>
+    </div>
+  );
 };
 
 export default Logout;
