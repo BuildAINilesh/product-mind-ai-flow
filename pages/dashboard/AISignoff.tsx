@@ -1134,27 +1134,27 @@ const AISignoff = () => {
                       <User className="h-4 w-4 mr-1" />
                       <span>
                         Signed off by{" "}
-                        {signoffDetails.reviewer_comments ? "Admin" : "Unknown"}{" "}
+                        {signoffDetails.approver_comment ? "Admin" : "Unknown"}{" "}
                         on {formatDate(signoffDetails.updated_at)}
                       </span>
                     </div>
                   )}
                 </div>
 
-                {signoffDetails.reviewer_comments && (
+                {signoffDetails.approver_comment && (
                   <div className="mt-4">
                     <h4 className="font-medium mb-2 text-foreground">
                       Reviewer Comments:
                     </h4>
                     <div className="bg-muted/30 p-4 rounded-md border border-border">
                       <p className="text-foreground">
-                        {signoffDetails.reviewer_comments}
+                        {signoffDetails.approver_comment}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {!signoffDetails.reviewer_comments && (
+                {!signoffDetails.approver_comment && (
                   <div className="text-muted-foreground italic">
                     No reviewer comments available.
                   </div>
@@ -1188,8 +1188,8 @@ const AISignoff = () => {
                     Confidence Score
                   </div>
                   <div className="text-2xl font-semibold text-foreground">
-                    {signoffDetails.signoff_score
-                      ? `${Math.round(signoffDetails.signoff_score * 100)}%`
+                    {signoffDetails.ai_signoff_confidence
+                      ? `${Math.round(signoffDetails.ai_signoff_confidence * 100)}%`
                       : "N/A"}
                   </div>
                 </div>
