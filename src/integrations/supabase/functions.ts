@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+
 import { Database } from "./types";
 
 // Define the custom RPC functions

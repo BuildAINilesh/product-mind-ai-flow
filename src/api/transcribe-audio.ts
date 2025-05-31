@@ -1,8 +1,9 @@
+
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { FormData, File } from 'formdata-node';
 import { Readable } from 'stream';
-import { supabase } from './supabase';
+import { supabase } from '../integrations/supabase/client';
 
 // OpenAI API key from environment variables
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'your-openai-api-key';
@@ -23,12 +24,12 @@ export const transcribeAudio = async (audioFile: File): Promise<string> => {
       throw new Error('No active session');
     }
 
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`, {
+    const response = await fetch(`https://nbjajaafqswspkytekun.supabase.co/functions/v1/transcribe-audio`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${session.access_token}`,
       },
-      body: formData as BodyInit,
+      body: formData as any,
     });
 
     if (!response.ok) {
@@ -36,7 +37,7 @@ export const transcribeAudio = async (audioFile: File): Promise<string> => {
       throw new Error(`Transcription failed: ${errorText}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as { text: string };
     return result.text || '';
   } catch (error) {
     console.error('Error transcribing audio:', error);
@@ -70,7 +71,7 @@ export default async function handler(req: Request, res: Response) {
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
-      body: formData,
+      body: formData as any,
     });
 
     if (!response.ok) {

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Progress } from "@/components/ui/progress";
@@ -56,14 +57,14 @@ export function RequirementFlowStatus({
   const calculateProgress = (): number => {
     if (!flowStatus) return 0;
 
-    const currentStageIndex = stages.indexOf(flowStatus.current_stage);
+    const currentStageIndex = stages.indexOf(flowStatus.current_stage as FlowStage);
     if (currentStageIndex === -1) return 0;
 
     // Base progress is how far along the stages we are
     let progress = (currentStageIndex / (stages.length - 1)) * 100;
 
     // Add a bit more progress based on status within the current stage
-    const stageProgress = getStageProgress(flowStatus.current_stage);
+    const stageProgress = getStageProgress(flowStatus.current_stage as FlowStage);
     progress += (stageProgress / 100) * (100 / (stages.length - 1));
 
     return Math.min(Math.round(progress), 100);
@@ -125,7 +126,7 @@ export function RequirementFlowStatus({
   const isStageAccessible = (stage: FlowStage): boolean => {
     if (!flowStatus) return false;
 
-    const currentStageIndex = stages.indexOf(flowStatus.current_stage);
+    const currentStageIndex = stages.indexOf(flowStatus.current_stage as FlowStage);
     const stageIndex = stages.indexOf(stage);
 
     // Current or previous stages are always accessible
@@ -133,7 +134,7 @@ export function RequirementFlowStatus({
 
     // Next stage is accessible if current stage is complete
     if (stageIndex === currentStageIndex + 1) {
-      return isStageComplete(flowStatus.current_stage);
+      return isStageComplete(flowStatus.current_stage as FlowStage);
     }
 
     // Future stages beyond next are locked
@@ -215,7 +216,7 @@ export function RequirementFlowStatus({
       <CardContent>
         {/* Progress bar */}
         <div className="mb-4">
-          <Progress value={calculateProgress()} className="h-2" />
+          <Progress value={calculateProgress()} />
           <div className="flex justify-between mt-1 text-xs text-gray-500">
             <span>Start</span>
             <span>In Progress</span>
