@@ -215,57 +215,58 @@ function generatePrompt(
   marketAnalysis: MarketAnalysis | null
 ): string {
   return `
-    You are a senior product strategist and market analyst.
-    Based on the provided product requirement and market research data, your task is to evaluate the product idea's market readiness, strengths, risks, and next steps.
+You are a senior product strategist and market analyst.
 
-    ⚠️ Very Important Instructions:
+Your task is to critically evaluate the product's market viability based on the provided structured product requirement and market research data.
 
-    Use only the information provided. Do not assume or fabricate facts, data points, or metrics.
+🎯 Your Goal:
+Assess the product's readiness for market entry, highlighting its strategic strengths, potential risks or red flags, and providing actionable next steps.
 
-    If any area lacks enough detail to assess, state that clearly in the output.
+⚠️ Very Important Instructions:
+- Base your assessment **strictly on the information provided**. Do **not** infer, fabricate, or assume any additional facts or metrics.
+- If you cannot assess a section due to lack of detail, mention it clearly in the output.
+- Output must be **valid JSON only**, conforming to the exact structure provided below.
+- Do **not include** markdown, commentary, or extraneous text.
+- Ensure arrays use quoted strings and are syntactically valid.
+- Text fields may be \`null\` only if there's truly insufficient information.
 
-    Output must be a valid JSON object, matching the structure exactly. No markdown, commentary, or extra text.
+🟦 Inputs:
+Product Requirement:
+Project Overview: ${
+    analysis?.project_overview || requirement.project_idea || "Not available"
+  }
+Problem Statement: ${analysis?.problem_statement || "Not available"}
+Proposed Solution: ${analysis?.proposed_solution || "Not available"}
+Key Features: ${analysis?.key_features || "Not available"}
 
-    Text fields can be null if you truly cannot assess the content based on input.
+Market Research:
+Market Trends: ${marketAnalysis?.market_trends || "Not available"}
+Demand Insights: ${marketAnalysis?.demand_insights || "Not available"}
+Top Competitors: ${marketAnalysis?.top_competitors || "Not available"}
+Market Gaps: ${marketAnalysis?.market_gap_opportunity || "Not available"}
+SWOT Analysis: ${marketAnalysis?.swot_analysis || "Not available"}
+Industry Benchmarks: ${marketAnalysis?.industry_benchmarks || "Not available"}
 
-    Arrays must be enclosed in [] with quoted string items.
+🟨 Output Format (strict JSON only):
+{
+  "validation_summary": "string — a concise but insightful overview of market readiness and product viability (max 3–4 sentences)",
+  "strengths": ["string", "string", "..."],  // Highlight key strategic advantages (up to 5)
+  "risks": ["string", "string", "..."],      // Identify weaknesses, unknowns, or red flags (up to 5)
+  "recommendations": ["string", "string", "..."],  // Actionable improvements or validation steps (up to 5)
+  "readiness_score": number,                 // 0–100 scale; reflect confidence in the product's readiness
+  "validation_verdict": "validated" | "needs_refinement" | "high_risk"
+}
 
-    🟦 Inputs:
-    Product Requirement (structured):
-    Project Overview: ${
-      analysis?.project_overview || requirement.project_idea || "Not available"
-    }
+Evaluation criteria you must consider:
+- Clarity and completeness of the problem-solution fit
+- Strength of market demand and product-market fit
+- Presence of strategic differentiation or innovation
+- Competitive positioning and defensibility
+- Risks due to unclear data, weak demand, or lack of features
+- Research-backed justification of readiness score
 
-    Problem Statement: ${analysis?.problem_statement || "Not available"}
-
-    Proposed Solution: ${analysis?.proposed_solution || "Not available"}
-
-    Key Features: ${analysis?.key_features || "Not available"}
-
-    Market Analysis:
-    Market Trends: ${marketAnalysis?.market_trends || "Not available"}
-
-    Demand Insights: ${marketAnalysis?.demand_insights || "Not available"}
-
-    Top Competitors: ${marketAnalysis?.top_competitors || "Not available"}
-
-    Market Gaps: ${marketAnalysis?.market_gap_opportunity || "Not available"}
-
-    SWOT Analysis: ${marketAnalysis?.swot_analysis || "Not available"}
-
-    Benchmarks: ${marketAnalysis?.industry_benchmarks || "Not available"}
-
-    🟨 Output Format (strict JSON):
-    {
-      "validation_summary": "string — concise evaluation summary (max 3–4 sentences)",
-      "strengths": ["string", "string", "..."],  // Key strong points (up to 5)
-      "risks": ["string", "string", "..."],      // Risks, gaps, concerns (up to 5)
-      "recommendations": ["string", "string", "..."],  // Actionable advice for improvement
-      "readiness_score": number,                 // From 0 to 100 (use your judgment)
-      "validation_verdict": "validated" | "needs_refinement" | "high_risk"
-    }
-    Respond with only the JSON — no explanation.
-    `;
+Respond ONLY with a valid JSON object.
+`;
 }
 
 // Function to call the OpenAI API

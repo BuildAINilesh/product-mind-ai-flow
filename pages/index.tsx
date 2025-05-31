@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
@@ -38,21 +38,19 @@ const Index = () => {
                 finalized requirements, testing, and approval.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button
-                  size="lg"
-                  asChild
-                  className="text-lg px-8 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
-                >
-                  <Link to="/waitlist">Get Started</Link>
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  asChild
-                  className="text-lg px-8"
-                >
-                  <Link to="/features">See Features</Link>
-                </Button>
+                <Link href="/waitlist">
+                  <Button
+                    size="lg"
+                    className="text-lg px-8 bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
+                  >
+                    Get Started
+                  </Button>
+                </Link>
+                <Link href="/features">
+                  <Button size="lg" variant="outline" className="text-lg px-8">
+                    See Features
+                  </Button>
+                </Link>
               </div>
             </div>
             <div className="flex-1 mt-8 lg:mt-0">
@@ -179,14 +177,15 @@ const Index = () => {
             Join the teams already using ProductMind's AI networks to build
             better products, faster.
           </p>
-          <Button
-            size="lg"
-            variant="secondary"
-            asChild
-            className="text-lg px-8 bg-white hover:bg-white/90 text-primary"
-          >
-            <Link to="/waitlist">Get Started Free</Link>
-          </Button>
+          <Link href="/waitlist">
+            <Button
+              size="lg"
+              variant="secondary"
+              className="text-lg px-8 bg-white hover:bg-white/90 text-primary"
+            >
+              Get Started Free
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -199,7 +198,7 @@ const Index = () => {
               <ul className="space-y-2">
                 <li>
                   <Link
-                    to="/privacy"
+                    href="/privacy"
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Privacy Policy
@@ -207,7 +206,7 @@ const Index = () => {
                 </li>
                 <li>
                   <Link
-                    to="/terms"
+                    href="/terms"
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Terms of Service
