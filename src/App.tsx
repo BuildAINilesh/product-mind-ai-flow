@@ -1,4 +1,5 @@
 
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,37 +9,37 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 
 // Pages
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Waitlist from "./pages/Waitlist";
-import Features from "./pages/Features";
-import Pricing from "./pages/Pricing";
-import Roadmap from "./pages/Roadmap";
-import About from "./pages/About";
-import Blog from "./pages/Blog";
-import Career from "./pages/Career";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Logout from "./pages/Logout";
+import Index from "../pages/Index";
+import NotFound from "../pages/NotFound";
+import Login from "../pages/Login";
+import Register from "../pages/Register";
+import Waitlist from "../pages/Waitlist";
+import Features from "../pages/Features";
+import Pricing from "../pages/Pricing";
+import Roadmap from "../pages/Roadmap";
+import About from "../pages/About";
+import Blog from "../pages/Blog";
+import Career from "../pages/Career";
+import Privacy from "../pages/Privacy";
+import Terms from "../pages/Terms";
+import Logout from "../pages/Logout";
 
 // Dashboard
 import DashboardLayout from "./layouts/DashboardLayout";
-import Dashboard from "./pages/dashboard/Dashboard";
-import RequirementsList from "./pages/requirements/RequirementsList";
-import RequirementView from "./pages/requirements/RequirementView";
-import NewRequirement from "./pages/requirements/NewRequirement";
-import EditRequirement from "./pages/requirements/EditRequirement";
-import MarketSense from "./pages/dashboard/MarketSense";
-import RequirementValidator from "./pages/dashboard/RequirementValidator";
-import AICaseGenerator from "./pages/dashboard/AICaseGenerator";
-import AISignoff from "./pages/dashboard/AISignoff";
-import Profile from "./pages/dashboard/Profile";
+import Dashboard from "../pages/dashboard/Dashboard";
+import RequirementsList from "../pages/requirements/RequirementsList";
+import RequirementView from "../pages/requirements/RequirementView";
+import NewRequirement from "../pages/requirements/NewRequirement";
+import EditRequirement from "../pages/requirements/EditRequirement";
+import MarketSense from "../pages/dashboard/MarketSense";
+import RequirementValidator from "../pages/dashboard/RequirementValidator";
+import AICaseGenerator from "../pages/dashboard/AICaseGenerator";
+import AISignoff from "../pages/dashboard/AISignoff";
+import Profile from "../pages/dashboard/Profile";
 
 // Add imports for Settings and Support
-import Settings from "./pages/dashboard/Settings";
-import Support from "./pages/dashboard/Support";
+import Settings from "../pages/dashboard/Settings";
+import Support from "../pages/dashboard/Support";
 
 const queryClient = new QueryClient();
 
@@ -96,3 +97,4 @@ const App = () => (
 );
 
 export default App;
+
