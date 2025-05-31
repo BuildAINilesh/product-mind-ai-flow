@@ -51,7 +51,6 @@ const AICaseTabContent: React.FC<AICaseTabContentProps> = ({
           <CasePendingGeneration
             icon={FileText}
             title="User Stories"
-            status={statusData.userStoriesStatus}
             isGenerating={isGenerating}
             onGenerate={() => handleGenerateClick("userStories")}
           />
