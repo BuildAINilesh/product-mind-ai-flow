@@ -61,6 +61,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "build:dev": "vite build --mode development"
   }
 }
