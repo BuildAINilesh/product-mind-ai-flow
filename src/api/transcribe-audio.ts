@@ -2,9 +2,47 @@ import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { FormData, File } from 'formdata-node';
 import { Readable } from 'stream';
+import { supabase } from './supabase';
 
 // OpenAI API key from environment variables
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'your-openai-api-key';
+
+export const transcribeAudio = async (audioFile: File): Promise<string> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', audioFile);
+    formData.append('model', 'whisper-1');
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: formData as BodyInit,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Transcription failed: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return result.text || '';
+  } catch (error) {
+    console.error('Error transcribing audio:', error);
+    throw error;
+  }
+};
 
 export default async function handler(req: Request, res: Response) {
   if (req.method !== 'POST') {
@@ -47,4 +85,4 @@ export default async function handler(req: Request, res: Response) {
     console.error('Error processing audio:', error);
     return res.status(500).json({ error: 'Error processing audio' });
   }
-} 
+}
