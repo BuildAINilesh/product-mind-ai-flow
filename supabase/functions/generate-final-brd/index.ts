@@ -136,56 +136,157 @@ serve(async (req) => {
 
     // Create the prompt for OpenAI
     const prompt = `
-    You are an experienced product documentation expert.
-    Based on all prior product development artifacts, generate a comprehensive Business Requirements Document (BRD) ready for team review and stakeholder sign-off.
+You are an expert BRD writer and product analyst.
+Your job is to stitch together a detailed, logically flowing, and business-aligned Business Requirements Document (BRD).
 
-    ⚠️ Do not make up any content. Only use what's given.
+🧠 The BRD should:
+- Tell a coherent story from context to recommendation
+- Use the structure of a traditional enterprise BRD
+- Be firmly rooted in the actual data (requirement, research, validation, user stories, use cases, and tests)
+- Have deep insights, linked logic across sections, and professional tone
 
-    Inputs:
-    Requirement Overview: ${promptData.project_overview}, ${promptData.problem_statement}, ${promptData.proposed_solution}, ${promptData.key_features}, ${promptData.business_goals}, ${promptData.target_audience}
+📌 Inputs:
+---
+Project Overview: ${promptData.project_overview}
+Problem Statement: ${promptData.problem_statement}
+Proposed Solution: ${promptData.proposed_solution}
+Key Features: ${promptData.key_features}
+Business Goals: ${promptData.business_goals}
+Target Audience: ${promptData.target_audience}
 
-    Market Insights: ${promptData.market_trends}, ${promptData.demand_insights}, ${promptData.top_competitors}, ${promptData.swot_analysis}, ${promptData.market_gap_opportunity}
+Market Trends: ${promptData.market_trends}
+Demand Insights: ${promptData.demand_insights}
+Top Competitors: ${promptData.top_competitors}
+SWOT: ${promptData.swot_analysis}
+Gap Opportunity: ${promptData.market_gap_opportunity}
 
-    Validation Verdict: ${promptData.validation_summary}, ${promptData.strengths}, ${promptData.risks}, ${promptData.recommendations}, ${promptData.readiness_score}, ${promptData.validation_verdict}
+Validation Summary: ${promptData.validation_summary}
+Strengths: ${promptData.strengths}
+Risks: ${promptData.risks}
+Recommendations: ${promptData.recommendations}
+Readiness Score: ${promptData.readiness_score}
+Verdict: ${promptData.validation_verdict}
 
-    FlowForge Artifacts:
+User Stories: ${promptData.user_stories_json}
+Use Cases: ${promptData.use_cases_json}
+Test Case Summary: ${promptData.test_case_counts}
 
-    User Stories: ${promptData.user_stories_json}
+---
 
-    Use Cases: ${promptData.use_cases_json}
+🎯 Section-Specific Instructions:
 
-    Test Cases (summary): ${promptData.test_case_counts}
+1. Project Overview (250-300 words):
+   - Executive summary of the project scope
+   - Clear articulation of the business opportunity
+   - High-level timeline and resource implications
+   - Key stakeholders and their roles
 
-    Output Format:
-    json
-    
-    {
-      "brd_document": {
-        "project_overview": "...",
-        "problem_statement": "...",
-        "proposed_solution": "...",
-        "key_features": "...",
-        "business_goals": "...",
-        "target_audience": "...",
-        "market_research_summary": "...",
-        "validation_summary": "...",
-        "user_stories_summary": ["..."],
-        "use_cases_summary": ["..."],
-        "test_case_summary": {
-          "total_tests": number,
-          "functional": number,
-          "edge": number,
-          "negative": number,
-          "integration": number
-        },
-        "risks_and_mitigations": ["..."],
-        "final_recommendation": "string",
-        "ai_signoff_confidence": number (0–100)
+2. Problem Statement (200-250 words):
+   - Current state analysis
+   - Pain points and their business impact
+   - Quantifiable metrics showing the problem scale
+   - Affected stakeholders and their challenges
+
+3. Proposed Solution (250-300 words):
+   - Comprehensive solution architecture
+   - Core functionalities and their benefits
+   - Integration requirements
+   - Technical and operational considerations
+
+4. Key Features (200-250 words):
+   - Prioritized feature list with rationale
+   - Dependencies and implementation phases
+   - Success metrics for each feature
+   - Integration points with existing systems
+
+5. Business Goals (200-250 words):
+   - Short and long-term objectives
+   - Success metrics and KPIs
+   - ROI analysis and timeline
+   - Risk-adjusted business outcomes
+
+6. Target Audience (200-250 words):
+   - Detailed persona analysis
+   - Usage patterns and preferences
+   - Pain points and gain points
+   - Adoption barriers and enablers
+
+7. Market Research Summary (250-300 words):
+   - Market size and growth potential
+   - Competitive landscape analysis
+   - Market gaps and opportunities
+   - Trend impact analysis
+
+8. Validation Summary (200-250 words):
+   - Validation methodology
+   - Key findings and insights
+   - Stakeholder feedback synthesis
+   - Pivot points and adjustments
+
+9. Risks and Mitigations:
+   - Strategic risks
+   - Operational risks
+   - Technical risks
+   - Market risks
+   Each risk should include:
+   - Impact assessment
+   - Probability analysis
+   - Mitigation strategy
+   - Contingency plan
+
+10. Final Recommendation (250-300 words):
+    - Go/No-go recommendation
+    - Critical success factors
+    - Implementation roadmap
+    - Resource requirements
+    - Next steps and timeline
+
+General Instructions:
+1. Make each section read like a part of a bigger narrative.
+2. Use insights from earlier sections to inform later ones (e.g., market → validation → risks).
+3. Make the document compelling but rooted in factual insights only.
+4. User stories and use cases should be distilled into bullet-style summaries.
+5. Risks should be connected to key challenges or edge cases.
+6. Final recommendation must refer to all prior factors logically.
+7. Keep each section aligned with enterprise standards.
+8. Do not invent new features or fabricate metrics.
+
+✅ Output Format (JSON only):
+{
+  "brd_document": {
+    "project_overview": "...",
+    "problem_statement": "...",
+    "proposed_solution": "...",
+    "key_features": "...",
+    "business_goals": "...",
+    "target_audience": "...",
+    "market_research_summary": "...",
+    "validation_summary": "...",
+    "user_stories_summary": ["...", "..."],
+    "use_cases_summary": ["...", "..."],
+    "test_case_summary": {
+      "total_tests": number,
+      "functional": number,
+      "edge": number,
+      "negative": number,
+      "integration": number
+    },
+    "risks_and_mitigations": [
+      {
+        "risk_type": "...",
+        "description": "...",
+        "impact": "...",
+        "probability": "...",
+        "mitigation": "...",
+        "contingency": "..."
       }
-    }
-    
-    Respond with valid JSON only.
-    `;
+    ],
+    "final_recommendation": "...",
+    "ai_signoff_confidence": number (0–100)
+  }
+}
+
+Respond with a valid, clean JSON object only.`;
 
     // Call OpenAI API to generate the BRD
     const openAIResponse = await fetch(
