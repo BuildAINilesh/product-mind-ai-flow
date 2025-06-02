@@ -326,9 +326,9 @@ const Dashboard = () => {
           </section>
 
           {/* Charts Section */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <section className="grid grid-cols-1 lg:grid-cols-7 gap-6">
             {/* Weekly Progress Chart */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-4">
               <AIChart
                 title="Weekly Progress"
                 description="Requirements and validations completed over the past week"
@@ -340,14 +340,14 @@ const Dashboard = () => {
               />
             </div>
 
-            <Card>
+            <Card className="min-h-[370px] flex flex-col lg:col-span-3">
               <CardHeader>
                 <CardTitle>Test Coverage</CardTitle>
                 <CardDescription>
                   Distribution across test types
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 flex items-center justify-center">
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
