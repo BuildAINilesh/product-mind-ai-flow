@@ -319,9 +319,22 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-4 px-4">
-              <div className="prose max-w-none">
-                {formatText(brdData.project_overview)}
-              </div>
+              {/* Display as bullet points if possible */}
+              {(() => {
+                const points = formatAsBulletPoints(brdData.project_overview);
+                if (points.length > 1) {
+                  return (
+                    <ul className="list-disc pl-5 space-y-2">
+                      {points.map((point, idx) => (
+                        <li key={idx} className="text-slate-700">{point}</li>
+                      ))}
+                    </ul>
+                  );
+                } else {
+                  // fallback: show as paragraph
+                  return <div className="prose max-w-none">{brdData.project_overview}</div>;
+                }
+              })()}
             </AccordionContent>
           </AccordionItem>
 
@@ -604,11 +617,86 @@ export const BRDDisplay: React.FC<BRDDisplayProps> = ({
                     Identified Risks & Mitigation Strategies
                   </h3>
                 </div>
-                <ul className="list-disc pl-5 space-y-2 text-amber-800">
-                  {brdData.risks_and_mitigations.map((risk, index) => (
-                    <li key={index}>{risk}</li>
-                  ))}
-                </ul>
+                <div className="space-y-6">
+                  {Array.isArray(brdData.risks_and_mitigations) && brdData.risks_and_mitigations.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {brdData.risks_and_mitigations.map((risk, index) => {
+                        if (!risk) return null;
+                        let r: any = risk;
+                        // If risk is a stringified object, try to parse it
+                        if (typeof risk === 'string') {
+                          try {
+                            const parsed = JSON.parse(risk);
+                            if (parsed && typeof parsed === 'object') {
+                              r = parsed;
+                            } else {
+                              r = null;
+                            }
+                          } catch {
+                            // Not a JSON string, treat as plain string
+                            r = null;
+                          }
+                        }
+                        if (r && typeof r === 'object' && (
+                          r.risk_type || r.description || r.impact || r.probability || r.mitigation || r.contingency
+                        )) {
+                          return (
+                            <div key={index} className="bg-white border border-amber-200 rounded-lg shadow-sm p-4">
+                              <div className="mb-2 flex items-center gap-2">
+                                <span className="font-bold text-orange-700 text-base">Risk {index + 1}:</span>
+                                {r.risk_type && (
+                                  <span className="inline-block bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded-full border border-orange-200 ml-2">
+                                    {r.risk_type}
+                                  </span>
+                                )}
+                              </div>
+                              {r.description && (
+                                <div className="mb-1">
+                                  <span className="font-semibold text-amber-900">Description: </span>
+                                  <span className="text-amber-800">{r.description}</span>
+                                </div>
+                              )}
+                              {r.impact && (
+                                <div className="mb-1">
+                                  <span className="font-semibold text-amber-900">Impact: </span>
+                                  <span className="text-amber-800">{r.impact}</span>
+                                </div>
+                              )}
+                              {r.probability && (
+                                <div className="mb-1">
+                                  <span className="font-semibold text-amber-900">Probability: </span>
+                                  <span className="text-amber-800">{r.probability}</span>
+                                </div>
+                              )}
+                              {r.mitigation && (
+                                <div className="mb-1">
+                                  <span className="font-semibold text-amber-900">Mitigation: </span>
+                                  <span className="text-amber-800">{r.mitigation}</span>
+                                </div>
+                              )}
+                              {r.contingency && (
+                                <div className="mb-1">
+                                  <span className="font-semibold text-amber-900">Contingency: </span>
+                                  <span className="text-amber-800">{r.contingency}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        } else if (typeof risk === 'string') {
+                          // Fallback for old data: just show the string (no curly brackets)
+                          return (
+                            <div key={index} className="bg-white border border-amber-100 rounded p-3 text-amber-900">
+                              {risk}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-amber-700 italic">No risks and mitigations identified.</div>
+                  )}
+                </div>
               </div>
             </AccordionContent>
           </AccordionItem>
