@@ -60,57 +60,56 @@ serve(async (req) => {
 
     Your task is to generate a structured Business Requirements Document (BRD) in valid JSON format based on the input provided below. You must follow these instructions strictly:
 
-    Instructions:
-    - Reuse and rephrase content from the inputs (especially "Project Idea") wherever possible to maintain factual accuracy.
-    - Tailor your analysis to the given "Industry Type"—use industry-specific language for goals, constraints, risks, and competitor landscape.
-    - If any section cannot be confidently answered, return the string: "Not specified in provided input."
+    CRITICAL FORMATTING REQUIREMENTS:
+    1. Return ONLY a valid JSON object
+    2. DO NOT include any markdown formatting, code blocks, or explanatory text
+    3. DO NOT use any special characters or formatting in the JSON values
+    4. Use proper JSON string escaping for newlines (\\n) and quotes
+    5. Ensure all string values are properly quoted
+    6. The response must be parseable by JSON.parse()
+
+    Content Instructions:
+    - Reuse and rephrase content from the inputs (especially "Project Idea") wherever possible to maintain factual accuracy
+    - Tailor your analysis to the given "Industry Type"—use industry-specific language for goals, constraints, risks, and competitor landscape
+    - If any section cannot be confidently answered, use the string: "Not specified in provided input"
     - For the following fields, include:
-      → A **1-line introductory sentence**  
-      → Followed by a **list of bullet points**, clearly formatted for easy display:
-      - key_features
-      - business_goals
-      - target_audience
-      - competitive_landscape
-      - constraints_assumptions
-      - risks_mitigations
-      - acceptance_criteria
-      - user_stories
+      - A single-line introductory sentence
+      - Followed by bullet points using "\\n- " for each new point:
+        - key_features
+        - business_goals
+        - target_audience
+        - competitive_landscape
+        - constraints_assumptions
+        - risks_mitigations
+        - acceptance_criteria
+        - user_stories
 
-    - Keep each section short, precise, and professional. Use clear bullet points (no long paragraphs).
-    - Estimate "analysis_confidence_score" between 0–100 based on how complete and clear the provided inputs are.
-    - Output must be valid JSON — do not return Markdown, comments, or explanation outside the object.
+    - Keep each section short, precise, and professional
+    - Estimate "analysis_confidence_score" between 0-100 based on input completeness
 
-    ---
+    Input:
+    Project Name: ${projectData.project_name}
+    Company Name: ${projectData.company_name}
+    Industry Type: ${projectData.industry_type}
+    Project Idea: ${projectData.project_idea}
+    Uploaded Files Summary: ${projectData.document_summary}
 
-    ### Input:
-
-    Project Name: ${projectData.project_name}  
-    Company Name: ${projectData.company_name}  
-    Industry Type: ${projectData.industry_type}  
-    Project Idea: ${projectData.project_idea}  
-    Uploaded Files Summary (if any): ${projectData.document_summary}
-
-    ---
-
-    ### Output Format (JSON):
-
+    The response must be a single JSON object with exactly these fields:
     {
-      "project_overview": string or null,
-      "problem_statement": string or null,
-      "proposed_solution": string or null,
-      "business_goals": "Intro sentence\n- Goal 1\n- Goal 2",
-      "target_audience": "Intro sentence\n- Persona 1\n- Persona 2",
-      "key_features": "Intro sentence\n- Feature 1\n- Feature 2",
-      "competitive_landscape": "Intro sentence\n- Competitor type or gap 1\n- Competitor type or gap 2",
-      "constraints_assumptions": "Intro sentence\n- Constraint 1\n- Assumption 1",
-      "risks_mitigations": "Intro sentence\n- Risk 1 with mitigation\n- Risk 2 with mitigation",
-      "acceptance_criteria": "Intro sentence\n- Criteria 1\n- Criteria 2",
-      "user_stories": "Intro sentence\n- As a [user], I want to [goal] so that [value]",
+      "project_overview": "string",
+      "problem_statement": "string",
+      "proposed_solution": "string",
+      "business_goals": "string with \\n- for bullet points",
+      "target_audience": "string with \\n- for bullet points",
+      "key_features": "string with \\n- for bullet points",
+      "competitive_landscape": "string with \\n- for bullet points",
+      "constraints_assumptions": "string with \\n- for bullet points",
+      "risks_mitigations": "string with \\n- for bullet points",
+      "acceptance_criteria": "string with \\n- for bullet points",
+      "user_stories": "string with \\n- for bullet points",
       "appendices": [],
-      "analysis_confidence_score": number (0–100)
-    }
-
-    `;
+      "analysis_confidence_score": number
+    }`;
 
     // Call OpenAI API to generate the analysis
     const openAIResponse = await fetch(
@@ -122,13 +121,14 @@ serve(async (req) => {
           Authorization: `Bearer ${openaiApiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4", // Using GPT-4 model
+          model: "gpt-4-turbo-preview", // Using latest model that supports JSON mode
           messages: [
             {
               role: "user",
               content: prompt,
             },
           ],
+          response_format: { type: "json_object" },
           temperature: 0.7,
           max_tokens: 2500,
         }),
@@ -146,48 +146,89 @@ serve(async (req) => {
     const openAIData = await openAIResponse.json();
     console.log("OpenAI response received");
     console.log(
-      "Raw OpenAI response content:",
-      openAIData.choices[0].message.content
+      "Raw OpenAI response:",
+      JSON.stringify(openAIData.choices[0].message.content)
     );
 
     let analysisData;
     try {
       // Extract the JSON content from the OpenAI response
-      const content = openAIData.choices[0].message.content;
+      const content = openAIData.choices[0].message.content.trim();
+      console.log("Trimmed content:", content);
 
-      // Sometimes OpenAI wraps the JSON in markdown code blocks, so we need to extract it
-      let jsonString = content;
-
-      // Check if the response is wrapped in a code block
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (jsonMatch && jsonMatch[1]) {
-        jsonString = jsonMatch[1];
-        console.log("Extracted JSON from code block:", jsonString);
-      }
-
-      // Try to clean the string before parsing
-      jsonString = jsonString.trim();
-
-      // Parse the JSON
+      // First try direct JSON parse
       try {
-        analysisData = JSON.parse(jsonString);
-        console.log("Successfully parsed OpenAI response to JSON");
-      } catch (parseError) {
-        console.error("JSON Parse error:", parseError);
-        console.log("Failed JSON string:", jsonString);
-        throw parseError;
+        analysisData = JSON.parse(content);
+        console.log("Direct JSON parse successful");
+      } catch (directParseError) {
+        console.log("Direct JSON parse failed:", directParseError.message);
+
+        // If direct parse fails, try to extract JSON from markdown code blocks
+        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          const extractedJson = jsonMatch[1].trim();
+          console.log("Extracted JSON from code block:", extractedJson);
+          try {
+            analysisData = JSON.parse(extractedJson);
+            console.log("Code block JSON parse successful");
+          } catch (extractedParseError) {
+            console.log(
+              "Code block JSON parse failed:",
+              extractedParseError.message
+            );
+            throw new Error(
+              `Failed to parse JSON from code block: ${extractedParseError.message}`
+            );
+          }
+        } else {
+          // Try to find any JSON-like structure in the content
+          const possibleJson = content.match(/\{[\s\S]*\}/);
+          if (possibleJson) {
+            try {
+              analysisData = JSON.parse(possibleJson[0]);
+              console.log("Found and parsed JSON structure in content");
+            } catch (structureParseError) {
+              console.log(
+                "Structure JSON parse failed:",
+                structureParseError.message
+              );
+              throw new Error("No valid JSON found in response");
+            }
+          } else {
+            throw new Error("No JSON structure found in response");
+          }
+        }
       }
+
+      // Validate required fields
+      const requiredFields = [
+        "project_overview",
+        "problem_statement",
+        "proposed_solution",
+        "business_goals",
+        "target_audience",
+        "key_features",
+        "competitive_landscape",
+        "constraints_assumptions",
+        "risks_mitigations",
+        "acceptance_criteria",
+        "user_stories",
+        "analysis_confidence_score",
+      ];
+
+      console.log("Parsed analysis data:", JSON.stringify(analysisData));
+
+      const missingFields = requiredFields.filter(
+        (field) => !(field in analysisData)
+      );
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+      }
+
+      console.log("Successfully parsed and validated OpenAI response");
     } catch (error) {
-      console.error("Error parsing OpenAI response:", error);
-      // If parsing fails, use a simplified format with the raw content
-      const content = openAIData.choices[0].message.content;
-      analysisData = {
-        project_overview: `Generated analysis could not be properly formatted. Raw content: ${content.substring(
-          0,
-          100
-        )}...`,
-        analysis_confidence_score: 50, // Lower confidence due to parsing issue
-      };
+      console.error("Error processing OpenAI response:", error);
+      throw new Error(`Failed to process AI response: ${error.message}`);
     }
 
     // Add the requirement_id to the analysis data
