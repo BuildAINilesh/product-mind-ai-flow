@@ -158,157 +158,85 @@ const AISignoffDashboard: React.FC<AISignoffDashboardProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-100 via-white to-blue-100 animate-gradient-x p-6">
-      {/* Stats Cards - Only show if hideMetrics is false */}
-      {!hideMetrics && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 justify-items-center">
-          {/* Total Requirements */}
-          <Card className="p-6 rounded-lg shadow-sm bg-white max-w-xs w-full mx-auto">
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Total Requirements
-                </h3>
-                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600">
-                  <FileText className="h-3.5 w-3.5 text-white" />
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold">{totalCount}</h2>
-            </div>
-          </Card>
-
-          {/* Approved */}
-          <Card className="p-6 rounded-lg shadow-sm bg-white max-w-xs w-full mx-auto">
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Approved
-                </h3>
-                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-green-400 to-green-600">
-                  <Check className="h-3.5 w-3.5 text-white" />
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold">{approvedCount}</h2>
-            </div>
-          </Card>
-
-          {/* Pending */}
-          <Card className="p-6 rounded-lg shadow-sm bg-white max-w-xs w-full mx-auto">
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Pending
-                </h3>
-                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600">
-                  <ClipboardCheck className="h-3.5 w-3.5 text-white" />
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold">{pendingCount}</h2>
-            </div>
-          </Card>
-
-          {/* Rejected */}
-          <Card className="p-6 rounded-lg shadow-sm bg-white max-w-xs w-full mx-auto">
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Rejected
-                </h3>
-                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-red-400 to-red-600">
-                  <AlertTriangle className="h-3.5 w-3.5 text-white" />
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold">{rejectedCount}</h2>
-            </div>
-          </Card>
+    <div className="rounded-3xl shadow-2xl bg-white/80 p-0 animate-fadeIn">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4 px-2 pt-2">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-1">
+            Signoff Analysis
+          </h2>
+          <p className="text-slate-500">
+            View and manage your AI-powered signoff analysis
+          </p>
+        </div>
+        <div className="relative w-full md:w-96">
+          <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search signoffs..."
+            className="pl-12 pr-4 py-3 rounded-full w-full bg-white/70 border border-slate-200 focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow transition text-base"
+          />
+        </div>
+      </div>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader size="large" />
+        </div>
+      ) : dataFetchAttempted && signoffItems.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <div className="inline-flex p-3 rounded-full bg-muted mb-4">
+            <SearchIcon className="h-6 w-6" />
+          </div>
+          <h3 className="text-xl font-medium mb-2">No signoffs found</h3>
+          <p className="max-w-md mx-auto mb-6">
+            {"You haven't created any requirements to sign off yet. Start by creating a requirement and then sign off."}
+          </p>
+          <Link
+            to="/dashboard/requirements/new"
+            className="rounded-full px-6 py-2 text-base bg-indigo-500 text-white hover:bg-indigo-600 transition"
+          >
+            Create Requirement
+          </Link>
+        </div>
+      ) : (
+        <div className="overflow-x-auto animate-fadeIn">
+          <Table className="min-w-full rounded-2xl overflow-hidden">
+            <TableHeader className="bg-slate-50 sticky top-0 z-10">
+              <TableRow>
+                <TableHead className="whitespace-nowrap text-lg">ID</TableHead>
+                <TableHead className="w-[300px] text-lg">Project</TableHead>
+                <TableHead className="text-lg">Industry</TableHead>
+                <TableHead className="text-lg">Created</TableHead>
+                <TableHead className="text-lg">Status</TableHead>
+                <TableHead className="text-right text-lg">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {signoffItems.map((item) => (
+                <TableRow
+                  key={item.id}
+                  className="hover:bg-indigo-50/60 transition cursor-pointer"
+                  onClick={() => window.location.href = `/dashboard/signoff?requirementId=${item.requirementId}`}
+                >
+                  <TableCell className="font-medium text-base">{item.reqId || "N/A"}</TableCell>
+                  <TableCell className="text-base">{item.projectName}</TableCell>
+                  <TableCell className="capitalize text-base">{capitalizeWords(item.industry)}</TableCell>
+                  <TableCell className="whitespace-nowrap text-base">{item.created}</TableCell>
+                  <TableCell className="text-base">{renderStatusBadge(item.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <Link
+                      to={`/dashboard/signoff?requirementId=${item.requirementId}`}
+                      className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white rounded-full shadow hover:opacity-90 transition"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <SearchIcon className="h-4 w-4" /> View Details
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
-
-      {/* Table Section */}
-      <div className="bg-white/80 rounded-3xl shadow-2xl p-10 animate-fadeIn">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-1">
-              Signoff Analysis
-            </h2>
-            <p className="text-slate-500">
-              View and manage your AI-powered signoff analysis
-            </p>
-          </div>
-          <div className="relative w-full md:w-96">
-            <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search signoffs..."
-              className="pl-12 pr-4 py-3 rounded-full w-full bg-white/70 border border-slate-200 focus:ring-2 focus:ring-blue-400 focus:outline-none shadow transition text-base"
-            />
-          </div>
-        </div>
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader size="large" />
-          </div>
-        ) : !dataFetchAttempted || signoffItems.length === 0 ? (
-          <EmptyState
-            title="No signoff data found"
-            description="You haven't created any requirements yet. Start by creating a requirement, then complete it to see it here for signoff."
-            icon={<FileText className="h-8 w-8 text-slate-400" />}
-            actionLabel="Create Requirement"
-            actionLink="/dashboard/requirements/new"
-          />
-        ) : (
-          <div className="overflow-x-auto animate-fadeIn">
-            <Table className="min-w-full rounded-2xl overflow-hidden">
-              <TableHeader className="bg-slate-50 sticky top-0 z-10">
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">
-                    Requirement ID
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap">Project</TableHead>
-                  <TableHead className="whitespace-nowrap">Industry</TableHead>
-                  <TableHead className="whitespace-nowrap">Created</TableHead>
-                  <TableHead className="whitespace-nowrap">Status</TableHead>
-                  <TableHead className="whitespace-nowrap">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {signoffItems.map((item, idx) => (
-                  <TableRow
-                    key={item.id}
-                    className="hover:bg-blue-100/60 transition-all duration-200 cursor-pointer animate-fadeIn"
-                    style={{ animationDelay: `${idx * 40}ms` }}
-                  >
-                    <TableCell className="whitespace-nowrap font-mono text-blue-900 font-semibold">
-                      {item.reqId || "N/A"}
-                    </TableCell>
-                    <TableCell className="max-w-[180px] truncate font-semibold text-slate-800 flex items-center gap-3">
-                      <span className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-lg shadow bg-gradient-to-br from-blue-400 to-blue-600">
-                        {item.projectName?.[0] || "P"}
-                      </span>
-                      {item.projectName}
-                    </TableCell>
-                    <TableCell className="capitalize text-slate-700">
-                      {capitalizeWords(item.industry)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-slate-500">
-                      {item.created}
-                    </TableCell>
-                    <TableCell>{renderStatusBadge(item.status)}</TableCell>
-                    <TableCell>
-                      <Link
-                        to={`/dashboard/signoff?requirementId=${item.requirementId}`}
-                        className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-full font-semibold shadow hover:scale-105 hover:shadow-lg transition-all duration-150"
-                      >
-                        <SearchIcon className="h-4 w-4" /> View Details
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

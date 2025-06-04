@@ -219,6 +219,11 @@ const RequirementView = () => {
 
       // Update UI based on the analysis result
       if (analysisSuccessful) {
+        toast({
+          title: "Analysis Complete",
+          description: "AI analysis has been successfully completed!",
+        });
+
         // Update the project status to "Analysis Complete"
         const { data: updatedProject } = await supabase
           .from("requirements")
@@ -244,13 +249,9 @@ const RequirementView = () => {
           })
           .eq("requirement_id", id);
 
-        // Immediately fetch the fresh analysis data
+        // Immediately fetch fresh project and analysis data
+        await fetchProjectData();
         await fetchAnalysisData();
-
-        toast({
-          title: "Analysis Complete",
-          description: "AI analysis has been successfully completed!",
-        });
       } else {
         toast({
           title: "Analysis Failed",
