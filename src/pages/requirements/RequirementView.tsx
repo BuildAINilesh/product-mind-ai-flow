@@ -249,11 +249,9 @@ const RequirementView = () => {
           })
           .eq("requirement_id", id);
 
-        // Give a small delay to ensure DB writes are complete before fetching
-        setTimeout(async () => {
-          // Fetch the fresh analysis data
-          await fetchAnalysisData();
-        }, 1000);
+        // Immediately fetch fresh project and analysis data
+        await fetchProjectData();
+        await fetchAnalysisData();
       } else {
         toast({
           title: "Analysis Failed",
